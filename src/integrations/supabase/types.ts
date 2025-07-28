@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_chat_config: {
+        Row: {
+          created_at: string
+          default_provider_id: string | null
+          id: string
+          is_enabled: boolean
+          max_tokens: number | null
+          system_prompt: string | null
+          temperature: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          default_provider_id?: string | null
+          id?: string
+          is_enabled?: boolean
+          max_tokens?: number | null
+          system_prompt?: string | null
+          temperature?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          default_provider_id?: string | null
+          id?: string
+          is_enabled?: boolean
+          max_tokens?: number | null
+          system_prompt?: string | null
+          temperature?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_chat_config_default_provider_id_fkey"
+            columns: ["default_provider_id"]
+            isOneToOne: false
+            referencedRelation: "ai_providers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_link_tabs: {
         Row: {
           category: string
@@ -50,6 +91,45 @@ export type Database = {
           title?: string
           updated_at?: string
           url?: string
+        }
+        Relationships: []
+      }
+      ai_providers: {
+        Row: {
+          api_key_secret_name: string
+          base_url: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          model_name: string
+          name: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          api_key_secret_name: string
+          base_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          model_name: string
+          name: string
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          api_key_secret_name?: string
+          base_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          model_name?: string
+          name?: string
+          type?: string
+          updated_at?: string
         }
         Relationships: []
       }

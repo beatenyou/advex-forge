@@ -50,17 +50,42 @@ export const AIQAWidget = () => {
 
     setIsLoading(true);
     try {
-      // Simulate AI response - replace with actual webhook call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setAnswer(`Here's information about "${question}": This is a simulated AI response providing details about Active Directory security concepts, attack techniques, and best practices. In a real implementation, this would connect to your AI agent webhook.`);
+      // Call the AI chat router function
+      const { data, error } = await supabase.functions.invoke('ai-chat-router', {
+        body: {
+          message: question
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to get AI response');
+      }
+
+      if (data?.error) {
+        throw new Error(data.error);
+      }
+
+      setAnswer(data.response || 'No response received from AI provider');
       toast({
         title: "AI Response Ready",
-        description: "Your question has been answered."
+        description: `Answered by ${data.providerName || 'AI Provider'}`
       });
     } catch (error) {
+      console.error('AI Chat Error:', error);
+      
+      // Fallback to informative message
+      setAnswer(`⚠️ AI service is currently unavailable. ${error.message || 'Unknown error occurred'}
+
+Please check that AI providers are configured in the admin panel and API keys are properly set in Supabase secrets.
+
+For cybersecurity questions, you can:
+• Browse the technique cards above
+• Check the Quick Links tab for useful resources
+• Contact an administrator to configure AI providers`);
+      
       toast({
-        title: "Error", 
-        description: "Failed to get AI response. Please try again.",
+        title: "AI Service Unavailable", 
+        description: "Using fallback response. Please check AI configuration.",
         variant: "destructive"
       });
     } finally {

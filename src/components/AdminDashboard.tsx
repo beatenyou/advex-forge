@@ -14,6 +14,7 @@ import { CheatSheetManager } from "@/components/CheatSheetManager";
 import { LinkTabsManager } from "@/components/LinkTabsManager";
 import { ScenarioManager } from "@/components/ScenarioManager";
 import { UserManager } from "@/components/UserManager";
+import AIProviderManager from "@/components/AIProviderManager";
 
 interface AdminDashboardProps {
   techniques: ParsedTechnique[];
@@ -263,7 +264,7 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
 
         <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
           <Tabs defaultValue="guidance" className="p-6">
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="guidance">Guidance</TabsTrigger>
           <TabsTrigger value="upload">Upload Cards</TabsTrigger>
           <TabsTrigger value="manage">Manage Cards</TabsTrigger>
@@ -271,6 +272,7 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
           <TabsTrigger value="linktabs">Link Tabs</TabsTrigger>
           <TabsTrigger value="scenarios">Scenarios</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="ai-providers">AI Chat</TabsTrigger>
           <TabsTrigger value="webscraper">LLM Webscraper</TabsTrigger>
         </TabsList>
 
@@ -457,6 +459,10 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
 
             <TabsContent value="users" className="space-y-6 mt-6">
               <UserManager />
+            </TabsContent>
+
+            <TabsContent value="ai-providers" className="space-y-6 mt-6">
+              <AIProviderManager />
             </TabsContent>
 
             <TabsContent value="webscraper" className="space-y-6 mt-6">
