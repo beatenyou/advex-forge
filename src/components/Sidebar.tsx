@@ -19,18 +19,21 @@ interface Technique {
 interface SidebarProps {
   techniques: Technique[];
   onTechniqueClick: (technique: Technique) => void;
+  selectedPhase: string;
+  onPhaseSelect: (phase: string) => void;
 }
 
 const navigationItems = [
-  { label: "Enumeration", active: false },
-  { label: "Initial Access", active: false },
-  { label: "Privilege Escalation", active: true },
-  { label: "Persistence", active: false },
-  { label: "Credential Access", active: false },
-  { label: "Lateral Movement", active: false }
+  { label: "All Phases", phase: "All Phases" },
+  { label: "Enumeration", phase: "Enumeration" },
+  { label: "Initial Access", phase: "Initial Access" },
+  { label: "Privilege Escalation", phase: "Privilege Escalation" },
+  { label: "Persistence", phase: "Persistence" },
+  { label: "Credential Access", phase: "Credential Access" },
+  { label: "Lateral Movement", phase: "Lateral Movement" }
 ];
 
-export const Sidebar = ({ techniques, onTechniqueClick }: SidebarProps) => {
+export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSelect }: SidebarProps) => {
   const [selectedScenario, setSelectedScenario] = useState("Select your situation...");
   
   const favoriteItems = techniques.filter(technique => technique.starred);
@@ -43,20 +46,23 @@ export const Sidebar = ({ techniques, onTechniqueClick }: SidebarProps) => {
           <CardTitle className="text-lg text-foreground">Quick Navigation</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {navigationItems.map((item, index) => (
-            <Button
-              key={index}
-              variant={item.active ? "default" : "ghost"}
-              className={`w-full justify-start ${
-                item.active 
-                  ? "bg-gradient-cyber text-primary-foreground" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/30"
-              }`}
-            >
-              <ChevronRight className="w-4 h-4 mr-2" />
-              {item.label}
-            </Button>
-          ))}
+          <div className="space-y-2">
+            {navigationItems.map((item) => (
+              <Button
+                key={item.phase}
+                variant={selectedPhase === item.phase ? "default" : "ghost"}
+                className={`w-full justify-start text-sm h-8 ${
+                  selectedPhase === item.phase 
+                    ? "bg-primary text-primary-foreground" 
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                }`}
+                onClick={() => onPhaseSelect(item.phase)}
+              >
+                <ChevronRight className="w-4 h-4 mr-2" />
+                {item.label}
+              </Button>
+            ))}
+          </div>
         </CardContent>
       </Card>
 

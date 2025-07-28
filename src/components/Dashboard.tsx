@@ -173,6 +173,8 @@ export const Dashboard = () => {
         <Sidebar 
           techniques={techniques} 
           onTechniqueClick={openTechniqueModal}
+          selectedPhase={selectedPhase}
+          onPhaseSelect={setSelectedPhase}
         />
 
         {/* Main Content */}
