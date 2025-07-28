@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Plus, Edit2, Trash2, Copy } from "lucide-react";
+import { Plus, Edit2, Trash2, Copy, Upload, Download } from "lucide-react";
+import { parseCheatSheetMarkdown, generateCheatSheetTemplate } from "@/lib/cheatSheetMarkdownParser";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,7 +42,11 @@ export const CheatSheetManager = () => {
   const [cheatSheets, setCheatSheets] = useState<CheatSheet[]>([]);
   const [loading, setLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [editingSheet, setEditingSheet] = useState<CheatSheet | null>(null);
+  const [importMarkdown, setImportMarkdown] = useState("");
+  const [importPreview, setImportPreview] = useState<any[]>([]);
+  const [isImporting, setIsImporting] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -123,6 +128,77 @@ export const CheatSheetManager = () => {
       ...prev,
       commands: prev.commands.filter((_, i) => i !== index)
     }));
+  };
+
+  const handleImportPreview = () => {
+    try {
+      const parsed = parseCheatSheetMarkdown(importMarkdown);
+      setImportPreview(parsed);
+    } catch (error) {
+      toast({
+        title: "Import Error",
+        description: error instanceof Error ? error.message : "Failed to parse markdown",
+        variant: "destructive",
+      });
+      setImportPreview([]);
+    }
+  };
+
+  const handleImport = async () => {
+    if (importPreview.length === 0) return;
+    
+    setIsImporting(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const sheet of importPreview) {
+      try {
+        const { error } = await supabase
+          .from('cheat_sheets')
+          .insert({
+            title: sheet.title,
+            category: sheet.category,
+            description: sheet.description,
+            bg_color: sheet.bg_color,
+            commands: sheet.commands,
+            created_by: null
+          });
+
+        if (error) throw error;
+        successCount++;
+      } catch (error) {
+        console.error('Failed to import cheat sheet:', error);
+        errorCount++;
+      }
+    }
+
+    setIsImporting(false);
+    setIsImportDialogOpen(false);
+    setImportMarkdown("");
+    setImportPreview([]);
+    
+    toast({
+      title: "Import Complete",
+      description: `Successfully imported ${successCount} cheat sheet(s). ${errorCount > 0 ? `${errorCount} failed.` : ''}`,
+      variant: successCount > 0 ? "default" : "destructive",
+    });
+
+    if (successCount > 0) {
+      fetchCheatSheets();
+    }
+  };
+
+  const downloadTemplate = () => {
+    const template = generateCheatSheetTemplate();
+    const blob = new Blob([template], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'cheat-sheet-template.md';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   const saveCheatSheet = async () => {
@@ -268,13 +344,22 @@ export const CheatSheetManager = () => {
           <p className="text-muted-foreground">Manage quick reference command sheets</p>
         </div>
         
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Create Cheat Sheet
-            </Button>
-          </DialogTrigger>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={downloadTemplate}>
+            <Download className="h-4 w-4 mr-2" />
+            Template
+          </Button>
+          <Button variant="outline" onClick={() => setIsImportDialogOpen(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Import
+          </Button>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={() => setIsCreateDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create
+              </Button>
+            </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
@@ -411,7 +496,73 @@ export const CheatSheetManager = () => {
             </div>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
+
+      {/* Import Dialog */}
+      <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Import Cheat Sheets from Markdown</DialogTitle>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Markdown Content</label>
+                <Textarea
+                  placeholder="Paste your markdown content here..."
+                  value={importMarkdown}
+                  onChange={(e) => setImportMarkdown(e.target.value)}
+                  className="min-h-[300px] font-mono text-sm"
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={handleImportPreview}>
+                  Preview
+                </Button>
+                <Button 
+                  onClick={handleImport} 
+                  disabled={importPreview.length === 0 || isImporting}
+                >
+                  {isImporting ? "Importing..." : `Import ${importPreview.length} Sheet(s)`}
+                </Button>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <label className="text-sm font-medium">Preview</label>
+              <div className="border rounded-lg p-4 min-h-[300px] bg-muted/50">
+                {importPreview.length > 0 ? (
+                  <div className="space-y-4">
+                    {importPreview.map((sheet, index) => (
+                      <Card key={index} className="p-4">
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-start">
+                            <h3 className="font-semibold">{sheet.title}</h3>
+                            <Badge variant="secondary">{sheet.category}</Badge>
+                          </div>
+                          {sheet.description && (
+                            <p className="text-sm text-muted-foreground">{sheet.description}</p>
+                          )}
+                          <div className="text-xs text-muted-foreground">
+                            {sheet.commands.length} commands
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-full text-muted-foreground">
+                    Paste markdown and click Preview to see parsed cheat sheets
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
