@@ -153,18 +153,26 @@ export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSe
                   </p>
                   <div className="flex flex-wrap gap-1">
                     {scenarios.find(s => s.id === selectedScenario)?.linked_techniques.map((techniqueName, index) => {
+                      console.log('Processing technique:', techniqueName);
                       const matchedTechnique = techniques.find(t => 
                         t.title.toLowerCase().includes(techniqueName.toLowerCase()) ||
                         techniqueName.toLowerCase().includes(t.title.toLowerCase())
                       );
+                      
+                      console.log('Matched technique for', techniqueName, ':', matchedTechnique?.title);
                       
                       return (
                         <Badge 
                           key={index} 
                           variant={matchedTechnique ? "default" : "outline"}
                           className={`text-xs ${matchedTechnique ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
-                          onClick={() => {
+                          onClick={(e) => {
+                            console.log('Badge clicked!', techniqueName, matchedTechnique);
+                            console.log('Event:', e);
+                            e.preventDefault();
+                            e.stopPropagation();
                             if (matchedTechnique) {
+                              console.log('Calling onTechniqueClick with:', matchedTechnique);
                               onTechniqueClick(matchedTechnique);
                             }
                           }}
