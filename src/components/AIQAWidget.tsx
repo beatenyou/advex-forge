@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
+import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
 interface LinkTab {
   id: string;
@@ -192,6 +193,12 @@ For cybersecurity questions, you can:
               placeholder="Ask anything about Active Directory, attacks, or using this dashboard..."
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey && !isLoading && question.trim()) {
+                  e.preventDefault();
+                  handleSubmit(e as any);
+                }
+              }}
               className="flex-1 bg-muted/30 border-border/50 focus:border-primary"
               disabled={isLoading}
             />
@@ -231,7 +238,7 @@ For cybersecurity questions, you can:
                   </Button>
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground">{answer}</p>
+              <MarkdownRenderer content={answer} className="text-sm" />
             </div>
           )}
         </form>
@@ -263,6 +270,12 @@ const AIQuestionForm = ({
         placeholder="Ask anything about Active Directory, attacks, or using this dashboard..."
         value={question}
         onChange={(e) => setQuestion(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey && !isLoading && question.trim()) {
+            e.preventDefault();
+            handleSubmit(e as any);
+          }
+        }}
         className="flex-1 bg-muted/30 border-border/50 focus:border-primary"
         disabled={isLoading}
       />
@@ -303,7 +316,7 @@ const AIQuestionForm = ({
             </Button>
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">{answer}</p>
+        <MarkdownRenderer content={answer} className="text-sm" />
       </div>
     )}
   </div>
