@@ -28,58 +28,62 @@ interface TechniqueModalProps {
   onToggleFavorite: (techniqueId: string) => void;
 }
 
-// Mock detailed data for the technique
-const getDetailedTechnique = (technique: Technique) => ({
-  ...technique,
-  whenToUse: [
-    "When you have a list of valid usernames but no passwords",
-    "Use during initial reconnaissance phase",
-    "When organization has weak password policies"
-  ],
-  prerequisites: [
-    "List of valid usernames, common password list"
-  ],
-  howToUse: [
-    "Extract NTLM hashes from memory or registry",
-    "Use hash with authentication tools", 
-    "Access remote systems"
-  ],
-  commands: [
-    {
-      tool: "Impacket",
-      template: "psexec.py target.local/user@{target_ip} -hashes :{ntlm_hash}",
-      params: [
-        { name: "target_ip", required: true, example: "10.10.10.10" },
-        { name: "ntlm_hash", required: true, example: "aad3b435b51404eeaad3b435b51404ee:hash" }
-      ]
-    },
-    {
-      tool: "crackmapexec",
-      template: "crackmapexec smb {target_range} -u {username} -H {ntlm_hash}",
-      params: [
-        { name: "target_range", required: true, example: "10.10.10.0/24" },
-        { name: "username", required: true, example: "user" },
-        { name: "ntlm_hash", required: true, example: "ntlmhash" }
-      ]
-    },
-    {
-      tool: "Rubeus",
-      template: "Rubeus.exe asktgt /user:{username} /rc4:{ntlm_hash} /domain:{domain}",
-      params: [
-        { name: "username", required: true, example: "user" },
-        { name: "ntlm_hash", required: true, example: "hash" },
-        { name: "domain", required: false, example: "target.local" }
-      ]
-    }
-  ],
-  detection: [
-    "Unusual authentication patterns, NTLM authentication from unexpected sources"
-  ],
-  mitigation: [
-    "Strong SPN password policy"
-  ],
-  mitreMapping: "T1550.002"
-});
+// Enhanced function to get detailed technique data
+const getDetailedTechnique = (technique: any) => {
+  // If the technique already has detailed data from markdown parsing, use it
+  if (technique.whenToUse && technique.commands) {
+    return {
+      ...technique,
+      whenToUse: Array.isArray(technique.whenToUse) ? technique.whenToUse : [technique.whenToUse],
+      prerequisites: Array.isArray(technique.prerequisites) ? technique.prerequisites : [technique.prerequisites || "No specific prerequisites"],
+      howToUse: Array.isArray(technique.howToUse) ? technique.howToUse : (technique.howToUse || "Follow standard procedures").split('\n').filter(Boolean),
+      commands: technique.commands.map((cmd: any) => ({
+        tool: cmd.tool,
+        template: cmd.command,
+        params: extractParamsFromCommand(cmd.command)
+      })),
+      detection: Array.isArray(technique.detection) ? technique.detection : [technique.detection || "Monitor for suspicious activity"],
+      mitigation: Array.isArray(technique.mitigation) ? technique.mitigation : [technique.mitigation || "Implement security controls"]
+    };
+  }
+
+  // Fallback for techniques without detailed data
+  return {
+    ...technique,
+    whenToUse: ["Use this technique when appropriate for your security assessment"],
+    prerequisites: ["Ensure proper authorization and access"],
+    howToUse: ["Follow documented procedures", "Execute with proper precautions"],
+    commands: technique.tools.map((tool: string) => ({
+      tool,
+      template: `${tool.toLowerCase()} --help`,
+      params: []
+    })),
+    detection: ["Monitor for unusual activity patterns"],
+    mitigation: ["Implement proper security controls"]
+  };
+};
+
+// Helper function to extract parameters from command strings
+const extractParamsFromCommand = (command: string) => {
+  const params: Array<{ name: string; required: boolean; example: string }> = [];
+  const paramRegex = /<([^>]+)>/g;
+  let match;
+  
+  while ((match = paramRegex.exec(command)) !== null) {
+    const paramName = match[1];
+    params.push({
+      name: paramName,
+      required: true,
+      example: paramName.includes('ip') ? '10.10.10.10' : 
+               paramName.includes('domain') ? 'example.com' :
+               paramName.includes('user') ? 'admin' :
+               paramName.includes('pass') ? 'password123' :
+               'value'
+    });
+  }
+  
+  return params;
+};
 
 export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite }: TechniqueModalProps) => {
   const [selectedCommand, setSelectedCommand] = useState(0);
@@ -156,20 +160,28 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite }:
           </div>
 
           {/* When to Use */}
-          <div>
-            <h3 className="text-sm font-semibold text-foreground mb-2">When to Use</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {detailedTechnique.whenToUse.join(". ")}
-            </p>
-          </div>
+          {detailedTechnique.whenToUse && (
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-2">When to Use</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {Array.isArray(detailedTechnique.whenToUse) ? 
+                  detailedTechnique.whenToUse.join(". ") : 
+                  detailedTechnique.whenToUse}
+              </p>
+            </div>
+          )}
 
           {/* Prerequisites */}
-          <div>
-            <h3 className="text-sm font-semibold text-foreground mb-2">Prerequisites</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {detailedTechnique.prerequisites.join(", ")}
-            </p>
-          </div>
+          {detailedTechnique.prerequisites && (
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-2">Prerequisites</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {Array.isArray(detailedTechnique.prerequisites) ? 
+                  detailedTechnique.prerequisites.join(", ") : 
+                  detailedTechnique.prerequisites}
+              </p>
+            </div>
+          )}
 
           {/* How to Use */}
           <div>
@@ -226,12 +238,28 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite }:
           </div>
 
           {/* Detection */}
-          <div>
-            <h3 className="text-sm font-semibold text-foreground mb-2">Detection</h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {detailedTechnique.detection.join(". ")}
-            </p>
-          </div>
+          {detailedTechnique.detection && (
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-2">Detection</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {Array.isArray(detailedTechnique.detection) ? 
+                  detailedTechnique.detection.join(". ") : 
+                  detailedTechnique.detection}
+              </p>
+            </div>
+          )}
+
+          {/* Mitigation */}
+          {detailedTechnique.mitigation && (
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-2">Mitigation</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {Array.isArray(detailedTechnique.mitigation) ? 
+                  detailedTechnique.mitigation.join(". ") : 
+                  detailedTechnique.mitigation}
+              </p>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

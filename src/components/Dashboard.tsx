@@ -12,36 +12,10 @@ import { TechniqueModal } from "./TechniqueModal";
 import { Sidebar } from "./Sidebar";
 import { AIQAWidget } from "./AIQAWidget";
 import { QuickReference } from "./QuickReference";
+import { sampleMarkdownTechniques, parseMultipleMarkdownTechniques } from "@/lib/markdownParser";
 
-// Mock data for demo - initial state
-const initialTechniques = [{
-  id: "T1110.003",
-  title: "Password Spraying",
-  description: "Attempt a few commonly used passwords against many accounts",
-  phase: "Initial Access",
-  tags: ["Password Attack", "Credential Access"],
-  tools: ["Rubeus", "crackmapexec", "Hydra"],
-  starred: true,
-  category: "kerberos"
-}, {
-  id: "T1558.002",
-  title: "Pass-the-Hash",
-  description: "Use NTLM hash to authenticate without knowing the plaintext password",
-  phase: "Credential Access",
-  tags: ["NTLM", "Lateral Movement"],
-  tools: ["Impacket", "crackmapexec", "Rubeus"],
-  starred: false,
-  category: "credential-access"
-}, {
-  id: "T1018",
-  title: "Domain Enumeration",
-  description: "Gather basic information about the Active Directory domain",
-  phase: "Reconnaissance",
-  tags: ["Enumeration", "Discovery"],
-  tools: ["PowerView", "BloodHound", "ldapsearch"],
-  starred: true,
-  category: "enumeration"
-}];
+// Parse techniques from markdown
+const initialTechniques = parseMultipleMarkdownTechniques(sampleMarkdownTechniques);
 export const Dashboard = () => {
   const {
     user,
@@ -72,8 +46,8 @@ export const Dashboard = () => {
       });
     }
   };
-  const phases = ["All Phases", "Initial Access", "Reconnaissance", "Credential Access", "Lateral Movement", "Persistence"];
-  const allTags = ["kerberos", "enumeration", "lateral-movement", "powershell", "impacket"];
+  const phases = ["All Phases", "Enumeration", "Initial Access", "Privilege Escalation", "Persistence", "Credential Access", "Lateral Movement"];
+  const allTags = [...new Set(techniques.flatMap(t => t.tags.map(tag => tag.toLowerCase().replace(/\s+/g, '-'))))];
   useEffect(() => {
     let filtered = techniques;
     
