@@ -48,6 +48,50 @@ const AIProviderManager = () => {
     model_name: ''
   });
 
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editProvider, setEditProvider] = useState({
+    name: '',
+    type: 'openai' as 'openai' | 'mistral',
+    api_key_secret_name: '',
+    base_url: '',
+    model_name: ''
+  });
+
+  // Model suggestions based on provider type
+  const getModelSuggestions = (type: 'openai' | 'mistral') => {
+    if (type === 'openai') {
+      return ['gpt-4o', 'gpt-4o-mini', 'gpt-3.5-turbo'];
+    } else {
+      return ['mistral-large-latest', 'mistral-small-latest', 'mistral-medium-latest'];
+    }
+  };
+
+  // Validation functions
+  const validateProvider = (provider: typeof newProvider) => {
+    const errors: string[] = [];
+    
+    if (!provider.name.trim()) errors.push('Provider name is required');
+    if (!provider.api_key_secret_name.trim()) errors.push('API key secret name is required');
+    if (!provider.model_name.trim()) errors.push('Model name is required');
+    
+    // Validate API key secret name format
+    const secretNamePattern = /^[A-Z_]+$/;
+    if (provider.api_key_secret_name && !secretNamePattern.test(provider.api_key_secret_name)) {
+      errors.push('API key secret name should be in UPPERCASE_SNAKE_CASE format (e.g., OPENAI_API_KEY)');
+    }
+    
+    // Validate base URL if provided
+    if (provider.base_url && provider.base_url.trim()) {
+      try {
+        new URL(provider.base_url);
+      } catch {
+        errors.push('Base URL must be a valid URL');
+      }
+    }
+    
+    return errors;
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -77,6 +121,16 @@ const AIProviderManager = () => {
   };
 
   const handleAddProvider = async () => {
+    const errors = validateProvider(newProvider);
+    if (errors.length > 0) {
+      toast({
+        title: "Validation Error",
+        description: errors.join(', '),
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase.from('ai_providers').insert([{
         ...newProvider,
@@ -107,6 +161,60 @@ const AIProviderManager = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleEditProvider = async () => {
+    if (!editingProvider) return;
+
+    const errors = validateProvider(editProvider);
+    if (errors.length > 0) {
+      toast({
+        title: "Validation Error",
+        description: errors.join(', '),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('ai_providers')
+        .update({
+          ...editProvider,
+          base_url: editProvider.base_url || null
+        })
+        .eq('id', editingProvider.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "AI provider updated successfully",
+      });
+
+      setShowEditDialog(false);
+      setEditingProvider(null);
+      fetchData();
+    } catch (error) {
+      console.error('Error updating provider:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update AI provider",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openEditDialog = (provider: AIProvider) => {
+    setEditingProvider(provider);
+    setEditProvider({
+      name: provider.name,
+      type: provider.type,
+      api_key_secret_name: provider.api_key_secret_name,
+      base_url: provider.base_url || '',
+      model_name: provider.model_name
+    });
+    setShowEditDialog(true);
   };
 
   const handleDeleteProvider = async (id: string) => {
@@ -308,67 +416,95 @@ const AIProviderManager = () => {
               Add Provider
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-2xl">
             <DialogHeader>
               <DialogTitle>Add AI Provider</DialogTitle>
               <DialogDescription>Configure a new AI provider for the chat system</DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Provider Name</Label>
-                <Input
-                  id="name"
-                  value={newProvider.name}
-                  onChange={(e) => setNewProvider({...newProvider, name: e.target.value})}
-                  placeholder="e.g., OpenAI GPT-4"
-                />
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-muted-foreground">Basic Information</h4>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="name">Provider Name *</Label>
+                  <Input
+                    id="name"
+                    value={newProvider.name}
+                    onChange={(e) => setNewProvider({...newProvider, name: e.target.value})}
+                    placeholder="e.g., OpenAI GPT-4o or Mistral Large"
+                  />
+                  <p className="text-xs text-muted-foreground">A descriptive name for this provider</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="type">Provider Type *</Label>
+                  <Select value={newProvider.type} onValueChange={(value: 'openai' | 'mistral') => 
+                    setNewProvider({...newProvider, type: value, model_name: ''})}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="openai">OpenAI</SelectItem>
+                      <SelectItem value="mistral">Mistral AI</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="type">Provider Type</Label>
-                <Select value={newProvider.type} onValueChange={(value: 'openai' | 'mistral') => 
-                  setNewProvider({...newProvider, type: value})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="openai">OpenAI</SelectItem>
-                    <SelectItem value="mistral">Mistral</SelectItem>
-                  </SelectContent>
-                </Select>
+              {/* API Configuration */}
+              <div className="space-y-4">
+                <h4 className="text-sm font-medium text-muted-foreground">API Configuration</h4>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="api-key">API Key Secret Name *</Label>
+                  <Input
+                    id="api-key"
+                    value={newProvider.api_key_secret_name}
+                    onChange={(e) => setNewProvider({...newProvider, api_key_secret_name: e.target.value.toUpperCase()})}
+                    placeholder={newProvider.type === 'openai' ? 'OPENAI_API_KEY' : 'MISTRAL_API_KEY'}
+                  />
+                  <p className="text-xs text-muted-foreground">Reference to the secret name configured in Supabase (UPPERCASE_SNAKE_CASE)</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="model">Model Name *</Label>
+                  <Select value={newProvider.model_name} onValueChange={(value) => 
+                    setNewProvider({...newProvider, model_name: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={`Select a ${newProvider.type} model`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getModelSuggestions(newProvider.type).map((model) => (
+                        <SelectItem key={model} value={model}>{model}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Input
+                    value={newProvider.model_name}
+                    onChange={(e) => setNewProvider({...newProvider, model_name: e.target.value})}
+                    placeholder="Or enter a custom model name"
+                    className="mt-2"
+                  />
+                  <p className="text-xs text-muted-foreground">Select from common models or enter a custom model name</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="base-url">Base URL (Optional)</Label>
+                  <Input
+                    id="base-url"
+                    value={newProvider.base_url}
+                    onChange={(e) => setNewProvider({...newProvider, base_url: e.target.value})}
+                    placeholder="https://api.openai.com/v1 (leave empty for default)"
+                  />
+                  <p className="text-xs text-muted-foreground">Custom API endpoint URL. Leave empty to use the default endpoint.</p>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="api-key">API Key Secret Name</Label>
-                <Input
-                  id="api-key"
-                  value={newProvider.api_key_secret_name}
-                  onChange={(e) => setNewProvider({...newProvider, api_key_secret_name: e.target.value})}
-                  placeholder="OPENAI_API_KEY or MISTRAL_API_KEY"
-                />
+              <div className="flex gap-2 pt-4">
+                <Button onClick={handleAddProvider} className="flex-1">Add Provider</Button>
+                <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="model">Model Name</Label>
-                <Input
-                  id="model"
-                  value={newProvider.model_name}
-                  onChange={(e) => setNewProvider({...newProvider, model_name: e.target.value})}
-                  placeholder={newProvider.type === 'openai' ? 'gpt-4o-mini' : 'mistral-large-latest'}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="base-url">Base URL (Optional)</Label>
-                <Input
-                  id="base-url"
-                  value={newProvider.base_url}
-                  onChange={(e) => setNewProvider({...newProvider, base_url: e.target.value})}
-                  placeholder="Custom API endpoint (optional)"
-                />
-              </div>
-
-              <Button onClick={handleAddProvider} className="w-full">Add Provider</Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -406,6 +542,15 @@ const AIProviderManager = () => {
                   >
                     <TestTube className="w-4 h-4" />
                     {testingProvider === provider.id ? 'Testing...' : 'Test'}
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => openEditDialog(provider)}
+                  >
+                    <Edit className="w-4 h-4" />
+                    Edit
                   </Button>
                   
                   {provider.is_active && config?.default_provider_id !== provider.id && (
@@ -451,6 +596,101 @@ const AIProviderManager = () => {
           </Card>
         )}
       </div>
+
+      {/* Edit Provider Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit AI Provider</DialogTitle>
+            <DialogDescription>Update the configuration for this AI provider</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6">
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium text-muted-foreground">Basic Information</h4>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">Provider Name *</Label>
+                <Input
+                  id="edit-name"
+                  value={editProvider.name}
+                  onChange={(e) => setEditProvider({...editProvider, name: e.target.value})}
+                  placeholder="e.g., OpenAI GPT-4o or Mistral Large"
+                />
+                <p className="text-xs text-muted-foreground">A descriptive name for this provider</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-type">Provider Type *</Label>
+                <Select value={editProvider.type} onValueChange={(value: 'openai' | 'mistral') => 
+                  setEditProvider({...editProvider, type: value})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="openai">OpenAI</SelectItem>
+                    <SelectItem value="mistral">Mistral AI</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* API Configuration */}
+            <div className="space-y-4">
+              <h4 className="text-sm font-medium text-muted-foreground">API Configuration</h4>
+              
+              <div className="space-y-2">
+                <Label htmlFor="edit-api-key">API Key Secret Name *</Label>
+                <Input
+                  id="edit-api-key"
+                  value={editProvider.api_key_secret_name}
+                  onChange={(e) => setEditProvider({...editProvider, api_key_secret_name: e.target.value.toUpperCase()})}
+                  placeholder={editProvider.type === 'openai' ? 'OPENAI_API_KEY' : 'MISTRAL_API_KEY'}
+                />
+                <p className="text-xs text-muted-foreground">Reference to the secret name configured in Supabase (UPPERCASE_SNAKE_CASE)</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-model">Model Name *</Label>
+                <Select value={editProvider.model_name} onValueChange={(value) => 
+                  setEditProvider({...editProvider, model_name: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={`Select a ${editProvider.type} model`} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getModelSuggestions(editProvider.type).map((model) => (
+                      <SelectItem key={model} value={model}>{model}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  value={editProvider.model_name}
+                  onChange={(e) => setEditProvider({...editProvider, model_name: e.target.value})}
+                  placeholder="Or enter a custom model name"
+                  className="mt-2"
+                />
+                <p className="text-xs text-muted-foreground">Select from common models or enter a custom model name</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="edit-base-url">Base URL (Optional)</Label>
+                <Input
+                  id="edit-base-url"
+                  value={editProvider.base_url}
+                  onChange={(e) => setEditProvider({...editProvider, base_url: e.target.value})}
+                  placeholder="https://api.openai.com/v1 (leave empty for default)"
+                />
+                <p className="text-xs text-muted-foreground">Custom API endpoint URL. Leave empty to use the default endpoint.</p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-4">
+              <Button onClick={handleEditProvider} className="flex-1">Update Provider</Button>
+              <Button variant="outline" onClick={() => setShowEditDialog(false)}>Cancel</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
