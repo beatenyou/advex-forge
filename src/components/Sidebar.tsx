@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronRight, Star, Hash } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Technique {
   id: string;
@@ -14,6 +15,17 @@ interface Technique {
   tools: string[];
   starred: boolean;
   category: string;
+}
+
+interface Scenario {
+  id: string;
+  title: string;
+  description?: string;
+  phase: string;
+  tags: string[];
+  linked_techniques: string[];
+  order_index: number;
+  is_active: boolean;
 }
 
 interface SidebarProps {
@@ -35,8 +47,42 @@ const navigationItems = [
 
 export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSelect }: SidebarProps) => {
   const [selectedScenario, setSelectedScenario] = useState("Select your situation...");
+  const [scenarios, setScenarios] = useState<Scenario[]>([]);
   
   const favoriteItems = techniques.filter(technique => technique.starred);
+
+  useEffect(() => {
+    fetchScenarios();
+  }, []);
+
+  const fetchScenarios = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('scenarios')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_index', { ascending: true });
+
+      if (error) throw error;
+      setScenarios(data || []);
+    } catch (error) {
+      console.error('Error fetching scenarios:', error);
+    }
+  };
+
+  const handleScenarioChange = (scenarioId: string) => {
+    setSelectedScenario(scenarioId);
+    
+    if (scenarioId === "Select your situation...") return;
+    
+    const scenario = scenarios.find(s => s.id === scenarioId);
+    if (scenario) {
+      // Filter techniques to show only those linked to the selected scenario
+      // This could be enhanced to highlight matching techniques in the main view
+      console.log(`Selected scenario: ${scenario.title}`);
+      console.log(`Linked techniques: ${scenario.linked_techniques.join(', ')}`);
+    }
+  };
 
   return (
     <aside className="w-80 bg-gradient-card border-r border-border/50 p-6 space-y-6">
@@ -72,17 +118,50 @@ export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSe
           <CardTitle className="text-lg text-foreground">Scenario Assistant</CardTitle>
         </CardHeader>
         <CardContent>
-          <Select value={selectedScenario} onValueChange={setSelectedScenario}>
+          <Select value={selectedScenario} onValueChange={handleScenarioChange}>
             <SelectTrigger className="w-full bg-muted/30 border-border/50">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="initial-foothold">Initial Foothold</SelectItem>
-              <SelectItem value="domain-admin">Path to Domain Admin</SelectItem>
-              <SelectItem value="persistence">Maintain Persistence</SelectItem>
-              <SelectItem value="data-exfil">Data Exfiltration</SelectItem>
+              <SelectItem value="Select your situation...">Select your situation...</SelectItem>
+              {scenarios.map((scenario) => (
+                <SelectItem key={scenario.id} value={scenario.id}>
+                  {scenario.title}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
+          {selectedScenario !== "Select your situation..." && scenarios.find(s => s.id === selectedScenario) && (
+            <div className="mt-3 p-3 bg-muted/30 rounded-lg">
+              <p className="text-xs text-muted-foreground mb-2">
+                {scenarios.find(s => s.id === selectedScenario)?.description}
+              </p>
+              <div className="flex flex-wrap gap-1 mb-2">
+                {scenarios.find(s => s.id === selectedScenario)?.tags.map((tag, index) => (
+                  <Badge key={index} variant="secondary" className="text-xs">
+                    {tag}
+                  </Badge>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                <strong>Phase:</strong> {scenarios.find(s => s.id === selectedScenario)?.phase}
+              </p>
+              {scenarios.find(s => s.id === selectedScenario)?.linked_techniques.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs font-medium text-muted-foreground mb-1">
+                    Linked Techniques:
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {scenarios.find(s => s.id === selectedScenario)?.linked_techniques.map((technique, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {technique}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
 

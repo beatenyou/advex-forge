@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { parseMarkdownTechnique, ParsedTechnique } from "@/lib/markdownParser";
 import { CheatSheetManager } from "@/components/CheatSheetManager";
 import { LinkTabsManager } from "@/components/LinkTabsManager";
+import { ScenarioManager } from "@/components/ScenarioManager";
 
 interface AdminDashboardProps {
   techniques: ParsedTechnique[];
@@ -261,12 +262,13 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
 
         <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
           <Tabs defaultValue="guidance" className="p-6">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="guidance">Guidance</TabsTrigger>
               <TabsTrigger value="upload">Upload Cards</TabsTrigger>
               <TabsTrigger value="manage">Manage Cards</TabsTrigger>
               <TabsTrigger value="cheatsheets">Cheat Sheets</TabsTrigger>
               <TabsTrigger value="linktabs">Link Tabs</TabsTrigger>
+              <TabsTrigger value="scenarios">Scenarios</TabsTrigger>
               <TabsTrigger value="webscraper">LLM Webscraper</TabsTrigger>
             </TabsList>
 
@@ -445,6 +447,10 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
 
             <TabsContent value="linktabs" className="space-y-6 mt-6">
               <LinkTabsManager />
+            </TabsContent>
+
+            <TabsContent value="scenarios" className="space-y-6 mt-6">
+              <ScenarioManager />
             </TabsContent>
 
             <TabsContent value="webscraper" className="space-y-6 mt-6">
