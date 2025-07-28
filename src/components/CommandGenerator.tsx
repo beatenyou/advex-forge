@@ -17,6 +17,11 @@ interface Technique {
   tools: string[];
   starred: boolean;
   category: string;
+  commands?: Array<{
+    tool: string;
+    command: string;
+    description: string;
+  }>;
 }
 
 interface CommandGeneratorProps {
