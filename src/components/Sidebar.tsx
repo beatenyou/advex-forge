@@ -22,14 +22,12 @@ interface SidebarProps {
 }
 
 const navigationItems = [
-  { label: "Initial Recon", active: false },
-  { label: "Initial Compromise", active: false },
-  { label: "Establish Foothold", active: false },
+  { label: "Enumeration", active: false },
+  { label: "Initial Access", active: false },
   { label: "Privilege Escalation", active: true },
-  { label: "Internal Recon", active: false },
-  { label: "Move Laterally", active: false },
-  { label: "Maintain Presence", active: false },
-  { label: "Complete Mission", active: false }
+  { label: "Persistence", active: false },
+  { label: "Credential Access", active: false },
+  { label: "Lateral Movement", active: false }
 ];
 
 export const Sidebar = ({ techniques, onTechniqueClick }: SidebarProps) => {
