@@ -37,7 +37,7 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
   
   let currentSection = '';
   let isToolsSection = false;
-  let toolLines: string[] = [];
+  let isCommandsSection = false;
   
   for (const line of lines) {
     const trimmedLine = line.trim();
@@ -65,13 +65,19 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
     if (trimmedLine.startsWith('**How to use:**')) {
       currentSection = 'howToUse';
       isToolsSection = false;
-    } else if (trimmedLine.startsWith('### Tools')) {
+      isCommandsSection = false;
+    } else if (trimmedLine.startsWith('### Tools') || trimmedLine.startsWith('### Tools and Commands')) {
       currentSection = 'tools';
       isToolsSection = true;
-      toolLines = [];
+      isCommandsSection = false;
+    } else if (trimmedLine.startsWith('### Commands') || trimmedLine.startsWith('### Command Templates')) {
+      currentSection = 'commands';
+      isToolsSection = false;
+      isCommandsSection = true;
     } else if (trimmedLine.startsWith('##') || trimmedLine.startsWith('###')) {
       currentSection = '';
       isToolsSection = false;
+      isCommandsSection = false;
     }
     
     // Collect content for sections
@@ -85,6 +91,22 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
       if (toolMatch) {
         const [, toolName, command, description] = toolMatch;
         tools.push(toolName.trim());
+        commands.push({
+          tool: toolName.trim(),
+          command: command.trim(),
+          description: description.trim()
+        });
+      }
+    }
+    
+    if (isCommandsSection && trimmedLine && !trimmedLine.startsWith('### Commands') && !trimmedLine.startsWith('### Command Templates')) {
+      // Parse command template entries
+      const commandMatch = trimmedLine.match(/^\d+\.\s*\*\*([^:]+):\*\*\s*`([^`]+)`\s*\|\s*(.+)$/);
+      if (commandMatch) {
+        const [, toolName, command, description] = commandMatch;
+        if (!tools.includes(toolName.trim())) {
+          tools.push(toolName.trim());
+        }
         commands.push({
           tool: toolName.trim(),
           command: command.trim(),
@@ -141,7 +163,7 @@ export function parseMultipleMarkdownTechniques(markdownText: string): ParsedTec
   return techniques.map(technique => parseMarkdownTechnique(technique));
 }
 
-// Sample data to replace initialTechniques
+// Updated sample data with command templates
 export const sampleMarkdownTechniques = `**Name:** Password Spraying
 **MITRE ID:** T1110.003
 **Phase:** Credential Access
@@ -155,8 +177,13 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 
 ### Tools
 
-1. **CrackMapExec:** \`crackmapexec smb <targets> -u <users> -p <passwords>\` | Automated password spraying.
-2. **Hydra:** \`hydra -L users.txt -P passwords.txt <target> <service>\` | Brute-force and spray attempts.
+1. **CrackMapExec:** \`crackmapexec smb <target> -u <username> -p <password>\` | Automated password spraying.
+2. **Hydra:** \`hydra -L <userlist> -P <passlist> <target> <service>\` | Brute-force and spray attempts.
+
+### Command Templates
+
+1. **CrackMapExec:** \`crackmapexec smb <target> -u <username> -p <password> --continue-on-success\` | Spray passwords across multiple targets.
+2. **Hydra:** \`hydra -L <userlist> -p <password> <target> <service> -t 1 -W 30\` | Controlled password spraying with delays.
 
 **Detection:** Multiple authentication attempts from single IP, use of known common passwords.
 **Mitigation:** MFA, strong password complexity, lockout policies.
@@ -175,8 +202,13 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 
 ### Tools
 
-1. **Rubeus:** \`Rubeus.exe kerberoast /outfile:hashes.txt\` | Request and extract Kerberos tickets.
-2. **Impacket:** \`GetUserSPNs.py domain/user:password -dc-ip <dc> -request\` | Python-based Kerberoasting.
+1. **Rubeus:** \`Rubeus.exe kerberoast /outfile:<output_file>\` | Request and extract Kerberos tickets.
+2. **Impacket:** \`GetUserSPNs.py <domain>/<user>:<password> -dc-ip <dc_ip> -request\` | Python-based Kerberoasting.
+
+### Command Templates
+
+1. **Rubeus:** \`Rubeus.exe kerberoast /outfile:<output_file> /domain:<domain> /dc:<dc_ip>\` | Full Kerberoasting with domain specification.
+2. **Impacket:** \`GetUserSPNs.py <domain>/<user>:<password> -dc-ip <dc_ip> -request -outputfile <output_file>\` | Save hashes to file.
 
 **Detection:** Unusual TGS requests, service ticket requests from non-service accounts.
 **Mitigation:** Strong service account passwords, managed service accounts.
@@ -197,6 +229,11 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 
 1. **smbclient:** \`smbclient -L //<target> -N\` | List SMB shares anonymously.
 2. **enum4linux:** \`enum4linux -a <target>\` | Comprehensive SMB enumeration.
+
+### Command Templates
+
+1. **smbclient:** \`smbclient -L //<target> -U <username>%<password>\` | Authenticated share enumeration.
+2. **enum4linux:** \`enum4linux -a <target> -u <username> -p <password>\` | Authenticated comprehensive enumeration.
 
 **Detection:** SMB connection logs, unusual share access patterns.
 **Mitigation:** Disable unnecessary shares, implement proper access controls.`;

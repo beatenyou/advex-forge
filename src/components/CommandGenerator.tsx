@@ -33,34 +33,42 @@ interface CommandTemplate {
 }
 
 const getCommandTemplates = (technique: Technique): CommandTemplate[] => {
-  // Return different templates based on technique
+  // Use the technique's command templates if available
+  if (technique.commands && technique.commands.length > 0) {
+    return technique.commands.map(cmd => ({
+      tool: cmd.tool,
+      template: cmd.command,
+      description: cmd.description,
+      params: extractParameters(cmd.command)
+    }));
+  }
+  
+  // Fallback to default templates if no commands are defined
   return [
     {
-      tool: "Rubeus",
-      template: "Rubeus.exe asrep-roast /outfile:asrep_hashes.txt",
-      description: "Extract AS-REP hashes for accounts without pre-authentication",
-      params: ["target_domain", "target_ip", "username", "password_hash"]
-    },
-    {
-      tool: "Impacket", 
-      template: "GetNPUsers.py target.local/ -usersfile users.txt -dc-ip 10.10.10.10",
-      description: "Request AS-REP for users without pre-authentication",
-      params: ["target_domain", "target_ip", "username", "password_hash"]
-    },
-    {
-      tool: "PowerShell",
-      template: "Get-ADUser -Filter {DoesNotRequirePreAuth -eq $true} -Properties DoesNotRequirePreAuth",
-      description: "Find accounts with pre-authentication disabled",
-      params: ["target_domain", "target_ip", "username", "password_hash"]
+      tool: "Default Tool",
+      template: "tool_command <target> <username> <password>",
+      description: "Default command template - please add command templates to this technique",
+      params: ["target", "username", "password"]
     }
   ];
 };
 
+// Helper function to extract parameters from command template
+const extractParameters = (command: string): string[] => {
+  const paramMatches = command.match(/<([^>]+)>/g) || [];
+  return paramMatches.map(param => param.slice(1, -1)); // Remove < and >
+};
+
 export const CommandGenerator = ({ technique, isOpen, onClose }: CommandGeneratorProps) => {
-  const [targetDomain, setTargetDomain] = useState("target.local");
-  const [targetIP, setTargetIP] = useState("10.10.10.10");
-  const [username, setUsername] = useState("user");
-  const [passwordHash, setPasswordHash] = useState("password or hash");
+  const [parameters, setParameters] = useState<{[key: string]: string}>({
+    target: "10.10.10.10",
+    domain: "target.local",
+    username: "user",
+    password: "password",
+    output_file: "output.txt",
+    dc_ip: "10.10.10.10"
+  });
   const [editedTemplates, setEditedTemplates] = useState<{[key: number]: string}>({});
 
   const commandTemplates = getCommandTemplates(technique);
@@ -76,12 +84,21 @@ export const CommandGenerator = ({ technique, isOpen, onClose }: CommandGenerato
     }));
   };
 
+  const updateParameter = (key: string, value: string) => {
+    setParameters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
   const generateCommand = (template: string) => {
-    return template
-      .replace(/target\.local/g, targetDomain)
-      .replace(/10\.10\.10\.10/g, targetIP)
-      .replace(/user/g, username)
-      .replace(/password or hash/g, passwordHash);
+    let command = template;
+    // Replace all parameters in the command
+    Object.entries(parameters).forEach(([key, value]) => {
+      const regex = new RegExp(`<${key}>`, 'g');
+      command = command.replace(regex, value);
+    });
+    return command;
   };
 
   const copyCommand = (command: string) => {
@@ -104,9 +121,14 @@ export const CommandGenerator = ({ technique, isOpen, onClose }: CommandGenerato
     });
   };
 
+  // Get all unique parameters from all templates
+  const allParameters = Array.from(new Set(
+    commandTemplates.flatMap(template => extractParameters(template.template))
+  ));
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden bg-card border-border">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden bg-card border-border">
         <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-border/30">
           <DialogTitle className="text-xl font-semibold">Command Generator</DialogTitle>
           <Button
@@ -126,52 +148,26 @@ export const CommandGenerator = ({ technique, isOpen, onClose }: CommandGenerato
               Command Templates for {technique.title}
             </h3>
             <p className="text-sm text-muted-foreground">
-              Fill in the placeholders below to generate custom commands:
+              Fill in the parameters below to generate custom commands:
             </p>
           </div>
 
-          {/* Input Parameters */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="target-domain" className="text-sm font-medium">Target Domain</Label>
-              <Input
-                id="target-domain"
-                value={targetDomain}
-                onChange={(e) => setTargetDomain(e.target.value)}
-                className="bg-muted/30 border-border/50"
-                placeholder="target.local"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="target-ip" className="text-sm font-medium">Target IP</Label>
-              <Input
-                id="target-ip"
-                value={targetIP}
-                onChange={(e) => setTargetIP(e.target.value)}
-                className="bg-muted/30 border-border/50"
-                placeholder="10.10.10.10"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="username" className="text-sm font-medium">Username</Label>
-              <Input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="bg-muted/30 border-border/50"
-                placeholder="user"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password-hash" className="text-sm font-medium">Password/Hash</Label>
-              <Input
-                id="password-hash"
-                value={passwordHash}
-                onChange={(e) => setPasswordHash(e.target.value)}
-                className="bg-muted/30 border-border/50"
-                placeholder="password or hash"
-              />
-            </div>
+          {/* Dynamic Input Parameters */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {allParameters.map((param) => (
+              <div key={param} className="space-y-2">
+                <Label htmlFor={`param-${param}`} className="text-sm font-medium capitalize">
+                  {param.replace(/_/g, ' ')}
+                </Label>
+                <Input
+                  id={`param-${param}`}
+                  value={parameters[param] || ''}
+                  onChange={(e) => updateParameter(param, e.target.value)}
+                  className="bg-muted/30 border-border/50"
+                  placeholder={`Enter ${param.replace(/_/g, ' ')}`}
+                />
+              </div>
+            ))}
           </div>
 
           {/* Generated Commands */}
@@ -231,7 +227,7 @@ export const CommandGenerator = ({ technique, isOpen, onClose }: CommandGenerato
               onClick={generateAllCommands}
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
             >
-              Generate Commands
+              Generate All Commands
             </Button>
           </div>
         </div>

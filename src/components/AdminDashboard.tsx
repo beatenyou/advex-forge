@@ -41,6 +41,11 @@ export const AdminDashboard = ({ techniques, onTechniquesUpdate, onClose }: Admi
 1. **[Tool Name]:** \`[command template with <parameters>]\` | [Description]
 2. **[Tool Name 2]:** \`[command template with <parameters>]\` | [Description]
 
+### Command Templates
+
+1. **[Tool Name]:** \`[full command with <placeholders>]\` | [Command description]
+2. **[Tool Name 2]:** \`[full command with <placeholders>]\` | [Command description]
+
 **Detection:** [How to detect this technique]
 **Mitigation:** [How to prevent/mitigate this technique]`;
 
@@ -69,12 +74,23 @@ For each technique found, use this exact markdown structure:
 
 ### Tools
 
-1. **[Tool Name]:** \`[exact command/syntax from source]\` | [Tool description]
+1. **[Tool Name]:** \`[basic command/syntax from source]\` | [Tool description]
 2. **[Additional tools if present]:** \`[commands]\` | [descriptions]
+
+### Command Templates
+
+1. **[Tool Name]:** \`[full command with <parameter> placeholders]\` | [Command description and purpose]
+2. **[Tool Name 2]:** \`[full command with <parameter> placeholders]\` | [Command description and purpose]
 
 **Detection:** [Blue team detection methods if mentioned]
 **Mitigation:** [Defense/prevention methods if mentioned]
 \`\`\`
+
+**COMMAND TEMPLATE GUIDELINES:**
+- Use <parameter> syntax for placeholders (e.g., <target>, <username>, <password>)
+- Include full command syntax with all necessary flags
+- Each command should be ready-to-use after parameter substitution
+- Focus on practical, executable commands
 
 **MULTIPLE TECHNIQUES:**
 If multiple techniques are found, separate each with "---"
@@ -230,8 +246,22 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                       <li>Follow the exact markdown schema provided in the template</li>
                       <li>Include all required fields: Name, MITRE ID, Phase, Description</li>
                       <li>Add tools with command templates using &lt;parameter&gt; syntax</li>
+                      <li>Include both "Tools" and "Command Templates" sections for full functionality</li>
                       <li>Separate multiple techniques with "---"</li>
                     </ol>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">Command Generator Integration</h4>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                      <li>Include "Command Templates" section in markdown for command generator functionality</li>
+                      <li>Use &lt;parameter&gt; syntax for placeholders (e.g., &lt;target&gt;, &lt;username&gt;, &lt;password&gt;)</li>
+                      <li>Provide full command syntax with all necessary flags and options</li>
+                      <li>Each command template should be executable after parameter substitution</li>
+                      <li>Include command descriptions to explain purpose and usage</li>
+                    </ul>
                   </div>
                   
                   <Separator />
@@ -244,6 +274,7 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                       <li>Keep tool command templates consistent with parameter syntax</li>
                       <li>Tag techniques appropriately for better searchability</li>
                       <li>Include both detection and mitigation information when available</li>
+                      <li>Ensure command templates use consistent parameter naming across techniques</li>
                     </ul>
                   </div>
                   
@@ -256,6 +287,7 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                       <li>Group techniques by attack phases for logical progression</li>
                       <li>Reference tools consistently across related techniques</li>
                       <li>Maintain scenario connections through technique references</li>
+                      <li>Use consistent command template parameters across related techniques</li>
                     </ul>
                   </div>
                 </CardContent>
@@ -440,7 +472,7 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
   );
 };
 
-// Separate component for editing techniques
+// Enhanced TechniqueEditModal with command template support
 interface TechniqueEditModalProps {
   technique: ParsedTechnique;
   onSave: (technique: ParsedTechnique) => void;
@@ -454,9 +486,39 @@ const TechniqueEditModal = ({ technique, onSave, onClose }: TechniqueEditModalPr
     onSave(editedTechnique);
   };
 
+  const addCommandTemplate = () => {
+    const newCommand = {
+      tool: "New Tool",
+      command: "command <parameter>",
+      description: "Description"
+    };
+    setEditedTechnique({
+      ...editedTechnique,
+      commands: [...(editedTechnique.commands || []), newCommand]
+    });
+  };
+
+  const removeCommandTemplate = (index: number) => {
+    const updatedCommands = editedTechnique.commands?.filter((_, i) => i !== index) || [];
+    setEditedTechnique({
+      ...editedTechnique,
+      commands: updatedCommands
+    });
+  };
+
+  const updateCommandTemplate = (index: number, field: string, value: string) => {
+    const updatedCommands = editedTechnique.commands?.map((cmd, i) => 
+      i === index ? { ...cmd, [field]: value } : cmd
+    ) || [];
+    setEditedTechnique({
+      ...editedTechnique,
+      commands: updatedCommands
+    });
+  };
+
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-      <div className="bg-card border border-border rounded-lg shadow-lg w-full max-w-2xl max-h-[80vh] overflow-hidden">
+      <div className="bg-card border border-border rounded-lg shadow-lg w-full max-w-4xl max-h-[80vh] overflow-hidden">
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h3 className="text-lg font-semibold">Edit Technique</h3>
           <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
@@ -511,6 +573,64 @@ const TechniqueEditModal = ({ technique, onSave, onClose }: TechniqueEditModalPr
                 })}
               />
             </div>
+          </div>
+
+          {/* Command Templates Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-base font-semibold">Command Templates</Label>
+              <Button size="sm" onClick={addCommandTemplate}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Template
+              </Button>
+            </div>
+            
+            {editedTechnique.commands?.map((command, index) => (
+              <Card key={index} className="p-4">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium">Command Template {index + 1}</Label>
+                    <Button 
+                      size="sm" 
+                      variant="destructive"
+                      onClick={() => removeCommandTemplate(index)}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs">Tool Name</Label>
+                      <Input
+                        value={command.tool}
+                        onChange={(e) => updateCommandTemplate(index, 'tool', e.target.value)}
+                        placeholder="Tool Name"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Description</Label>
+                      <Input
+                        value={command.description}
+                        onChange={(e) => updateCommandTemplate(index, 'description', e.target.value)}
+                        placeholder="Command description"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label className="text-xs">Command Template</Label>
+                    <Textarea
+                      value={command.command}
+                      onChange={(e) => updateCommandTemplate(index, 'command', e.target.value)}
+                      placeholder="command <parameter1> <parameter2>"
+                      className="font-mono text-sm"
+                      rows={2}
+                    />
+                  </div>
+                </div>
+              </Card>
+            ))}
           </div>
         </div>
         
