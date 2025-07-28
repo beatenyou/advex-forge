@@ -160,7 +160,20 @@ export function parseMultipleMarkdownTechniques(markdownText: string): ParsedTec
   // Split by double newlines or by "**Name:**" markers to separate techniques
   const techniques = markdownText.split(/(?=\*\*Name:\*\*)/g).filter(section => section.trim());
   
-  return techniques.map(technique => parseMarkdownTechnique(technique));
+  console.log('Total technique sections found:', techniques.length);
+  console.log('First few technique titles:');
+  techniques.slice(0, 5).forEach((technique, index) => {
+    const nameMatch = technique.match(/\*\*Name:\*\*\s*(.+)/);
+    if (nameMatch) {
+      console.log(`${index + 1}. ${nameMatch[1]}`);
+    }
+  });
+  
+  const parsed = techniques.map(technique => parseMarkdownTechnique(technique));
+  console.log('Successfully parsed techniques:', parsed.length);
+  console.log('Parsed technique titles:', parsed.map(t => t.title));
+  
+  return parsed;
 }
 
 // Updated sample data with command templates
