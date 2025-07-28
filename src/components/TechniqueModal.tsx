@@ -107,241 +107,113 @@ export const TechniqueModal = ({ technique, isOpen, onClose }: TechniqueModalPro
     });
   };
 
-  const getPhaseColor = (phase: string) => {
-    switch (phase) {
-      case "Initial Access": return "bg-cyber-blue/20 text-cyber-blue border-cyber-blue/30";
-      case "Reconnaissance": return "bg-cyber-green/20 text-cyber-green border-cyber-green/30";
-      case "Credential Access": return "bg-cyber-purple/20 text-cyber-purple border-cyber-purple/30";
-      case "Lateral Movement": return "bg-cyber-orange/20 text-cyber-orange border-cyber-orange/30";
-      default: return "bg-muted/20 text-muted-foreground border-muted/30";
-    }
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-card border-border">
-        <DialogHeader className="pb-4 border-b border-border/30">
-          <div className="flex items-start justify-between">
-            <div>
-              <DialogTitle className="text-2xl text-foreground mb-2">{technique.title}</DialogTitle>
-              <div className="flex items-center gap-3">
-                <Badge variant="outline" className={getPhaseColor(technique.phase)}>
-                  {technique.id}
-                </Badge>
-                <Badge variant="outline" className="text-muted-foreground">
-                  {technique.phase}
-                </Badge>
-                <div className="flex items-center gap-1 text-muted-foreground">
-                  <Zap className="w-4 h-4 text-cyber-orange" />
-                  <span className="text-sm">{technique.tools.length} tools available</span>
-                </div>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="hover:bg-primary/10"
-            >
-              <Star className="w-4 h-4 fill-cyber-orange text-cyber-orange" />
-            </Button>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden bg-card border-border">
+        <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-border/30">
+          <div className="flex items-center gap-2">
+            <DialogTitle className="text-xl font-semibold">{technique.title}</DialogTitle>
+            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-xs">
+              {technique.id}
+            </Badge>
           </div>
+          <Button
+            variant="ghost" 
+            size="sm"
+            onClick={onClose}
+            className="h-6 w-6 p-0 hover:bg-muted"
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </DialogHeader>
 
-        <Tabs defaultValue="overview" className="mt-4">
-          <TabsList className="grid w-full grid-cols-4 bg-muted/20">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="commands">Commands</TabsTrigger>
-            <TabsTrigger value="detection">Detection</TabsTrigger>
-            <TabsTrigger value="mitigation">Mitigation</TabsTrigger>
-          </TabsList>
+        <div className="space-y-6 overflow-y-auto max-h-[calc(90vh-120px)] p-1">
+          {/* Description */}
+          <div>
+            <h3 className="text-sm font-semibold text-foreground mb-2">Description</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {technique.description}
+            </p>
+          </div>
 
-          <TabsContent value="overview" className="space-y-4">
-            <Card className="bg-muted/20 border-border/30">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Eye className="w-5 h-5 text-primary" />
-                  Description
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">{technique.description}</p>
-              </CardContent>
-            </Card>
+          {/* When to Use */}
+          <div>
+            <h3 className="text-sm font-semibold text-foreground mb-2">When to Use</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {detailedTechnique.whenToUse.join(". ")}
+            </p>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="bg-muted/20 border-border/30">
-                <CardHeader>
-                  <CardTitle className="text-lg">When to Use</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {detailedTechnique.whenToUse.map((item, index) => (
-                      <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
+          {/* Prerequisites */}
+          <div>
+            <h3 className="text-sm font-semibold text-foreground mb-2">Prerequisites</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {detailedTechnique.prerequisites.join(", ")}
+            </p>
+          </div>
 
-              <Card className="bg-muted/20 border-border/30">
-                <CardHeader>
-                  <CardTitle className="text-lg">Prerequisites</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {detailedTechnique.prerequisites.map((item, index) => (
-                      <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 bg-cyber-orange rounded-full mt-2 flex-shrink-0" />
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
+          {/* How to Use */}
+          <div>
+            <h3 className="text-sm font-semibold text-foreground mb-2">How to Use</h3>
+            <div className="text-sm text-muted-foreground leading-relaxed">
+              <ol className="list-decimal list-inside space-y-1">
+                {detailedTechnique.howToUse.map((step, index) => (
+                  <li key={index}>{step}</li>
+                ))}
+              </ol>
             </div>
+          </div>
 
-            <Card className="bg-muted/20 border-border/30">
-              <CardHeader>
-                <CardTitle className="text-lg">MITRE ATT&CK Mapping</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Badge variant="outline" className="bg-cyber-red/20 text-cyber-red border-cyber-red/30">
-                  {detailedTechnique.mitreMapping}
-                </Badge>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="commands" className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {/* Tool Selection */}
-              <Card className="bg-muted/20 border-border/30">
-                <CardHeader>
-                  <CardTitle className="text-lg">Tools & Commands</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {detailedTechnique.commands.map((cmd, index) => (
+          {/* Tools & Commands */}
+          <div>
+            <h3 className="text-sm font-semibold text-foreground mb-3">Tools & Commands</h3>
+            <div className="space-y-4">
+              {detailedTechnique.commands.map((cmd, index) => (
+                <div key={index} className="bg-muted/30 rounded-md p-3 border border-border/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-primary">{cmd.tool}</span>
                     <Button
-                      key={index}
-                      variant={selectedCommand === index ? "default" : "outline"}
-                      className={`w-full justify-start ${
-                        selectedCommand === index ? "bg-gradient-cyber" : ""
-                      }`}
-                      onClick={() => setSelectedCommand(index)}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(cmd.template.replace(/\{[^}]+\}/g, (match) => {
+                          const paramName = match.slice(1, -1);
+                          const param = cmd.params.find(p => p.name === paramName);
+                          return param?.example || match;
+                        }));
+                        toast({
+                          title: "Copied",
+                          description: "Command template copied to clipboard."
+                        });
+                      }}
+                      className="h-7 px-2 hover:bg-primary/10"
                     >
-                      {cmd.tool}
+                      <Copy className="h-3 w-3 mr-1" />
+                      Copy
                     </Button>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* Command Generator */}
-              <Card className="lg:col-span-2 bg-muted/20 border-border/30">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="w-5 h-5 text-primary" />
-                    Command Generator
-                  </CardTitle>
-                  <CardDescription>
-                    Fill in the parameters below to generate custom commands
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    {detailedTechnique.commands[selectedCommand].params.map((param, index) => (
-                      <div key={index} className="space-y-2">
-                        <Label htmlFor={param.name} className="text-sm font-medium">
-                          {param.name} {param.required && <span className="text-destructive">*</span>}
-                        </Label>
-                        <Input
-                          id={param.name}
-                          placeholder={param.example}
-                          value={commandParams[param.name] || ""}
-                          onChange={(e) => setCommandParams(prev => ({
-                            ...prev,
-                            [param.name]: e.target.value
-                          }))}
-                          className="bg-muted/30 border-border/50"
-                        />
-                      </div>
-                    ))}
                   </div>
-
-                  <Button onClick={generateCommand} className="w-full bg-gradient-cyber">
-                    Generate Command
-                  </Button>
-
-                  {generatedCommand && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <Label className="text-sm font-medium">Generated Command:</Label>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={copyCommand}
-                          className="hover:bg-primary/10"
-                        >
-                          <Copy className="w-4 h-4 mr-2" />
-                          Copy
-                        </Button>
-                      </div>
-                      <Textarea
-                        value={generatedCommand}
-                        readOnly
-                        className="font-mono text-sm bg-muted/30 border-border/50"
-                        rows={3}
-                      />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                  <code className="text-xs font-mono text-muted-foreground bg-background/50 p-2 rounded block whitespace-pre-wrap border">
+                    {cmd.template.replace(/\{([^}]+)\}/g, (match, paramName) => {
+                      const param = cmd.params.find(p => p.name === paramName);
+                      return param?.example || match;
+                    })}
+                  </code>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {cmd.params.map(p => p.name).join(", ")} parameters
+                  </p>
+                </div>
+              ))}
             </div>
-          </TabsContent>
+          </div>
 
-          <TabsContent value="detection" className="space-y-4">
-            <Card className="bg-muted/20 border-border/30">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-cyber-green" />
-                  Detection Methods
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  {detailedTechnique.detection.map((item, index) => (
-                    <li key={index} className="text-sm text-muted-foreground flex items-start gap-3">
-                      <AlertTriangle className="w-4 h-4 text-cyber-orange mt-0.5 flex-shrink-0" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="mitigation" className="space-y-4">
-            <Card className="bg-muted/20 border-border/30">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="w-5 h-5 text-cyber-green" />
-                  Mitigation Strategies
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  {detailedTechnique.mitigation.map((item, index) => (
-                    <li key={index} className="text-sm text-muted-foreground flex items-start gap-3">
-                      <Shield className="w-4 h-4 text-cyber-green mt-0.5 flex-shrink-0" />
-                      {item}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          {/* Detection */}
+          <div>
+            <h3 className="text-sm font-semibold text-foreground mb-2">Detection</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {detailedTechnique.detection.join(". ")}
+            </p>
+          </div>
+        </div>
       </DialogContent>
     </Dialog>
   );
