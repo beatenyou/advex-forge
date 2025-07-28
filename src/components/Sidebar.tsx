@@ -152,11 +152,23 @@ export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSe
                     Linked Techniques:
                   </p>
                   <div className="flex flex-wrap gap-1">
-                    {scenarios.find(s => s.id === selectedScenario)?.linked_techniques.map((technique, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        {technique}
-                      </Badge>
-                    ))}
+                    {scenarios.find(s => s.id === selectedScenario)?.linked_techniques.map((techniqueName, index) => {
+                      const matchedTechnique = techniques.find(t => 
+                        t.title.toLowerCase().includes(techniqueName.toLowerCase()) ||
+                        techniqueName.toLowerCase().includes(t.title.toLowerCase())
+                      );
+                      
+                      return (
+                        <Badge 
+                          key={index} 
+                          variant={matchedTechnique ? "default" : "outline"}
+                          className={`text-xs ${matchedTechnique ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+                          onClick={() => matchedTechnique && onTechniqueClick(matchedTechnique)}
+                        >
+                          {techniqueName}
+                        </Badge>
+                      );
+                    })}
                   </div>
                 </div>
               )}
