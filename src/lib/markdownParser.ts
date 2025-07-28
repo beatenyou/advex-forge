@@ -361,4 +361,179 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 2. **xfreerdp:** \`xfreerdp /u:<user> /p:<password> /v:<target> /size:1920x1080\` | High-resolution RDP session.
 
 **Detection:** RDP login events, unusual remote desktop activity.
-**Mitigation:** Network level authentication, VPN requirements, access controls.`;
+**Mitigation:** Network level authentication, VPN requirements, access controls.
+
+**Name:** Data Compression
+**MITRE ID:** T1560
+**Phase:** Collection
+**Description:** Compress collected data to reduce file size and evade detection during exfiltration.
+**When to use:** Before exfiltrating large amounts of data to reduce transfer time and detection.
+**Prerequisites:** Access to target data and compression tools.
+**How to use:**
+
+1. Identify valuable data for exfiltration.
+2. Use compression tools to reduce file size.
+3. Apply encryption if needed for stealth.
+
+### Tools
+
+1. **7zip:** \`7z a -t7z <archive_name> <files>\` | Create compressed archives.
+2. **WinRAR:** \`rar a <archive_name> <files>\` | RAR compression with password protection.
+
+### Command Templates
+
+1. **7zip:** \`7z a -t7z -p<password> <archive_name> <files>\` | Password-protected compression.
+2. **tar:** \`tar -czf <archive_name>.tar.gz <files>\` | Gzip compression on Linux.
+
+**Detection:** Large file creation, compression tool usage, unusual data access patterns.
+**Mitigation:** Data loss prevention, file access monitoring, compression tool restrictions.
+
+**Name:** Encrypted Channel
+**MITRE ID:** T1573
+**Phase:** Command and Control
+**Description:** Use encrypted communication channels to hide data transmission and command execution.
+**When to use:** To maintain stealth during data exfiltration or command and control activities.
+**Prerequisites:** Access to encryption tools and communication channels.
+**How to use:**
+
+1. Establish encrypted communication channel.
+2. Transmit data or commands through secure tunnel.
+3. Maintain persistence while avoiding detection.
+
+### Tools
+
+1. **OpenSSL:** \`openssl enc -aes-256-cbc -in <file> -out <encrypted_file>\` | File encryption.
+2. **SSH:** \`ssh -D <port> <user>@<server>\` | Encrypted tunnel creation.
+
+### Command Templates
+
+1. **OpenSSL:** \`openssl enc -aes-256-cbc -salt -in <file> -out <file>.enc -k <password>\` | AES encryption with salt.
+2. **SSH:** \`ssh -L <local_port>:<remote_host>:<remote_port> <user>@<server>\` | Port forwarding tunnel.
+
+**Detection:** Encrypted traffic analysis, unusual SSL/TLS connections, tunnel detection.
+**Mitigation:** SSL inspection, network monitoring, encrypted traffic analysis.
+
+**Name:** SQL Injection
+**MITRE ID:** T1190
+**Phase:** Initial Access
+**Description:** Exploit SQL injection vulnerabilities to gain unauthorized access to databases.
+**When to use:** When web applications have insufficient input validation for database queries.
+**Prerequisites:** Web application with database interaction and insufficient input sanitization.
+**How to use:**
+
+1. Identify input fields that interact with databases.
+2. Test for SQL injection vulnerabilities.
+3. Exploit vulnerabilities to extract data or gain access.
+
+### Tools
+
+1. **SQLMap:** \`sqlmap -u <url> --dbs\` | Automated SQL injection testing.
+2. **Burp Suite:** Manual testing through proxy interception.
+
+### Command Templates
+
+1. **SQLMap:** \`sqlmap -u <url> --dump --batch\` | Automated data extraction.
+2. **Manual:** \`' OR '1'='1\` | Basic SQL injection payload.
+
+**Detection:** Unusual SQL queries, error messages, database access patterns.
+**Mitigation:** Input validation, parameterized queries, WAF deployment.
+
+**Name:** XSS
+**MITRE ID:** T1059.007
+**Phase:** Initial Access
+**Description:** Execute malicious scripts in victim browsers through cross-site scripting vulnerabilities.
+**When to use:** When web applications don't properly sanitize user input for script execution.
+**Prerequisites:** Web application with insufficient input validation.
+**How to use:**
+
+1. Identify input fields that display user content.
+2. Test for XSS vulnerabilities.
+3. Craft malicious payloads to execute scripts.
+
+### Tools
+
+1. **XSSer:** \`xsser --url <url> --auto\` | Automated XSS detection.
+2. **Manual Testing:** Browser-based payload testing.
+
+### Command Templates
+
+1. **Basic Payload:** \`<script>alert('XSS')</script>\` | Simple XSS test.
+2. **Advanced:** \`<img src=x onerror=alert('XSS')>\` | Event-based XSS.
+
+**Detection:** Script execution monitoring, Content Security Policy violations.
+**Mitigation:** Input sanitization, Content Security Policy, output encoding.
+
+**Name:** Directory Traversal
+**MITRE ID:** T1083
+**Phase:** Discovery
+**Description:** Access files and directories outside of the intended directory structure.
+**When to use:** When applications don't properly validate file path inputs.
+**Prerequisites:** Web application with file access functionality.
+**How to use:**
+
+1. Identify file access parameters.
+2. Test for path traversal vulnerabilities.
+3. Access sensitive files outside web root.
+
+### Tools
+
+1. **DotDotPwn:** \`dotdotpwn -m http -h <host> -x 8080\` | Automated directory traversal testing.
+2. **Manual Testing:** Browser-based payload testing.
+
+### Command Templates
+
+1. **Basic Payload:** \`../../../etc/passwd\` | Linux password file access.
+2. **Windows:** \`..\\..\\..\\windows\\system32\\drivers\\etc\\hosts\` | Windows hosts file.
+
+**Detection:** Unusual file access patterns, path traversal attempt logs.
+**Mitigation:** Input validation, chroot jails, proper file permissions.
+
+**Name:** Local Privilege Escalation
+**MITRE ID:** T1068
+**Phase:** Privilege Escalation
+**Description:** Gain higher-level permissions on a system through local exploits or misconfigurations.
+**When to use:** After gaining initial access to escalate privileges to administrator/root.
+**Prerequisites:** Local access to target system.
+**How to use:**
+
+1. Enumerate system for privilege escalation vectors.
+2. Identify exploitable services or misconfigurations.
+3. Execute privilege escalation technique.
+
+### Tools
+
+1. **LinPEAS:** \`./linpeas.sh\` | Linux privilege escalation enumeration.
+2. **WinPEAS:** \`winPEASany.exe\` | Windows privilege escalation enumeration.
+
+### Command Templates
+
+1. **SUID Check:** \`find / -perm -u=s -type f 2>/dev/null\` | Find SUID binaries.
+2. **Service Check:** \`sc query state= all\` | Windows service enumeration.
+
+**Detection:** Privilege change events, unusual process execution, system file access.
+**Mitigation:** Least privilege principle, regular patching, service hardening.
+
+**Name:** Kernel Exploits
+**MITRE ID:** T1068
+**Phase:** Privilege Escalation
+**Description:** Exploit kernel vulnerabilities to gain system-level privileges.
+**When to use:** When other privilege escalation methods fail and kernel exploits are available.
+**Prerequisites:** Local access and knowledge of kernel version vulnerabilities.
+**How to use:**
+
+1. Identify kernel version and architecture.
+2. Search for known kernel exploits.
+3. Compile and execute appropriate exploit.
+
+### Tools
+
+1. **Exploit-DB:** \`searchsploit kernel <version>\` | Search for kernel exploits.
+2. **GitHub:** Repository searches for proof-of-concept exploits.
+
+### Command Templates
+
+1. **Version Check:** \`uname -a\` | Linux kernel version.
+2. **Windows:** \`systeminfo\` | Windows system information.
+
+**Detection:** Kernel crash logs, system instability, privilege escalation events.
+**Mitigation:** Regular kernel updates, exploit mitigation features, system monitoring.`;
