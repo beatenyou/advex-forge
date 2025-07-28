@@ -110,6 +110,14 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
         try {
           const parsed = parseMarkdownTechnique(section.trim());
           if (parsed.title && parsed.id) {
+            // Check for duplicate IDs and generate unique ones if needed
+            let uniqueId = parsed.id;
+            let counter = 1;
+            while (techniques.some(t => t.id === uniqueId) || newTechniques.some(t => t.id === uniqueId)) {
+              uniqueId = `${parsed.id}.${counter}`;
+              counter++;
+            }
+            parsed.id = uniqueId;
             newTechniques.push(parsed);
           }
         } catch (error) {
@@ -118,12 +126,16 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
       });
 
       if (newTechniques.length > 0) {
-        const updatedTechniques = [...techniques, ...newTechniques];
+        // Filter out any existing techniques with the same ID to prevent duplicates
+        const existingIds = new Set(techniques.map(t => t.id));
+        const uniqueNewTechniques = newTechniques.filter(t => !existingIds.has(t.id));
+        
+        const updatedTechniques = [...techniques, ...uniqueNewTechniques];
         onTechniquesUpdate(updatedTechniques);
         setMarkdownInput("");
         toast({
           title: "Success",
-          description: `Added ${newTechniques.length} technique(s) successfully`
+          description: `Added ${uniqueNewTechniques.length} technique(s) successfully`
         });
       } else {
         toast({

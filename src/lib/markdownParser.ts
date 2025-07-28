@@ -162,7 +162,7 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 **Mitigation:** MFA, strong password complexity, lockout policies.
 
 **Name:** Kerberoasting
-**MITRE ID:** T1558.003
+**MITRE ID:** T1558.001
 **Phase:** Credential Access
 **Description:** Extract service account credentials by requesting service tickets and cracking them offline.
 **When to use:** When service accounts have weak passwords or when offline cracking is preferred.
