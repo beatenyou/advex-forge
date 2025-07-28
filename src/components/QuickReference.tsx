@@ -1,27 +1,25 @@
+import { useState, useEffect } from "react";
 import { Copy } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
-const powerViewCommands = [
-  { command: "Get-NetDomain", description: "Current domain info", category: "Domain Info" },
-  { command: "Get-NetUser", description: "All domain users", category: "User Enum" },
-  { command: "Get-NetGroup *admin*", description: "Admin groups", category: "Group Enum" },
-  { command: "Get-NetComputer", description: "All computers", category: "Computer Enum" },
-  { command: "Invoke-UserHunter", description: "Find user sessions", category: "Session Hunt" },
-  { command: "Get-NetShare", description: "Network shares", category: "Share Enum" },
-  { command: "Get-NetGPO", description: "Group policies", category: "GPO Enum" }
-];
+interface CheatSheetCommand {
+  command: string;
+  description: string;
+  category: string;
+}
 
-const impacketCommands = [
-  { command: "GetUserSPNs.py", description: "Kerberoasting", category: "Credential Access" },
-  { command: "GetNPUsers.py", description: "AS-REP roasting", category: "Credential Access" },
-  { command: "secretsdump.py", description: "Extract secrets", category: "Credential Dump" },
-  { command: "psexec.py", description: "Remote execution", category: "Lateral Movement" },
-  { command: "smbexec.py", description: "SMB-based execution", category: "Execution" },
-  { command: "wmiexec.py", description: "WMI-based execution", category: "Execution" }
-];
+interface CheatSheet {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  bg_color: string;
+  commands: CheatSheetCommand[];
+}
 
 const copyCommand = (command: string) => {
   navigator.clipboard.writeText(command);
@@ -31,17 +29,16 @@ const copyCommand = (command: string) => {
   });
 };
 
-const CommandCard = ({ title, commands, bgColor }: { 
-  title: string; 
-  commands: typeof powerViewCommands; 
-  bgColor: string; 
-}) => (
-  <Card className={`${bgColor} border-border/30`}>
+const CommandCard = ({ cheatSheet }: { cheatSheet: CheatSheet }) => (
+  <Card className={`${cheatSheet.bg_color} border-border/30`}>
     <CardHeader className="pb-3">
-      <CardTitle className="text-lg text-foreground">{title}</CardTitle>
+      <CardTitle className="text-lg text-foreground">{cheatSheet.title}</CardTitle>
+      {cheatSheet.description && (
+        <p className="text-sm text-muted-foreground">{cheatSheet.description}</p>
+      )}
     </CardHeader>
     <CardContent className="space-y-2">
-      {commands.map((cmd, index) => (
+      {cheatSheet.commands.map((cmd, index) => (
         <div key={index} className="flex items-center justify-between p-2 rounded bg-muted/20 border border-border/20">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
@@ -67,24 +64,74 @@ const CommandCard = ({ title, commands, bgColor }: {
 );
 
 export const QuickReference = () => {
+  const [cheatSheets, setCheatSheets] = useState<CheatSheet[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCheatSheets();
+  }, []);
+
+  const fetchCheatSheets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('cheat_sheets')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Type cast commands from Json to CheatSheetCommand[]
+      const typedData = (data || []).map(sheet => ({
+        ...sheet,
+        commands: sheet.commands as unknown as CheatSheetCommand[]
+      }));
+      
+      setCheatSheets(typedData);
+    } catch (error) {
+      console.error('Error fetching cheat sheets:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load cheat sheets",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold text-foreground">Quick Reference Cheat Sheets</h2>
+        </div>
+        <div className="flex justify-center p-8">
+          <div className="text-muted-foreground">Loading cheat sheets...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <h2 className="text-2xl font-bold text-foreground">Quick Reference Cheat Sheets</h2>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <CommandCard 
-          title="PowerView Quick Reference" 
-          commands={powerViewCommands}
-          bgColor="bg-gradient-to-br from-cyber-blue/5 to-cyber-blue/10"
-        />
-        <CommandCard 
-          title="Impacket Tools" 
-          commands={impacketCommands}
-          bgColor="bg-gradient-to-br from-cyber-purple/5 to-cyber-purple/10"
-        />
-      </div>
+      {cheatSheets.length === 0 ? (
+        <div className="text-center py-12">
+          <h3 className="text-lg font-medium mb-2">No Cheat Sheets Available</h3>
+          <p className="text-muted-foreground">
+            Cheat sheets will appear here once they are created by an administrator.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {cheatSheets.map((cheatSheet) => (
+            <CommandCard key={cheatSheet.id} cheatSheet={cheatSheet} />
+          ))}
+        </div>
+      )}
     </div>
   );
 };

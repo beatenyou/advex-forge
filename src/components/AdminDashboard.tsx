@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { parseMarkdownTechnique, ParsedTechnique } from "@/lib/markdownParser";
+import { CheatSheetManager } from "@/components/CheatSheetManager";
 
 interface AdminDashboardProps {
   techniques: ParsedTechnique[];
@@ -259,12 +260,13 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
 
         <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
           <Tabs defaultValue="guidance" className="p-6">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="guidance">Guidance</TabsTrigger>
-              <TabsTrigger value="upload">Upload Cards</TabsTrigger>
-              <TabsTrigger value="manage">Manage Cards</TabsTrigger>
-              <TabsTrigger value="webscraper">LLM Webscraper</TabsTrigger>
-            </TabsList>
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="guidance">Guidance</TabsTrigger>
+          <TabsTrigger value="upload">Upload Cards</TabsTrigger>
+          <TabsTrigger value="manage">Manage Cards</TabsTrigger>
+          <TabsTrigger value="cheatsheets">Cheat Sheets</TabsTrigger>
+          <TabsTrigger value="webscraper">LLM Webscraper</TabsTrigger>
+        </TabsList>
 
             <TabsContent value="guidance" className="space-y-6 mt-6">
               <Card>
@@ -433,6 +435,10 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="cheatsheets" className="space-y-6 mt-6">
+              <CheatSheetManager />
             </TabsContent>
 
             <TabsContent value="webscraper" className="space-y-6 mt-6">
