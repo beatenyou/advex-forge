@@ -76,15 +76,35 @@ export const Dashboard = () => {
   const allTags = ["kerberos", "enumeration", "lateral-movement", "powershell", "impacket"];
   useEffect(() => {
     let filtered = techniques;
-    if (searchQuery) {
-      filtered = filtered.filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()) || t.description.toLowerCase().includes(searchQuery.toLowerCase()) || t.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
+    
+    // Search functionality
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(technique => 
+        technique.title.toLowerCase().includes(query) ||
+        technique.description.toLowerCase().includes(query) ||
+        technique.id.toLowerCase().includes(query) ||
+        technique.phase.toLowerCase().includes(query) ||
+        technique.category.toLowerCase().includes(query) ||
+        technique.tags.some(tag => tag.toLowerCase().includes(query)) ||
+        technique.tools.some(tool => tool.toLowerCase().includes(query))
+      );
     }
+    
+    // Phase filtering
     if (selectedPhase !== "All Phases") {
-      filtered = filtered.filter(t => t.phase === selectedPhase);
+      filtered = filtered.filter(technique => technique.phase === selectedPhase);
     }
+    
+    // Tag filtering
     if (selectedTags.length > 0) {
-      filtered = filtered.filter(t => selectedTags.some(tag => t.tags.some(tTag => tTag.toLowerCase().includes(tag))));
+      filtered = filtered.filter(technique => 
+        selectedTags.some(selectedTag => 
+          technique.tags.some(tag => tag.toLowerCase().includes(selectedTag.toLowerCase()))
+        )
+      );
     }
+    
     setFilteredTechniques(filtered);
   }, [searchQuery, selectedPhase, selectedTags, techniques]);
   const toggleTag = (tag: string) => {
