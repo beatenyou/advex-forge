@@ -169,9 +169,20 @@ export function parseMultipleMarkdownTechniques(markdownText: string): ParsedTec
     }
   });
   
-  const parsed = techniques.map(technique => parseMarkdownTechnique(technique));
+  const parsed = techniques.map((technique, index) => {
+    const parsedTechnique = parseMarkdownTechnique(technique);
+    // Generate unique ID by combining MITRE ID with technique name or index
+    // This prevents duplicate IDs when multiple techniques share the same MITRE ID
+    const uniqueId = parsedTechnique.id + '-' + parsedTechnique.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+    return {
+      ...parsedTechnique,
+      id: uniqueId
+    };
+  });
+  
   console.log('Successfully parsed techniques:', parsed.length);
   console.log('Parsed technique titles:', parsed.map(t => t.title));
+  console.log('Unique IDs generated:', parsed.map(t => t.id));
   
   return parsed;
 }
