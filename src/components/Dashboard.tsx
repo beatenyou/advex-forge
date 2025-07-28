@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Shield, Users, Settings, Star, Hash, Filter, LogOut } from "lucide-react";
+import { Search, Shield, Users, Settings, Star, Hash, Filter, LogOut, UserCog } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,8 @@ import { TechniqueModal } from "./TechniqueModal";
 import { Sidebar } from "./Sidebar";
 import { AIQAWidget } from "./AIQAWidget";
 import { QuickReference } from "./QuickReference";
-import { sampleMarkdownTechniques, parseMultipleMarkdownTechniques } from "@/lib/markdownParser";
+import { AdminDashboard } from "./AdminDashboard";
+import { sampleMarkdownTechniques, parseMultipleMarkdownTechniques, ParsedTechnique } from "@/lib/markdownParser";
 
 // Parse techniques from markdown
 const initialTechniques = parseMultipleMarkdownTechniques(sampleMarkdownTechniques);
@@ -24,13 +25,14 @@ export const Dashboard = () => {
   const {
     toast
   } = useToast();
-  const [techniques, setTechniques] = useState(initialTechniques);
+  const [techniques, setTechniques] = useState<ParsedTechnique[]>(initialTechniques);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPhase, setSelectedPhase] = useState("All Phases");
   const [filteredTechniques, setFilteredTechniques] = useState(techniques);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedTechnique, setSelectedTechnique] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -120,6 +122,14 @@ export const Dashboard = () => {
               </Button>
               <Button variant="outline" size="sm">
                 <Settings className="w-4 h-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowAdminDashboard(true)}
+                className="border-primary/50 text-primary hover:bg-primary/10"
+              >
+                <UserCog className="w-4 h-4" />
               </Button>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
                 <LogOut className="w-4 h-4" />
@@ -212,6 +222,15 @@ export const Dashboard = () => {
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)}
           onToggleFavorite={toggleFavorite}
+        />
+      )}
+
+      {/* Admin Dashboard */}
+      {showAdminDashboard && (
+        <AdminDashboard
+          techniques={techniques}
+          onTechniquesUpdate={setTechniques}
+          onClose={() => setShowAdminDashboard(false)}
         />
       )}
     </div>;
