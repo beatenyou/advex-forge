@@ -48,7 +48,10 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
           className="bg-background"
         >
           <div className="flex-1 flex flex-col min-w-0 h-full">
-            {React.cloneElement(children as React.ReactElement, { onOpenChat: handleOpenChat })}
+            {React.cloneElement(children as React.ReactElement, { 
+              onOpenChat: handleOpenChat, 
+              isChatVisible: isChatVisible 
+            })}
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>

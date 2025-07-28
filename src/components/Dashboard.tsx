@@ -21,9 +21,10 @@ const initialTechniques = parseMultipleMarkdownTechniques(sampleMarkdownTechniqu
 interface DashboardProps {
   onTechniqueSelect?: (technique: ParsedTechnique) => void;
   onOpenChat?: () => void;
+  isChatVisible?: boolean;
 }
 
-export const Dashboard = ({ onTechniqueSelect, onOpenChat }: DashboardProps) => {
+export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true }: DashboardProps) => {
   const {
     user,
     signOut
@@ -198,8 +199,8 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat }: DashboardProps) => 
               </Badge>
             </div>
 
-            {/* Technique Cards Grid - Changed to 2 columns for better spacing */}
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+            {/* Technique Cards Grid - Responsive columns based on chat visibility */}
+            <div className={`grid grid-cols-1 gap-8 mb-8 ${isChatVisible ? 'xl:grid-cols-2' : 'lg:grid-cols-2 xl:grid-cols-3'}`}>
               {filteredTechniques.map(technique => (
                 <TechniqueCard 
                   key={technique.id} 
