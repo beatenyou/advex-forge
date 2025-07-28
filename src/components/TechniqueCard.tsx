@@ -19,16 +19,16 @@ interface Technique {
 
 interface TechniqueCardProps {
   technique: Technique;
+  onToggleFavorite: (techniqueId: string) => void;
 }
 
-export const TechniqueCard = ({ technique }: TechniqueCardProps) => {
+export const TechniqueCard = ({ technique, onToggleFavorite }: TechniqueCardProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCommandGenOpen, setIsCommandGenOpen] = useState(false);
-  const [isStarred, setIsStarred] = useState(technique.starred);
 
   const toggleStar = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsStarred(!isStarred);
+    onToggleFavorite(technique.id);
   };
 
   const getPhaseColor = (phase: string) => {
@@ -62,7 +62,7 @@ export const TechniqueCard = ({ technique }: TechniqueCardProps) => {
                 >
                   <Star 
                     className={`w-4 h-4 transition-colors ${
-                      isStarred ? "fill-cyber-orange text-cyber-orange" : "text-muted-foreground hover:text-cyber-orange"
+                      technique.starred ? "fill-cyber-orange text-cyber-orange" : "text-muted-foreground hover:text-cyber-orange"
                     }`} 
                   />
                 </Button>
@@ -164,7 +164,8 @@ export const TechniqueCard = ({ technique }: TechniqueCardProps) => {
       <TechniqueModal 
         technique={technique} 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+        onClose={() => setIsModalOpen(false)}
+        onToggleFavorite={onToggleFavorite}
       />
       
       <CommandGenerator

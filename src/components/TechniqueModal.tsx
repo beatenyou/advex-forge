@@ -25,6 +25,7 @@ interface TechniqueModalProps {
   technique: Technique;
   isOpen: boolean;
   onClose: () => void;
+  onToggleFavorite: (techniqueId: string) => void;
 }
 
 // Mock detailed data for the technique
@@ -80,7 +81,7 @@ const getDetailedTechnique = (technique: Technique) => ({
   mitreMapping: "T1550.002"
 });
 
-export const TechniqueModal = ({ technique, isOpen, onClose }: TechniqueModalProps) => {
+export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite }: TechniqueModalProps) => {
   const [selectedCommand, setSelectedCommand] = useState(0);
   const [generatedCommand, setGeneratedCommand] = useState("");
   const [commandParams, setCommandParams] = useState<Record<string, string>>({});
@@ -107,13 +108,11 @@ export const TechniqueModal = ({ technique, isOpen, onClose }: TechniqueModalPro
     });
   };
 
-  const [isStarred, setIsStarred] = useState(technique.starred);
-
   const toggleStar = () => {
-    setIsStarred(!isStarred);
+    onToggleFavorite(technique.id);
     toast({
-      title: isStarred ? "Removed from favorites" : "Added to favorites",
-      description: `${technique.title} ${isStarred ? "removed from" : "added to"} your favorites.`
+      title: technique.starred ? "Removed from favorites" : "Added to favorites",
+      description: `${technique.title} ${technique.starred ? "removed from" : "added to"} your favorites.`
     });
   };
 
@@ -134,7 +133,7 @@ export const TechniqueModal = ({ technique, isOpen, onClose }: TechniqueModalPro
               onClick={toggleStar}
               className="h-6 w-6 p-0 hover:bg-muted"
             >
-              <Star className={`h-4 w-4 ${isStarred ? 'fill-yellow-500 text-yellow-500' : 'text-muted-foreground hover:text-yellow-500'}`} />
+              <Star className={`h-4 w-4 ${technique.starred ? 'fill-yellow-500 text-yellow-500' : 'text-muted-foreground hover:text-yellow-500'}`} />
             </Button>
             <Button
               variant="ghost" 

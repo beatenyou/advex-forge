@@ -8,12 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TechniqueCard } from "./TechniqueCard";
+import { TechniqueModal } from "./TechniqueModal";
 import { Sidebar } from "./Sidebar";
 import { AIQAWidget } from "./AIQAWidget";
 import { QuickReference } from "./QuickReference";
 
-// Mock data for demo
-const techniques = [{
+// Mock data for demo - initial state
+const initialTechniques = [{
   id: "T1110.003",
   title: "Password Spraying",
   description: "Attempt a few commonly used passwords against many accounts",
@@ -49,10 +50,13 @@ export const Dashboard = () => {
   const {
     toast
   } = useToast();
+  const [techniques, setTechniques] = useState(initialTechniques);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPhase, setSelectedPhase] = useState("All Phases");
   const [filteredTechniques, setFilteredTechniques] = useState(techniques);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedTechnique, setSelectedTechnique] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -82,9 +86,22 @@ export const Dashboard = () => {
       filtered = filtered.filter(t => selectedTags.some(tag => t.tags.some(tTag => tTag.toLowerCase().includes(tag))));
     }
     setFilteredTechniques(filtered);
-  }, [searchQuery, selectedPhase, selectedTags]);
+  }, [searchQuery, selectedPhase, selectedTags, techniques]);
   const toggleTag = (tag: string) => {
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  };
+
+  const toggleFavorite = (techniqueId: string) => {
+    setTechniques(prev => prev.map(technique => 
+      technique.id === techniqueId 
+        ? { ...technique, starred: !technique.starred }
+        : technique
+    ));
+  };
+
+  const openTechniqueModal = (technique: any) => {
+    setSelectedTechnique(technique);
+    setIsModalOpen(true);
   };
   return <div className="min-h-screen bg-background">
       {/* Header */}
@@ -149,7 +166,10 @@ export const Dashboard = () => {
 
       <div className="flex">
         {/* Sidebar */}
-        <Sidebar />
+        <Sidebar 
+          techniques={techniques} 
+          onTechniqueClick={openTechniqueModal}
+        />
 
         {/* Main Content */}
         <main className="flex-1 p-6">
@@ -166,7 +186,13 @@ export const Dashboard = () => {
 
             {/* Technique Cards Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-              {filteredTechniques.map(technique => <TechniqueCard key={technique.id} technique={technique} />)}
+              {filteredTechniques.map(technique => (
+                <TechniqueCard 
+                  key={technique.id} 
+                  technique={technique} 
+                  onToggleFavorite={toggleFavorite}
+                />
+              ))}
             </div>
 
             {filteredTechniques.length === 0 && <Card className="bg-gradient-card border-border/50">
@@ -184,5 +210,15 @@ export const Dashboard = () => {
           <QuickReference />
         </main>
       </div>
+
+      {/* Technique Modal */}
+      {selectedTechnique && (
+        <TechniqueModal 
+          technique={selectedTechnique}
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)}
+          onToggleFavorite={toggleFavorite}
+        />
+      )}
     </div>;
 };

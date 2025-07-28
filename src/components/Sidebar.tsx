@@ -5,6 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
+interface Technique {
+  id: string;
+  title: string;
+  description: string;
+  phase: string;
+  tags: string[];
+  tools: string[];
+  starred: boolean;
+  category: string;
+}
+
+interface SidebarProps {
+  techniques: Technique[];
+  onTechniqueClick: (technique: Technique) => void;
+}
+
 const navigationItems = [
   { label: "Initial Access", active: false },
   { label: "Reconnaissance", active: false },
@@ -13,12 +29,10 @@ const navigationItems = [
   { label: "Lateral Movement", active: false }
 ];
 
-const favoriteItems = [
-  { label: "Password Spraying", count: 1 }
-];
-
-export const Sidebar = () => {
+export const Sidebar = ({ techniques, onTechniqueClick }: SidebarProps) => {
   const [selectedScenario, setSelectedScenario] = useState("Select your situation...");
+  
+  const favoriteItems = techniques.filter(technique => technique.starred);
 
   return (
     <aside className="w-80 bg-gradient-card border-r border-border/50 p-6 space-y-6">
@@ -76,16 +90,23 @@ export const Sidebar = () => {
           </div>
         </CardHeader>
         <CardContent className="space-y-2">
-          {favoriteItems.map((item, index) => (
-            <Button
-              key={index}
-              variant="ghost"
-              className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/30"
-            >
-              <Star className="w-4 h-4 mr-2 fill-cyber-orange text-cyber-orange" />
-              {item.label}
-            </Button>
-          ))}
+          {favoriteItems.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-2">
+              No favorites yet. Star techniques to add them here.
+            </p>
+          ) : (
+            favoriteItems.map((technique) => (
+              <Button
+                key={technique.id}
+                variant="ghost"
+                className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/30"
+                onClick={() => onTechniqueClick(technique)}
+              >
+                <Star className="w-4 h-4 mr-2 fill-cyber-orange text-cyber-orange" />
+                {technique.title}
+              </Button>
+            ))
+          )}
         </CardContent>
       </Card>
     </aside>
