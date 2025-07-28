@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
 
@@ -60,8 +61,20 @@ export const CommandGenerator = ({ technique, isOpen, onClose }: CommandGenerato
   const [targetIP, setTargetIP] = useState("10.10.10.10");
   const [username, setUsername] = useState("user");
   const [passwordHash, setPasswordHash] = useState("password or hash");
+  const [editedTemplates, setEditedTemplates] = useState<{[key: number]: string}>({});
 
   const commandTemplates = getCommandTemplates(technique);
+
+  const getEditableTemplate = (index: number) => {
+    return editedTemplates[index] || commandTemplates[index].template;
+  };
+
+  const updateTemplate = (index: number, newTemplate: string) => {
+    setEditedTemplates(prev => ({
+      ...prev,
+      [index]: newTemplate
+    }));
+  };
 
   const generateCommand = (template: string) => {
     return template
@@ -80,8 +93,8 @@ export const CommandGenerator = ({ technique, isOpen, onClose }: CommandGenerato
   };
 
   const generateAllCommands = () => {
-    const allCommands = commandTemplates.map(template => 
-      `# ${template.tool}\n${generateCommand(template.template)}`
+    const allCommands = commandTemplates.map((template, index) => 
+      `# ${template.tool}\n${generateCommand(getEditableTemplate(index))}`
     ).join('\n\n');
     
     navigator.clipboard.writeText(allCommands);
@@ -171,7 +184,7 @@ export const CommandGenerator = ({ technique, isOpen, onClose }: CommandGenerato
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => copyCommand(generateCommand(template.template))}
+                      onClick={() => copyCommand(generateCommand(getEditableTemplate(index)))}
                       className="hover:bg-primary/10"
                     >
                       <Copy className="h-4 w-4 mr-2" />
@@ -180,9 +193,30 @@ export const CommandGenerator = ({ technique, isOpen, onClose }: CommandGenerato
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <code className="text-sm font-mono bg-background/50 p-3 rounded block whitespace-pre-wrap border text-foreground">
-                    {generateCommand(template.template)}
-                  </code>
+                  {/* Editable Command Template */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Command Template (editable):
+                    </Label>
+                    <Textarea
+                      value={getEditableTemplate(index)}
+                      onChange={(e) => updateTemplate(index, e.target.value)}
+                      className="text-sm font-mono bg-background/50 border resize-none"
+                      rows={2}
+                      placeholder="Edit command template..."
+                    />
+                  </div>
+                  
+                  {/* Generated Command Preview */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Generated Command:
+                    </Label>
+                    <code className="text-sm font-mono bg-background/80 p-3 rounded block whitespace-pre-wrap border text-foreground">
+                      {generateCommand(getEditableTemplate(index))}
+                    </code>
+                  </div>
+                  
                   <p className="text-xs text-muted-foreground">
                     {template.description}
                   </p>
