@@ -17,7 +17,13 @@ import { sampleMarkdownTechniques, parseMultipleMarkdownTechniques, ParsedTechni
 
 // Parse techniques from markdown
 const initialTechniques = parseMultipleMarkdownTechniques(sampleMarkdownTechniques);
-export const Dashboard = () => {
+
+interface DashboardProps {
+  onTechniqueSelect?: (technique: ParsedTechnique) => void;
+  onOpenChat?: () => void;
+}
+
+export const Dashboard = ({ onTechniqueSelect, onOpenChat }: DashboardProps) => {
   const {
     user,
     signOut
@@ -105,7 +111,11 @@ export const Dashboard = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center gap-4 mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-cyber flex items-center justify-center">
+              <div 
+                className="w-8 h-8 rounded-full bg-gradient-cyber flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
+                onClick={onOpenChat}
+                title="Open chat panel"
+              >
                 <Shield className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>

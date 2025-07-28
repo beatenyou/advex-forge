@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bot, ExternalLink, Download, Trash2 } from "lucide-react";
+import { Bot, ExternalLink, Download, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChatSession } from "@/components/ChatSession";
@@ -26,7 +26,11 @@ interface LinkTab {
   is_active: boolean;
 }
 
-export const ChatSidebar = () => {
+interface ChatSidebarProps {
+  onClose?: () => void;
+}
+
+export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
   const [linkTabs, setLinkTabs] = useState<LinkTab[]>([]);
   const { user } = useAuth();
   const { toast } = useToast();
@@ -192,6 +196,23 @@ export const ChatSidebar = () => {
                   <p>Clear all chats</p>
                 </TooltipContent>
               </Tooltip>
+              {onClose && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={onClose}
+                      className="h-7 w-7 p-0 hover:bg-muted/50"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Close chat panel</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
           </div>
         </div>

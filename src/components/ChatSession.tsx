@@ -240,7 +240,7 @@ export const ChatSession = () => {
   };
 
   return (
-    <Card className="h-[600px] flex flex-col">
+    <Card className="h-full flex flex-col">
       <CardHeader className="flex-shrink-0">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
