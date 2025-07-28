@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Star, Zap, Eye, Copy, ExternalLink } from "lucide-react";
+import { Star, Zap, Eye, Copy, ExternalLink, Bolt } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TechniqueModal } from "./TechniqueModal";
+import { CommandGenerator } from "./CommandGenerator";
 
 interface Technique {
   id: string;
@@ -22,6 +23,7 @@ interface TechniqueCardProps {
 
 export const TechniqueCard = ({ technique }: TechniqueCardProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCommandGenOpen, setIsCommandGenOpen] = useState(false);
   const [isStarred, setIsStarred] = useState(technique.starred);
 
   const toggleStar = (e: React.MouseEvent) => {
@@ -69,9 +71,22 @@ export const TechniqueCard = ({ technique }: TechniqueCardProps) => {
                 {technique.id}
               </Badge>
             </div>
-            <div className="flex items-center gap-1">
-              <Zap className="w-4 h-4 text-cyber-orange" />
-              <span className="text-xs text-muted-foreground">{technique.tools.length} tools</span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsCommandGenOpen(true);
+                }}
+              >
+                <Bolt className="w-4 h-4 text-cyber-blue" />
+              </Button>
+              <div className="flex items-center gap-1">
+                <Zap className="w-4 h-4 text-cyber-orange" />
+                <span className="text-xs text-muted-foreground">{technique.tools.length} tools</span>
+              </div>
             </div>
           </div>
           <CardDescription className="text-muted-foreground line-clamp-2">
@@ -150,6 +165,12 @@ export const TechniqueCard = ({ technique }: TechniqueCardProps) => {
         technique={technique} 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
+      />
+      
+      <CommandGenerator
+        technique={technique}
+        isOpen={isCommandGenOpen}
+        onClose={() => setIsCommandGenOpen(false)}
       />
     </>
   );
