@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { Search, Shield, Users, Settings, Star, Hash, Filter } from "lucide-react";
+import { Search, Shield, Users, Settings, Star, Hash, Filter, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -45,10 +47,28 @@ const techniques = [
 ];
 
 export const Dashboard = () => {
+  const { user, signOut } = useAuth();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPhase, setSelectedPhase] = useState("All Phases");
   const [filteredTechniques, setFilteredTechniques] = useState(techniques);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Signed out successfully",
+        description: "You have been logged out of your account.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error signing out",
+        description: "There was a problem signing you out.",
+      });
+    }
+  };
 
   const phases = ["All Phases", "Initial Access", "Reconnaissance", "Credential Access", "Lateral Movement", "Persistence"];
   const allTags = ["kerberos", "enumeration", "lateral-movement", "powershell", "impacket"];
@@ -107,10 +127,13 @@ export const Dashboard = () => {
             <div className="ml-auto flex items-center gap-4">
               <Button variant="outline" size="sm">
                 <Users className="w-4 h-4 mr-2" />
-                User
+                {user?.email?.split('@')[0] || 'User'}
               </Button>
               <Button variant="outline" size="sm">
                 <Settings className="w-4 h-4" />
+              </Button>
+              <Button variant="outline" size="sm" onClick={handleSignOut}>
+                <LogOut className="w-4 h-4" />
               </Button>
             </div>
           </div>
