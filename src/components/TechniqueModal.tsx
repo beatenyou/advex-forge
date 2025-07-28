@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Copy, Star, Zap, Shield, AlertTriangle, Eye, Settings } from "lucide-react";
+import { X, Copy, Star, Zap, Shield, AlertTriangle, Eye, Settings, Bolt } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
+import { CommandGenerator } from "./CommandGenerator";
 
 interface Technique {
   id: string;
@@ -19,6 +20,11 @@ interface Technique {
   tools: string[];
   starred: boolean;
   category: string;
+  commands?: Array<{
+    tool: string;
+    command: string;
+    description: string;
+  }>;
 }
 
 interface TechniqueModalProps {
@@ -89,6 +95,7 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite }:
   const [selectedCommand, setSelectedCommand] = useState(0);
   const [generatedCommand, setGeneratedCommand] = useState("");
   const [commandParams, setCommandParams] = useState<Record<string, string>>({});
+  const [isCommandGenOpen, setIsCommandGenOpen] = useState(false);
   
   const detailedTechnique = getDetailedTechnique(technique);
 
@@ -131,6 +138,14 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite }:
             </Badge>
           </div>
           <div className="flex items-center gap-1">
+            <Button
+              variant="ghost" 
+              size="sm"
+              onClick={() => setIsCommandGenOpen(true)}
+              className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
+            >
+              <Bolt className="h-4 w-4 text-primary" />
+            </Button>
             <Button
               variant="ghost" 
               size="sm"
@@ -262,6 +277,12 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite }:
           )}
         </div>
       </DialogContent>
+      
+      <CommandGenerator
+        technique={technique}
+        isOpen={isCommandGenOpen}
+        onClose={() => setIsCommandGenOpen(false)}
+      />
     </Dialog>
   );
 };
