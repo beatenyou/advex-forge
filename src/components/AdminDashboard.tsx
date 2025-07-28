@@ -13,6 +13,7 @@ import { parseMarkdownTechnique, ParsedTechnique } from "@/lib/markdownParser";
 import { CheatSheetManager } from "@/components/CheatSheetManager";
 import { LinkTabsManager } from "@/components/LinkTabsManager";
 import { ScenarioManager } from "@/components/ScenarioManager";
+import { UserManager } from "@/components/UserManager";
 
 interface AdminDashboardProps {
   techniques: ParsedTechnique[];
@@ -262,15 +263,16 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
 
         <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
           <Tabs defaultValue="guidance" className="p-6">
-            <TabsList className="grid w-full grid-cols-7">
-              <TabsTrigger value="guidance">Guidance</TabsTrigger>
-              <TabsTrigger value="upload">Upload Cards</TabsTrigger>
-              <TabsTrigger value="manage">Manage Cards</TabsTrigger>
-              <TabsTrigger value="cheatsheets">Cheat Sheets</TabsTrigger>
-              <TabsTrigger value="linktabs">Link Tabs</TabsTrigger>
-              <TabsTrigger value="scenarios">Scenarios</TabsTrigger>
-              <TabsTrigger value="webscraper">LLM Webscraper</TabsTrigger>
-            </TabsList>
+        <TabsList className="grid w-full grid-cols-8">
+          <TabsTrigger value="guidance">Guidance</TabsTrigger>
+          <TabsTrigger value="upload">Upload Cards</TabsTrigger>
+          <TabsTrigger value="manage">Manage Cards</TabsTrigger>
+          <TabsTrigger value="cheatsheets">Cheat Sheets</TabsTrigger>
+          <TabsTrigger value="linktabs">Link Tabs</TabsTrigger>
+          <TabsTrigger value="scenarios">Scenarios</TabsTrigger>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="webscraper">LLM Webscraper</TabsTrigger>
+        </TabsList>
 
             <TabsContent value="guidance" className="space-y-6 mt-6">
               <Card>
@@ -451,6 +453,10 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
 
             <TabsContent value="scenarios" className="space-y-6 mt-6">
               <ScenarioManager />
+            </TabsContent>
+
+            <TabsContent value="users" className="space-y-6 mt-6">
+              <UserManager />
             </TabsContent>
 
             <TabsContent value="webscraper" className="space-y-6 mt-6">
