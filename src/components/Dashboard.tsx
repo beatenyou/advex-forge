@@ -118,13 +118,7 @@ export const Dashboard = () => {
               </div>
             </div>
             <div className="ml-auto flex items-center gap-4">
-              <SidebarTrigger asChild>
-                <Button variant="outline" size="sm" className="border-primary/50 text-primary hover:bg-primary/10">
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  Ask AI
-                  <AIStatusIndicator size="sm" className="ml-2" />
-                </Button>
-              </SidebarTrigger>
+              <AIStatusIndicator size="sm" />
               <Button variant="outline" size="sm">
                 <Users className="w-4 h-4 mr-2" />
                 {user?.email?.split('@')[0] || 'User'}
