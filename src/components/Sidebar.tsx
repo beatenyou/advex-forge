@@ -156,28 +156,39 @@ export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSe
                   </p>
                   <div className="flex flex-wrap gap-1">
                     {scenarios.find(s => s.id === selectedScenario)?.linked_techniques.map((techniqueName, index) => {
+                      console.log('=== DEBUG START ===');
                       console.log('Processing technique:', techniqueName);
-                      console.log('Available technique titles:', techniques.map(t => t.title));
-                      const matchedTechnique = techniques.find(t => 
-                        t.title.toLowerCase().includes(techniqueName.toLowerCase()) ||
-                        techniqueName.toLowerCase().includes(t.title.toLowerCase())
-                      );
+                      console.log('Total techniques available:', techniques.length);
+                      console.log('Techniques array:', techniques);
                       
-                      console.log('Matched technique for', techniqueName, ':', matchedTechnique);
+                      // Simplified exact match first, then partial match
+                      let matchedTechnique = techniques.find(t => t.title === techniqueName);
+                      if (!matchedTechnique) {
+                        matchedTechnique = techniques.find(t => 
+                          t.title.toLowerCase().includes(techniqueName.toLowerCase()) ||
+                          techniqueName.toLowerCase().includes(t.title.toLowerCase())
+                        );
+                      }
+                      
+                      console.log('Final matched technique:', matchedTechnique);
+                      console.log('=== DEBUG END ===');
                       
                       return (
                         <Badge 
                           key={index} 
                           variant={matchedTechnique ? "default" : "outline"}
-                          className={`text-xs ${matchedTechnique ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''}`}
+                          className={`text-xs ${matchedTechnique ? 'cursor-pointer hover:opacity-80 transition-opacity' : 'cursor-default'}`}
                           onClick={(e) => {
-                            console.log('Badge clicked!', techniqueName, matchedTechnique);
-                            console.log('Event:', e);
+                            console.log('BADGE CLICKED!');
+                            console.log('Technique name:', techniqueName);
+                            console.log('Matched technique:', matchedTechnique);
                             e.preventDefault();
                             e.stopPropagation();
                             if (matchedTechnique) {
-                              console.log('Calling onTechniqueClick with:', matchedTechnique);
+                              console.log('Calling onTechniqueClick');
                               onTechniqueClick(matchedTechnique);
+                            } else {
+                              console.log('No matched technique - cannot click');
                             }
                           }}
                         >
