@@ -56,8 +56,12 @@ export const ChatSidebar = () => {
   const hasLinkTabs = linkTabs.length > 0;
 
   return (
-    <Sidebar className="border-r border-border bg-card/50 backdrop-blur-sm" variant="floating">
-      <SidebarHeader className="p-6 border-b border-border/50 bg-gradient-card">
+    <Sidebar 
+      className="border-r border-border bg-background"
+      collapsible="icon"
+      variant="sidebar"
+    >
+      <SidebarHeader className="p-6 border-b border-border bg-card/30 backdrop-blur-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-gradient-cyber flex items-center justify-center shadow-glow">
             <Bot className="w-6 h-6 text-primary-foreground" />
@@ -71,10 +75,10 @@ export const ChatSidebar = () => {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="p-6 bg-gradient-glow">
+      <SidebarContent className="p-6 bg-background">
         {hasLinkTabs ? (
           <Tabs defaultValue="chat" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted/30">
+            <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted/50">
               <TabsTrigger value="chat" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Chat</TabsTrigger>
               <TabsTrigger value="links" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Links</TabsTrigger>
             </TabsList>
@@ -97,7 +101,7 @@ export const ChatSidebar = () => {
                             href={tab.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-start gap-3 p-3 bg-card/80 rounded-lg border border-border/50 hover:border-primary/50 hover:bg-primary/10 transition-all duration-300 group hover:shadow-glow animate-fade-in"
+                            className="flex items-start gap-3 p-4 bg-card/60 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/10 transition-all duration-300 group hover:shadow-glow animate-fade-in"
                           >
                             <ExternalLink className="w-4 h-4 text-primary mt-1 flex-shrink-0 group-hover:scale-110 transition-transform" />
                             <div className="flex-1 min-w-0">

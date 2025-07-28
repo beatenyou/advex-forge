@@ -8,7 +8,13 @@ interface MainLayoutProps {
 
 export const MainLayout = ({ children }: MainLayoutProps) => {
   return (
-    <SidebarProvider defaultOpen={true}>
+    <SidebarProvider 
+      defaultOpen={true}
+      style={{
+        "--sidebar-width": "800px",
+        "--sidebar-width-mobile": "100vw",
+      } as React.CSSProperties}
+    >
       <div className="min-h-screen flex w-full bg-background">
         <ChatSidebar />
         <div className="flex-1 flex flex-col min-w-0">
