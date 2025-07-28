@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { AIStatusIndicator } from "@/components/AIStatusIndicator";
 
 interface LinkTab {
   id: string;
@@ -117,14 +118,17 @@ For cybersecurity questions, you can:
   return (
     <Card className="bg-gradient-glow border-primary/20 border-2">
       <CardContent className="p-4">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-8 h-8 rounded-full bg-gradient-cyber flex items-center justify-center">
-            <Bot className="w-5 h-5 text-primary-foreground" />
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-gradient-cyber flex items-center justify-center">
+              <Bot className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground">Ask AI</h3>
+              <p className="text-xs text-muted-foreground">Get instant answers about AD security</p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-semibold text-foreground">Ask AI</h3>
-            <p className="text-xs text-muted-foreground">Get instant answers about AD security</p>
-          </div>
+          <AIStatusIndicator size="md" />
         </div>
 
         {hasLinkTabs && (

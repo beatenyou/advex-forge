@@ -10,6 +10,7 @@ import { Trash2, Edit, Plus, TestTube, Star } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { AIStatusIndicator } from '@/components/AIStatusIndicator';
 
 interface AIProvider {
   id: string;
@@ -405,6 +406,19 @@ const AIProviderManager = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* AI System Status */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <h4 className="text-sm font-medium">AI System Status</h4>
+              <p className="text-xs text-muted-foreground">Current operational status of the AI chat system</p>
+            </div>
+            <AIStatusIndicator showLabel size="lg" />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Providers List */}
       <div className="flex justify-between items-center">
