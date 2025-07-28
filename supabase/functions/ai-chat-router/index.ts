@@ -19,10 +19,11 @@ serve(async (req) => {
   }
 
   try {
-    const { message, providerId } = await req.json();
+    const { message, messages, providerId, sessionId } = await req.json();
 
-    if (!message) {
-      throw new Error('Message is required');
+    // Support both single message (legacy) and conversation context (new)
+    if (!message && !messages) {
+      throw new Error('Message or messages array is required');
     }
 
     console.log('AI Chat Router - Processing request');
@@ -74,9 +75,23 @@ serve(async (req) => {
     // Route to appropriate provider function
     const functionName = provider.type === 'openai' ? 'ai-chat-openai' : 'ai-chat-mistral';
     
+    // Prepare conversation context or single message
+    let conversationMessages = [];
+    if (messages && Array.isArray(messages)) {
+      // Use conversation context (new format)
+      conversationMessages = messages.slice(-20).map((msg: any) => ({
+        role: msg.role,
+        content: msg.content
+      }));
+    } else if (message) {
+      // Legacy single message format
+      conversationMessages = [{ role: 'user', content: message }];
+    }
+    
     const providerResponse = await supabase.functions.invoke(functionName, {
       body: {
-        message,
+        message: message || conversationMessages[conversationMessages.length - 1]?.content,
+        messages: conversationMessages,
         model: provider.model_name,
         systemPrompt: config.system_prompt,
         maxTokens: config.max_tokens,

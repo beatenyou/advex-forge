@@ -13,10 +13,17 @@ serve(async (req) => {
   }
 
   try {
-    const { message, model = 'gpt-4o-mini', systemPrompt, maxTokens = 1000, temperature = 0.7 } = await req.json();
+    const { 
+      message, 
+      messages, 
+      model = 'gpt-4o-mini', 
+      systemPrompt = 'You are a helpful AI assistant.', 
+      maxTokens = 1000, 
+      temperature = 0.7 
+    } = await req.json();
 
-    if (!message) {
-      throw new Error('Message is required');
+    if (!message && !messages) {
+      throw new Error('Message or messages array is required');
     }
 
     const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -26,6 +33,26 @@ serve(async (req) => {
 
     console.log('Sending request to OpenAI with model:', model);
 
+    // Build conversation messages
+    let conversationMessages = [];
+    
+    // Add system prompt
+    conversationMessages.push({
+      role: 'system',
+      content: systemPrompt || 'You are a helpful AI assistant. Provide clear, concise, and accurate responses.'
+    });
+
+    if (messages && Array.isArray(messages) && messages.length > 0) {
+      // Use conversation context
+      conversationMessages.push(...messages);
+    } else if (message) {
+      // Legacy single message
+      conversationMessages.push({
+        role: 'user',
+        content: message
+      });
+    }
+
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -34,16 +61,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model,
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt || 'You are a helpful AI assistant. Provide clear, concise, and accurate responses.'
-          },
-          {
-            role: 'user',
-            content: message
-          }
-        ],
+        messages: conversationMessages,
         max_tokens: maxTokens,
         temperature,
         stream: false
@@ -62,7 +80,7 @@ serve(async (req) => {
     console.log('Successfully received response from OpenAI');
 
     return new Response(JSON.stringify({ 
-      response: aiResponse,
+      message: aiResponse,
       model,
       provider: 'openai',
       tokensUsed: data.usage?.total_tokens || 0

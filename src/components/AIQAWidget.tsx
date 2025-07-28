@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { ChatSession } from "@/components/ChatSession";
 
 interface LinkTab {
   id: string;
@@ -139,15 +140,7 @@ For cybersecurity questions, you can:
               <TabsTrigger value="links">Quick Links</TabsTrigger>
             </TabsList>
             <TabsContent value="chat" className="mt-4">
-              <AIQuestionForm 
-                question={question}
-                setQuestion={setQuestion}
-                answer={answer}
-                isLoading={isLoading}
-                handleSubmit={handleSubmit}
-                copyAnswer={copyAnswer}
-                clearAll={clearAll}
-              />
+              <ChatSession />
             </TabsContent>
             <TabsContent value="links" className="mt-4">
               <div className="space-y-3">
