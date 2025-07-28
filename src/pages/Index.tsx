@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Dashboard } from "@/components/Dashboard";
+import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Shield, Loader2 } from "lucide-react";
@@ -56,7 +57,11 @@ const Index = () => {
     );
   }
 
-  return <Dashboard />;
+  return (
+    <MainLayout>
+      <Dashboard />
+    </MainLayout>
+  );
 };
 
 export default Index;

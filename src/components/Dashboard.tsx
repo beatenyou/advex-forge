@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Search, Shield, Users, Settings, Star, Hash, Filter, LogOut, UserCog } from "lucide-react";
+import { Search, Shield, Users, Settings, Star, Hash, Filter, LogOut, UserCog, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
@@ -10,9 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { TechniqueCard } from "./TechniqueCard";
 import { TechniqueModal } from "./TechniqueModal";
 import { Sidebar } from "./Sidebar";
-import { AIQAWidget } from "./AIQAWidget";
 import { QuickReference } from "./QuickReference";
 import { AdminDashboard } from "./AdminDashboard";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { AIStatusIndicator } from "@/components/AIStatusIndicator";
 import { sampleMarkdownTechniques, parseMultipleMarkdownTechniques, ParsedTechnique } from "@/lib/markdownParser";
 
 // Parse techniques from markdown
@@ -99,12 +100,13 @@ export const Dashboard = () => {
     setSelectedTechnique(technique);
     setIsModalOpen(true);
   };
-  return <div className="min-h-screen bg-background">
+  return <div className="bg-background">
       {/* Header */}
       <header className="border-b border-border bg-gradient-card backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center gap-4 mb-4">
             <div className="flex items-center gap-3">
+              <SidebarTrigger className="p-1" />
               <div className="w-8 h-8 rounded-full bg-gradient-cyber flex items-center justify-center">
                 <Shield className="w-5 h-5 text-primary-foreground" />
               </div>
@@ -116,6 +118,13 @@ export const Dashboard = () => {
               </div>
             </div>
             <div className="ml-auto flex items-center gap-4">
+              <SidebarTrigger asChild>
+                <Button variant="outline" size="sm" className="border-primary/50 text-primary hover:bg-primary/10">
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Ask AI
+                  <AIStatusIndicator size="sm" className="ml-2" />
+                </Button>
+              </SidebarTrigger>
               <Button variant="outline" size="sm">
                 <Users className="w-4 h-4 mr-2" />
                 {user?.email?.split('@')[0] || 'User'}
@@ -136,9 +145,6 @@ export const Dashboard = () => {
               </Button>
             </div>
           </div>
-
-          {/* AI Q&A Widget */}
-          <AIQAWidget />
 
           {/* Search and Filters */}
           <div className="flex flex-col lg:flex-row gap-4 mt-4">
