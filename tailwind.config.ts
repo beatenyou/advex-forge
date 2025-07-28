@@ -26,7 +26,8 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))'
+					foreground: 'hsl(var(--primary-foreground))',
+					glow: 'hsl(var(--primary-glow))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
@@ -36,6 +37,14 @@ export default {
 					DEFAULT: 'hsl(var(--destructive))',
 					foreground: 'hsl(var(--destructive-foreground))'
 				},
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					foreground: 'hsl(var(--success-foreground))'
+				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					foreground: 'hsl(var(--warning-foreground))'
+				},
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',
 					foreground: 'hsl(var(--muted-foreground))'
@@ -43,6 +52,15 @@ export default {
 				accent: {
 					DEFAULT: 'hsl(var(--accent))',
 					foreground: 'hsl(var(--accent-foreground))'
+				},
+				cyber: {
+					blue: 'hsl(var(--cyber-blue))',
+					'blue-dark': 'hsl(var(--cyber-blue-dark))',
+					'blue-light': 'hsl(var(--cyber-blue-light))',
+					green: 'hsl(var(--cyber-green))',
+					red: 'hsl(var(--cyber-red))',
+					purple: 'hsl(var(--cyber-purple))',
+					orange: 'hsl(var(--cyber-orange))'
 				},
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',
@@ -84,11 +102,34 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'cyber-glow': {
+					'0%, 100%': {
+						boxShadow: '0 0 20px hsl(var(--cyber-blue) / 0.2)'
+					},
+					'50%': {
+						boxShadow: '0 0 40px hsl(var(--cyber-blue) / 0.4)'
+					}
+				},
+				'pulse-border': {
+					'0%, 100%': {
+						borderColor: 'hsl(var(--cyber-blue) / 0.3)'
+					},
+					'50%': {
+						borderColor: 'hsl(var(--cyber-blue) / 0.7)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'cyber-glow': 'cyber-glow 3s ease-in-out infinite',
+				'pulse-border': 'pulse-border 2s ease-in-out infinite'
+			},
+			backgroundImage: {
+				'gradient-cyber': 'var(--gradient-primary)',
+				'gradient-card': 'var(--gradient-card)',
+				'gradient-glow': 'var(--gradient-glow)'
 			}
 		}
 	},

@@ -2,39 +2,68 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Cybersecurity Dashboard Design System - Dark theme with cyber blue accents */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Dark cybersecurity theme */
+    --background: 215 25% 8%;
+    --foreground: 210 40% 98%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 217 30% 12%;
+    --card-foreground: 210 40% 98%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 217 30% 12%;
+    --popover-foreground: 210 40% 98%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Cyber blue primary colors */
+    --primary: 195 100% 50%;
+    --primary-foreground: 215 25% 8%;
+    --primary-glow: 195 100% 65%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217 30% 18%;
+    --secondary-foreground: 210 40% 98%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 217 30% 15%;
+    --muted-foreground: 215 20% 65%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 195 100% 50%;
+    --accent-foreground: 215 25% 8%;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --success: 142 76% 36%;
+    --success-foreground: 210 40% 98%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 215 25% 8%;
+
+    --border: 217 30% 18%;
+    --input: 217 30% 15%;
+    --ring: 195 100% 50%;
+
+    /* Cyber theme specific colors */
+    --cyber-blue: 195 100% 50%;
+    --cyber-blue-dark: 195 100% 35%;
+    --cyber-blue-light: 195 100% 65%;
+    --cyber-green: 142 76% 36%;
+    --cyber-red: 0 84% 60%;
+    --cyber-purple: 270 100% 70%;
+    --cyber-orange: 38 92% 50%;
+
+    /* Gradients for cyber aesthetic */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--cyber-blue)) 0%, hsl(var(--cyber-blue-dark)) 100%);
+    --gradient-card: linear-gradient(135deg, hsl(var(--card)) 0%, hsl(217 30% 10%) 100%);
+    --gradient-glow: linear-gradient(135deg, hsl(var(--cyber-blue) / 0.1) 0%, hsl(var(--cyber-blue-dark) / 0.05) 100%);
+
+    /* Shadows with cyber glow */
+    --shadow-glow: 0 0 20px hsl(var(--cyber-blue) / 0.3);
+    --shadow-card: 0 4px 20px hsl(215 25% 4% / 0.4);
+    --shadow-hover: 0 8px 30px hsl(var(--cyber-blue) / 0.2);
+
+    /* Animations */
+    --transition-cyber: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     --radius: 0.5rem;
 

@@ -1,0 +1,156 @@
+import { useState } from "react";
+import { Star, Zap, Eye, Copy, ExternalLink } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { TechniqueModal } from "./TechniqueModal";
+
+interface Technique {
+  id: string;
+  title: string;
+  description: string;
+  phase: string;
+  tags: string[];
+  tools: string[];
+  starred: boolean;
+  category: string;
+}
+
+interface TechniqueCardProps {
+  technique: Technique;
+}
+
+export const TechniqueCard = ({ technique }: TechniqueCardProps) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isStarred, setIsStarred] = useState(technique.starred);
+
+  const toggleStar = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsStarred(!isStarred);
+  };
+
+  const getPhaseColor = (phase: string) => {
+    switch (phase) {
+      case "Initial Access": return "bg-cyber-blue/20 text-cyber-blue border-cyber-blue/30";
+      case "Reconnaissance": return "bg-cyber-green/20 text-cyber-green border-cyber-green/30";
+      case "Credential Access": return "bg-cyber-purple/20 text-cyber-purple border-cyber-purple/30";
+      case "Lateral Movement": return "bg-cyber-orange/20 text-cyber-orange border-cyber-orange/30";
+      default: return "bg-muted/20 text-muted-foreground border-muted/30";
+    }
+  };
+
+  return (
+    <>
+      <Card 
+        className="group bg-gradient-card border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 cursor-pointer"
+        onClick={() => setIsModalOpen(true)}
+      >
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <CardTitle className="text-lg text-foreground group-hover:text-primary transition-colors">
+                  {technique.title}
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 hover:bg-transparent"
+                  onClick={toggleStar}
+                >
+                  <Star 
+                    className={`w-4 h-4 transition-colors ${
+                      isStarred ? "fill-cyber-orange text-cyber-orange" : "text-muted-foreground hover:text-cyber-orange"
+                    }`} 
+                  />
+                </Button>
+              </div>
+              <Badge variant="outline" className={`text-xs ${getPhaseColor(technique.phase)}`}>
+                {technique.id}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-1">
+              <Zap className="w-4 h-4 text-cyber-orange" />
+              <span className="text-xs text-muted-foreground">{technique.tools.length} tools</span>
+            </div>
+          </div>
+          <CardDescription className="text-muted-foreground line-clamp-2">
+            {technique.description}
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <div className="space-y-3">
+            {/* Tags */}
+            <div className="flex flex-wrap gap-1">
+              {technique.tags.slice(0, 3).map(tag => (
+                <Badge 
+                  key={tag} 
+                  variant="secondary" 
+                  className="text-xs bg-muted/30 text-muted-foreground border-border/50"
+                >
+                  {tag}
+                </Badge>
+              ))}
+              {technique.tags.length > 3 && (
+                <Badge variant="secondary" className="text-xs bg-muted/30 text-muted-foreground">
+                  +{technique.tags.length - 3}
+                </Badge>
+              )}
+            </div>
+
+            {/* Tools */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Tools:</span>
+              <div className="flex gap-1">
+                {technique.tools.slice(0, 2).map(tool => (
+                  <span key={tool} className="text-xs font-mono bg-muted/30 px-2 py-1 rounded text-primary">
+                    {tool}
+                  </span>
+                ))}
+                {technique.tools.length > 2 && (
+                  <span className="text-xs text-muted-foreground">+{technique.tools.length - 2}</span>
+                )}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-between pt-2 border-t border-border/30">
+              <Badge variant="outline" className={getPhaseColor(technique.phase)}>
+                {technique.phase}
+              </Badge>
+              <div className="flex items-center gap-1">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsModalOpen(true);
+                  }}
+                >
+                  <Eye className="w-3 h-3 mr-1" />
+                  View
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <TechniqueModal 
+        technique={technique} 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+      />
+    </>
+  );
+};
