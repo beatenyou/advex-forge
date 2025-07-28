@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_link_tabs: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          icon: string
+          id: string
+          is_active: boolean
+          order_index: number
+          title: string
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean
+          order_index?: number
+          title: string
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean
+          order_index?: number
+          title?: string
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
+      }
       cheat_sheets: {
         Row: {
           bg_color: string
