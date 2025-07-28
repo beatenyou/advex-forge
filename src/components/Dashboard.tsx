@@ -177,8 +177,8 @@ export const Dashboard = () => {
           onPhaseSelect={setSelectedPhase}
         />
 
-        {/* Main Content */}
-        <main className="flex-1 p-6">
+        {/* Main Content - Added better padding and responsive spacing */}
+        <main className="flex-1 p-8 lg:p-12 max-w-7xl mx-auto w-full">
           {/* Phase Section */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-6">
@@ -190,8 +190,8 @@ export const Dashboard = () => {
               </Badge>
             </div>
 
-            {/* Technique Cards Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+            {/* Technique Cards Grid - Changed to 2 columns for better spacing */}
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
               {filteredTechniques.map(technique => (
                 <TechniqueCard 
                   key={technique.id} 

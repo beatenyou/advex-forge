@@ -56,14 +56,14 @@ export const ChatSidebar = () => {
   const hasLinkTabs = linkTabs.length > 0;
 
   return (
-    <Sidebar className="border-r border-border">
-      <SidebarHeader className="p-4 border-b border-border">
+    <Sidebar className="border-r border-border bg-card/50 backdrop-blur-sm" variant="floating">
+      <SidebarHeader className="p-6 border-b border-border/50 bg-gradient-card">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-cyber flex items-center justify-center">
-            <Bot className="w-5 h-5 text-primary-foreground" />
+          <div className="w-10 h-10 rounded-full bg-gradient-cyber flex items-center justify-center shadow-glow">
+            <Bot className="w-6 h-6 text-primary-foreground" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-foreground">AI Assistant</h3>
+            <h3 className="text-lg font-semibold text-foreground">AI Assistant</h3>
             <div className="flex items-center gap-2 mt-1">
               <AIStatusIndicator size="sm" showLabel />
             </div>
@@ -71,46 +71,45 @@ export const ChatSidebar = () => {
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="p-4">
+      <SidebarContent className="p-6 bg-gradient-glow">
         {hasLinkTabs ? (
           <Tabs defaultValue="chat" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="chat">Chat</TabsTrigger>
-              <TabsTrigger value="links">Links</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 mb-6 bg-muted/30">
+              <TabsTrigger value="chat" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Chat</TabsTrigger>
+              <TabsTrigger value="links" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Links</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="chat" className="mt-0">
+            <TabsContent value="chat" className="mt-0 h-[calc(100vh-200px)]">
               <ChatSession />
             </TabsContent>
-            
-            <TabsContent value="links" className="mt-0">
+            <TabsContent value="links" className="mt-0 h-[calc(100vh-200px)] overflow-y-auto">
               <SidebarGroup>
                 <SidebarGroupContent className="space-y-4">
                   {Object.entries(groupedTabs).map(([category, tabs]) => (
                     <div key={category}>
-                      <SidebarGroupLabel className="text-xs font-medium text-muted-foreground mb-2">
+                      <SidebarGroupLabel className="text-xs font-medium text-primary mb-3 uppercase tracking-wide">
                         {category}
                       </SidebarGroupLabel>
-                      <div className="space-y-2">
+                      <div className="space-y-3">
                         {tabs.map((tab) => (
                           <a
                             key={tab.id}
                             href={tab.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-start gap-2 p-2 bg-muted/20 rounded-lg border border-border/30 hover:border-primary/50 hover:bg-muted/30 transition-colors group"
+                            className="flex items-start gap-3 p-3 bg-card/80 rounded-lg border border-border/50 hover:border-primary/50 hover:bg-primary/10 transition-all duration-300 group hover:shadow-glow animate-fade-in"
                           >
-                            <ExternalLink className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+                            <ExternalLink className="w-4 h-4 text-primary mt-1 flex-shrink-0 group-hover:scale-110 transition-transform" />
                             <div className="flex-1 min-w-0">
                               <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors block truncate">
                                 {tab.title}
                               </span>
                               {tab.description && (
-                                <p className="text-xs text-muted-foreground line-clamp-2">
+                                <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
                                   {tab.description}
                                 </p>
                               )}
-                              <Badge variant="secondary" className="text-xs mt-1">
+                              <Badge variant="secondary" className="text-xs mt-2 bg-primary/10 text-primary border-primary/20">
                                 {tab.category}
                               </Badge>
                             </div>
@@ -124,7 +123,9 @@ export const ChatSidebar = () => {
             </TabsContent>
           </Tabs>
         ) : (
-          <ChatSession />
+          <div className="h-[calc(100vh-200px)]">
+            <ChatSession />
+          </div>
         )}
       </SidebarContent>
     </Sidebar>
