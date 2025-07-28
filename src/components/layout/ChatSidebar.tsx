@@ -1,14 +1,5 @@
 import { useState, useEffect } from "react";
 import { Bot, ExternalLink, Download, Trash2 } from "lucide-react";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarRail,
-} from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChatSession } from "@/components/ChatSession";
@@ -17,6 +8,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  Tooltip, 
+  TooltipContent, 
+  TooltipProvider, 
+  TooltipTrigger 
+} from "@/components/ui/tooltip";
 
 interface LinkTab {
   id: string;
@@ -148,66 +145,76 @@ export const ChatSidebar = () => {
   const hasLinkTabs = linkTabs.length > 0;
 
   return (
-    <Sidebar 
-      className="border-r border-border bg-background"
-      collapsible="icon"
-      variant="sidebar"
-    >
-      <SidebarHeader className="p-4 border-b border-border bg-gradient-card backdrop-blur-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-cyber flex items-center justify-center shadow-glow">
-              <Bot className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-semibold text-foreground">AI Assistant</h3>
-              <div className="flex items-center gap-2 mt-1">
-                <AIStatusIndicator size="sm" showLabel />
+    <TooltipProvider>
+      <div className="h-full flex flex-col border-r border-border bg-background">
+        {/* Header */}
+        <div className="p-4 border-b border-border bg-card/30 backdrop-blur-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                <Bot className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-foreground text-sm">AI Assistant</h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <AIStatusIndicator size="sm" showLabel />
+                </div>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleDownloadChats}
-              className="h-7 w-7 p-0 hover:bg-primary/10"
-              title="Download chat history"
-            >
-              <Download className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost" 
-              size="sm"
-              onClick={handleClearChats}
-              className="h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive"
-              title="Clear all chats"
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleDownloadChats}
+                    className="h-7 w-7 p-0 hover:bg-primary/10"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Download chat history</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost" 
+                    size="sm"
+                    onClick={handleClearChats}
+                    className="h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Clear all chats</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           </div>
         </div>
-      </SidebarHeader>
 
-      <SidebarContent className="p-4 bg-background">
-        {hasLinkTabs ? (
-          <Tabs defaultValue="chat" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted/50">
-              <TabsTrigger value="chat" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Chat</TabsTrigger>
-              <TabsTrigger value="links" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">Links</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="chat" className="mt-0 h-[calc(100vh-180px)]">
-              <ChatSession />
-            </TabsContent>
-            <TabsContent value="links" className="mt-0 h-[calc(100vh-180px)] overflow-y-auto">
-              <SidebarGroup>
-                <SidebarGroupContent className="space-y-3">
+        {/* Content */}
+        <div className="flex-1 p-4 bg-background overflow-hidden">
+          {hasLinkTabs ? (
+            <Tabs defaultValue="chat" className="w-full h-full flex flex-col">
+              <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted/50">
+                <TabsTrigger value="chat" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">Chat</TabsTrigger>
+                <TabsTrigger value="links" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">Links</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="chat" className="mt-0 flex-1 overflow-hidden">
+                <ChatSession />
+              </TabsContent>
+              <TabsContent value="links" className="mt-0 flex-1 overflow-y-auto">
+                <div className="space-y-3">
                   {Object.entries(groupedTabs).map(([category, tabs]) => (
                     <div key={category}>
-                      <SidebarGroupLabel className="text-xs font-medium text-primary mb-2 uppercase tracking-wide">
+                      <h4 className="text-xs font-medium text-primary mb-2 uppercase tracking-wide">
                         {category}
-                      </SidebarGroupLabel>
+                      </h4>
                       <div className="space-y-2">
                         {tabs.map((tab) => (
                           <a
@@ -236,17 +243,16 @@ export const ChatSidebar = () => {
                       </div>
                     </div>
                   ))}
-                </SidebarGroupContent>
-              </SidebarGroup>
-            </TabsContent>
-          </Tabs>
-        ) : (
-          <div className="h-[calc(100vh-180px)]">
-            <ChatSession />
-          </div>
-        )}
-      </SidebarContent>
-      <SidebarRail />
-    </Sidebar>
+                </div>
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <div className="h-full">
+              <ChatSession />
+            </div>
+          )}
+        </div>
+      </div>
+    </TooltipProvider>
   );
 };

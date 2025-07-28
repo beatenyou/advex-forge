@@ -1,5 +1,9 @@
 import { ReactNode } from "react";
-import { SidebarProvider } from "@/components/ui/sidebar";
+import { 
+  ResizablePanelGroup, 
+  ResizablePanel, 
+  ResizableHandle 
+} from "@/components/ui/resizable";
 import { ChatSidebar } from "./ChatSidebar";
 
 interface MainLayoutProps {
@@ -8,19 +12,32 @@ interface MainLayoutProps {
 
 export const MainLayout = ({ children }: MainLayoutProps) => {
   return (
-    <SidebarProvider 
-      defaultOpen={true}
-      style={{
-        "--sidebar-width": "800px",
-        "--sidebar-width-mobile": "100vw",
-      } as React.CSSProperties}
-    >
-      <div className="min-h-screen flex w-full bg-background">
-        <ChatSidebar />
-        <div className="flex-1 flex flex-col min-w-0">
-          {children}
-        </div>
-      </div>
-    </SidebarProvider>
+    <div className="min-h-screen w-full bg-background">
+      <ResizablePanelGroup direction="horizontal" className="min-h-screen">
+        <ResizablePanel 
+          defaultSize={35} 
+          minSize={25} 
+          maxSize={60}
+          className="bg-background"
+        >
+          <ChatSidebar />
+        </ResizablePanel>
+        
+        <ResizableHandle 
+          withHandle 
+          className="bg-border hover:bg-primary/20 transition-colors duration-200 w-1 group"
+        />
+        
+        <ResizablePanel 
+          defaultSize={65} 
+          minSize={40}
+          className="bg-background"
+        >
+          <div className="flex-1 flex flex-col min-w-0 h-full">
+            {children}
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
+    </div>
   );
 };
