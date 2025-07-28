@@ -46,6 +46,9 @@ const navigationItems = [
 ];
 
 export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSelect }: SidebarProps) => {
+  console.log('Sidebar techniques array:', techniques);
+  console.log('Techniques count:', techniques.length);
+  console.log('First technique:', techniques[0]);
   const [selectedScenario, setSelectedScenario] = useState("Select your situation...");
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   
@@ -154,12 +157,13 @@ export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSe
                   <div className="flex flex-wrap gap-1">
                     {scenarios.find(s => s.id === selectedScenario)?.linked_techniques.map((techniqueName, index) => {
                       console.log('Processing technique:', techniqueName);
+                      console.log('Available technique titles:', techniques.map(t => t.title));
                       const matchedTechnique = techniques.find(t => 
                         t.title.toLowerCase().includes(techniqueName.toLowerCase()) ||
                         techniqueName.toLowerCase().includes(t.title.toLowerCase())
                       );
                       
-                      console.log('Matched technique for', techniqueName, ':', matchedTechnique?.title);
+                      console.log('Matched technique for', techniqueName, ':', matchedTechnique);
                       
                       return (
                         <Badge 
