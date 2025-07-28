@@ -24,30 +24,69 @@ export const AdminDashboard = ({ techniques, onTechniquesUpdate, onClose }: Admi
   const [editingTechnique, setEditingTechnique] = useState<ParsedTechnique | null>(null);
   const [webscraperUrl, setWebscraperUrl] = useState("");
   
-  const markdownTemplate = `**Name:** [Technique Name]
-**MITRE ID:** [T####.###]
-**Phase:** [Enumeration/Initial Access/Privilege Escalation/Persistence/Credential Access/Lateral Movement]
-**Description:** [Brief description of the technique]
-**When to use:** [When to apply this technique]
-**Prerequisites:** [What's needed before using this technique]
+  const markdownTemplate = `**Name:** SMB Enumeration
+**MITRE ID:** T1021.002
+**Phase:** Enumeration
+**Description:** Enumerate SMB shares and services to gather information about network resources and potential attack vectors.
+**When to use:** During initial network reconnaissance when SMB ports (445/139) are open on target systems.
+**Prerequisites:** Network access to target, SMB client tools installed
 **How to use:**
 
-1. [Step 1]
-2. [Step 2]
-3. [Step 3]
+1. Scan for SMB services using port scanning
+2. Enumerate shares using various tools
+3. List share contents and permissions
+4. Identify writable shares and sensitive files
 
 ### Tools
 
-1. **[Tool Name]:** \`[command template with <parameters>]\` | [Description]
-2. **[Tool Name 2]:** \`[command template with <parameters>]\` | [Description]
+1. **smbclient:** \`smbclient -L //<target> -U <username>\` | List SMB shares on target system
+2. **enum4linux:** \`enum4linux -a <target>\` | Comprehensive SMB enumeration tool
+3. **smbmap:** \`smbmap -H <target> -u <username> -p <password>\` | SMB share discovery and access testing
 
 ### Command Templates
 
-1. **[Tool Name]:** \`[full command with <placeholders>]\` | [Command description]
-2. **[Tool Name 2]:** \`[full command with <placeholders>]\` | [Command description]
+1. **smbclient:** \`smbclient -L //<target> -U <username>%<password> --option='client min protocol=NT1'\` | List all available SMB shares with authentication
+2. **smbclient:** \`smbclient //<target>/<share> -U <username>%<password> -c 'ls; exit'\` | Connect to specific share and list contents
+3. **enum4linux:** \`enum4linux -a -u <username> -p <password> <target>\` | Full enumeration with credentials
+4. **smbmap:** \`smbmap -H <target> -u <username> -p <password> -R <share>\` | Recursively list share contents with permissions
+5. **crackmapexec:** \`crackmapexec smb <target> -u <username> -p <password> --shares\` | Modern SMB enumeration and share listing
+6. **rpcclient:** \`rpcclient -U <username>%<password> <target> -c 'enumdomusers; quit'\` | Enumerate domain users via RPC
 
-**Detection:** [How to detect this technique]
-**Mitigation:** [How to prevent/mitigate this technique]`;
+**Detection:** Monitor for multiple SMB connection attempts, unusual share access patterns, tools like enum4linux signatures
+**Mitigation:** Disable SMBv1, implement proper share permissions, use network segmentation, monitor SMB traffic
+
+---
+
+**Name:** SQL Injection Testing
+**MITRE ID:** T1190
+**Phase:** Initial Access
+**Description:** Test web applications for SQL injection vulnerabilities to gain unauthorized database access.
+**When to use:** When testing web applications with database backends during penetration testing.
+**Prerequisites:** Target web application with input fields, SQL injection testing tools
+**How to use:**
+
+1. Identify input parameters in web application
+2. Test for basic SQL injection with simple payloads
+3. Determine database type and structure
+4. Extract sensitive data or gain shell access
+
+### Tools
+
+1. **sqlmap:** \`sqlmap -u "<url>" --data="<post_data>"\` | Automated SQL injection testing tool
+2. **manual testing:** \`' OR 1=1-- \` | Basic SQL injection payload for manual testing
+3. **burp suite:** \`Intercept and modify requests\` | Professional web application security scanner
+
+### Command Templates
+
+1. **sqlmap:** \`sqlmap -u "<target_url>" --data="<post_parameters>" --dbs --batch\` | Enumerate databases automatically
+2. **sqlmap:** \`sqlmap -u "<target_url>" --data="<post_parameters>" -D <database> --tables\` | List tables in specific database
+3. **sqlmap:** \`sqlmap -u "<target_url>" --data="<post_parameters>" -D <database> -T <table> --dump\` | Dump table contents
+4. **sqlmap:** \`sqlmap -u "<target_url>" --data="<post_parameters>" --os-shell\` | Attempt to get OS command shell
+5. **curl:** \`curl -X POST -d "<parameter>=<payload>" "<target_url>"\` | Manual payload testing with curl
+6. **sqlmap:** \`sqlmap -r <request_file> --level=<level> --risk=<risk> --tamper=<tamper_script>\` | Advanced testing with request file and evasion
+
+**Detection:** Monitor for SQL error messages in logs, unusual database queries, multiple failed login attempts
+**Mitigation:** Use parameterized queries, input validation, least privilege database accounts, WAF deployment`;
 
   const llmPrompt = `You are a cybersecurity expert tasked with extracting attack techniques from web content and converting them into a structured markdown format for a security dashboard.
 
