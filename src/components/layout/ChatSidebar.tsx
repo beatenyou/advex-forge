@@ -35,6 +35,14 @@ export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Function to clear chat that can be passed to ChatSession
+  const clearChatAndResetSession = async () => {
+    // This will be called by the global function if available
+    if ((window as any).__clearChatFunction) {
+      await (window as any).__clearChatFunction();
+    }
+  };
+
   useEffect(() => {
     fetchLinkTabs();
   }, []);
@@ -65,6 +73,11 @@ export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
         .eq('user_id', user.id);
 
       if (error) throw error;
+      
+      // Clear the current chat interface immediately
+      if ((window as any).__clearChatFunction) {
+        await (window as any).__clearChatFunction();
+      }
       
       toast({
         title: "Chats cleared",
@@ -227,7 +240,7 @@ export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
               </TabsList>
               
               <TabsContent value="chat" className="mt-0 flex-1 overflow-hidden">
-                <ChatSession />
+                <ChatSession onClear={clearChatAndResetSession} />
               </TabsContent>
               <TabsContent value="links" className="mt-0 flex-1 overflow-y-auto">
                 <div className="space-y-3">
@@ -269,7 +282,7 @@ export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
             </Tabs>
           ) : (
             <div className="h-full">
-              <ChatSession />
+              <ChatSession onClear={clearChatAndResetSession} />
             </div>
           )}
         </div>

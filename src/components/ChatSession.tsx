@@ -26,12 +26,23 @@ interface ChatSession {
   updated_at: string;
 }
 
-export const ChatSession = () => {
+interface ChatSessionProps {
+  onClear?: () => void;
+}
+
+export const ChatSession = ({ onClear }: ChatSessionProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  // Function to clear all messages and create new session
+  const clearChatAndResetSession = async () => {
+    setMessages([]);
+    setCurrentSession(null);
+    await loadOrCreateSession();
+  };
 
   useEffect(() => {
     loadOrCreateSession();
@@ -40,6 +51,18 @@ export const ChatSession = () => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Expose clear function to parent component
+  useEffect(() => {
+    if (onClear) {
+      (window as any).__clearChatFunction = clearChatAndResetSession;
+    }
+    return () => {
+      if ((window as any).__clearChatFunction) {
+        delete (window as any).__clearChatFunction;
+      }
+    };
+  }, [onClear]);
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
