@@ -107,6 +107,16 @@ export const TechniqueModal = ({ technique, isOpen, onClose }: TechniqueModalPro
     });
   };
 
+  const [isStarred, setIsStarred] = useState(technique.starred);
+
+  const toggleStar = () => {
+    setIsStarred(!isStarred);
+    toast({
+      title: isStarred ? "Removed from favorites" : "Added to favorites",
+      description: `${technique.title} ${isStarred ? "removed from" : "added to"} your favorites.`
+    });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden bg-card border-border">
@@ -117,14 +127,24 @@ export const TechniqueModal = ({ technique, isOpen, onClose }: TechniqueModalPro
               {technique.id}
             </Badge>
           </div>
-          <Button
-            variant="ghost" 
-            size="sm"
-            onClick={onClose}
-            className="h-6 w-6 p-0 hover:bg-muted"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost" 
+              size="sm"
+              onClick={toggleStar}
+              className="h-6 w-6 p-0 hover:bg-muted"
+            >
+              <Star className={`h-4 w-4 ${isStarred ? 'fill-yellow-500 text-yellow-500' : 'text-muted-foreground hover:text-yellow-500'}`} />
+            </Button>
+            <Button
+              variant="ghost" 
+              size="sm"
+              onClick={onClose}
+              className="h-6 w-6 p-0 hover:bg-muted"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="space-y-6 overflow-y-auto max-h-[calc(90vh-120px)] p-1">
