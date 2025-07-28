@@ -12,7 +12,6 @@ import { TechniqueModal } from "./TechniqueModal";
 import { Sidebar } from "./Sidebar";
 import { QuickReference } from "./QuickReference";
 import { AdminDashboard } from "./AdminDashboard";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
 import { sampleMarkdownTechniques, parseMultipleMarkdownTechniques, ParsedTechnique } from "@/lib/markdownParser";
 
@@ -106,7 +105,6 @@ export const Dashboard = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center gap-4 mb-4">
             <div className="flex items-center gap-3">
-              <SidebarTrigger className="p-1" />
               <div className="w-8 h-8 rounded-full bg-gradient-cyber flex items-center justify-center">
                 <Shield className="w-5 h-5 text-primary-foreground" />
               </div>
