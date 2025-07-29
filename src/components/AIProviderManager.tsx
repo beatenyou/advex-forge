@@ -358,7 +358,7 @@ const AIProviderManager = () => {
 
       toast({
         title: "Test Successful",
-        description: `Provider responded: ${data.response?.substring(0, 100)}...`,
+        description: `Provider responded: ${data.message?.substring(0, 100)}...`,
       });
     } catch (error) {
       console.error('Error testing provider:', error);
