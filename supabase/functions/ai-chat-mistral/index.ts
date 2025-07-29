@@ -35,39 +35,20 @@ serve(async (req) => {
 
     console.log('Sending request to Mistral with model:', model, agentId ? `using agent: ${agentId}` : '');
 
-    // If agent_id is provided, use the Agents API
+    // If agent_id is provided, use the Conversations API
     if (agentId) {
-      // Build conversation messages
-      let conversationMessages = [];
-      
-      // Add system prompt if provided
-      if (systemPrompt && systemPrompt !== 'You are a helpful AI assistant.') {
-        conversationMessages.push({
-          role: 'system',
-          content: systemPrompt
-        });
-      }
-
-      if (messages && Array.isArray(messages) && messages.length > 0) {
-        // Use conversation context
-        conversationMessages.push(...messages);
-      } else if (message) {
-        // Single message
-        conversationMessages.push({
-          role: 'user',
-          content: message
-        });
-      }
-
+      // For agents, we need to use the conversations API
       const requestBody = {
         agent_id: agentId,
-        messages: conversationMessages,
-        max_tokens: maxTokens,
-        temperature: temperature,
-        stream: false
+        entries: [
+          {
+            type: "user_message",
+            content: message || (messages && messages.length > 0 ? messages[messages.length - 1].content : '')
+          }
+        ]
       };
 
-      const response = await fetch('https://api.mistral.ai/v1/agents/completions', {
+      const response = await fetch('https://api.mistral.ai/v1/conversations', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${mistralApiKey}`,
@@ -78,12 +59,15 @@ serve(async (req) => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Mistral Agents API Error:', errorData);
-        throw new Error(errorData.error?.message || 'Failed to get response from Mistral Agent');
+        console.error('Mistral Conversations API Error:', errorData);
+        throw new Error(errorData.error?.message || `Failed to get response from Mistral Agent. Status: ${response.status}`);
       }
 
       const data = await response.json();
-      const aiResponse = data.choices[0].message.content;
+      
+      // Find the assistant's response in the entries
+      const assistantEntry = data.entries?.find((entry: any) => entry.type === 'assistant_message');
+      const aiResponse = assistantEntry?.content || 'No response from agent';
 
       console.log('Successfully received response from Mistral Agent');
 
@@ -92,6 +76,7 @@ serve(async (req) => {
         model,
         provider: 'mistral',
         tokensUsed: data.usage?.total_tokens || 0,
+        conversationId: data.id,
         agentId: agentId
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
