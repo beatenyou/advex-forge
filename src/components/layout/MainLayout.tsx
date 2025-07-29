@@ -56,25 +56,6 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   return (
     <div className="min-h-screen w-full bg-background">
       <ResizablePanelGroup direction="horizontal" className="min-h-screen h-screen">
-        {isChatVisible && (
-          <>
-            <ResizablePanel 
-              defaultSize={chatPanelConfig.default} 
-              minSize={chatPanelConfig.min} 
-              maxSize={chatPanelConfig.max}
-              className="bg-background h-full overflow-hidden"
-              style={{ contain: 'layout', isolation: 'isolate' }}
-            >
-              <ChatSidebar onClose={handleCloseChat} />
-            </ResizablePanel>
-            
-            <ResizableHandle 
-              withHandle 
-              className="bg-border hover:bg-primary/20 transition-colors duration-200 w-1 group"
-            />
-          </>
-        )}
-        
         <ResizablePanel 
           defaultSize={getMainPanelSize()} 
           minSize={isWideScreen ? 55 : 40} // Larger minimum on wide screens
@@ -93,6 +74,25 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
             </div>
           </div>
         </ResizablePanel>
+        
+        {isChatVisible && (
+          <>
+            <ResizableHandle 
+              withHandle 
+              className="bg-border hover:bg-primary/20 transition-colors duration-200 w-1 group"
+            />
+            
+            <ResizablePanel 
+              defaultSize={chatPanelConfig.default} 
+              minSize={chatPanelConfig.min} 
+              maxSize={chatPanelConfig.max}
+              className="bg-background h-full overflow-hidden"
+              style={{ contain: 'layout', isolation: 'isolate' }}
+            >
+              <ChatSidebar onClose={handleCloseChat} />
+            </ResizablePanel>
+          </>
+        )}
       </ResizablePanelGroup>
     </div>
   );
