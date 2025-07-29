@@ -42,6 +42,8 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
     setMessages([]);
     setCurrentSession(null);
     await loadOrCreateSession();
+    // Scroll to top after clearing messages
+    setTimeout(scrollToTop, 100);
   };
 
   useEffect(() => {
@@ -69,6 +71,15 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
       const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
       if (scrollElement) {
         scrollElement.scrollTop = scrollElement.scrollHeight;
+      }
+    }
+  };
+
+  const scrollToTop = () => {
+    if (scrollAreaRef.current) {
+      const scrollElement = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollElement) {
+        scrollElement.scrollTop = 0;
       }
     }
   };
@@ -145,6 +156,8 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
       setCurrentSession(newSession);
       setMessages([]);
       setQuestion('');
+      // Scroll to top after creating new session
+      setTimeout(scrollToTop, 100);
     } catch (error) {
       console.error('Error creating new session:', error);
       toast({
