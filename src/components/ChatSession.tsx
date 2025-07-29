@@ -461,7 +461,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
                         <div className="absolute inset-0 bg-red-500/30 rounded-lg animate-ping"></div>
                         <div className="absolute inset-0 bg-red-400/10 rounded-lg animate-pulse"></div>
                       </div>
-                      <span className="text-sm text-muted-foreground animate-pulse">AI Processing...</span>
+                      <span className="text-sm text-muted-foreground animate-pulse">Processing...</span>
                     </div>
                   </div>
                 </div>
