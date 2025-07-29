@@ -239,7 +239,7 @@ export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
                 <TabsTrigger value="links" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">Links</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="chat" className="mt-0 flex-1 overflow-hidden">
+              <TabsContent value="chat" className="mt-0 flex-1 flex flex-col overflow-hidden">
                 <ChatSession onClear={clearChatAndResetSession} />
               </TabsContent>
               <TabsContent value="links" className="mt-0 flex-1 overflow-y-auto">
@@ -281,7 +281,7 @@ export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
               </TabsContent>
             </Tabs>
           ) : (
-            <div className="h-full">
+            <div className="h-full flex flex-col">
               <ChatSession onClear={clearChatAndResetSession} />
             </div>
           )}
