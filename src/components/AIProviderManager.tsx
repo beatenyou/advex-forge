@@ -129,7 +129,16 @@ const AIProviderManager = () => {
       if (configResult.error) throw configResult.error;
 
       setProviders(providersResult.data as AIProvider[] || []);
-      setConfig(configResult.data);
+      
+      // Ensure config has all required fields with defaults
+      const configData = configResult.data;
+      setConfig({
+        ...configData,
+        primary_provider_id: configData.primary_provider_id ?? configData.default_provider_id ?? null,
+        secondary_provider_id: configData.secondary_provider_id ?? null,
+        failover_enabled: configData.failover_enabled ?? true,
+        request_timeout_seconds: configData.request_timeout_seconds ?? 30
+      });
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -534,7 +543,7 @@ const AIProviderManager = () => {
               <div className="space-y-2">
                 <Label htmlFor="primary-provider">Primary Provider</Label>
                 <Select 
-                  value={config.primary_provider_id || ''} 
+                  value={config.primary_provider_id || config.default_provider_id || ''} 
                   onValueChange={(value) => setConfig({ ...config, primary_provider_id: value || null })}
                 >
                   <SelectTrigger>
@@ -561,7 +570,7 @@ const AIProviderManager = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">No secondary provider</SelectItem>
-                    {providers.filter(p => p.is_active && p.id !== config.primary_provider_id).map((provider) => (
+                    {providers.filter(p => p.is_active && p.id !== (config.primary_provider_id || config.default_provider_id)).map((provider) => (
                       <SelectItem key={provider.id} value={provider.id}>
                         {provider.name} ({provider.type})
                       </SelectItem>
@@ -577,7 +586,7 @@ const AIProviderManager = () => {
                 <Input
                   id="request-timeout"
                   type="number"
-                  value={config.request_timeout_seconds || 30}
+                  value={config.request_timeout_seconds ?? 30}
                   onChange={(e) => setConfig({ ...config, request_timeout_seconds: parseInt(e.target.value) })}
                   min="10"
                   max="300"
@@ -586,7 +595,7 @@ const AIProviderManager = () => {
               <div className="flex items-center space-x-2 pt-6">
                 <Switch
                   id="failover-enabled"
-                  checked={config.failover_enabled !== false}
+                  checked={config.failover_enabled ?? true}
                   onCheckedChange={(checked) => setConfig({ ...config, failover_enabled: checked })}
                 />
                 <Label htmlFor="failover-enabled">Enable Failover</Label>
