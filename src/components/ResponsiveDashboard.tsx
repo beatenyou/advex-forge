@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Activity, 
   Users, 
@@ -23,32 +23,38 @@ interface ResponsiveDashboardProps {
 }
 
 export const ResponsiveDashboard = ({ isWideScreen }: ResponsiveDashboardProps) => {
-  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
   const [columns, setColumns] = useState(1);
 
   useEffect(() => {
-    const handleResize = () => {
-      const width = window.innerWidth;
-      setScreenWidth(width);
-      
-      // Dynamic column calculation based on screen width
-      if (width >= 1920) setColumns(4);      // Ultra-wide: 4 columns
-      else if (width >= 1400) setColumns(3); // Wide: 3 columns  
-      else if (width >= 1024) setColumns(2); // Medium: 2 columns
-      else setColumns(1);                    // Small: 1 column
+    const updateLayout = () => {
+      if (containerRef.current) {
+        const width = containerRef.current.offsetWidth;
+        setContainerWidth(width);
+        
+        // Calculate columns based on actual container width
+        // More conservative breakpoints to account for reduced space
+        if (width >= 1600) setColumns(4);      // Ultra-wide: 4 columns
+        else if (width >= 1200) setColumns(3); // Wide: 3 columns  
+        else if (width >= 800) setColumns(2);  // Medium: 2 columns
+        else setColumns(1);                    // Small: 1 column
+      }
     };
 
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    // Initial calculation
+    updateLayout();
 
-  const gridCols = {
-    1: 'grid-cols-1',
-    2: 'grid-cols-1 lg:grid-cols-2',
-    3: 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3',
-    4: 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4'
-  };
+    // Use ResizeObserver for more accurate container size monitoring
+    const resizeObserver = new ResizeObserver(updateLayout);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   // Mock data for demonstration
   const stats = {
@@ -72,13 +78,13 @@ export const ResponsiveDashboard = ({ isWideScreen }: ResponsiveDashboardProps) 
   ];
 
   return (
-    <div className="p-6 space-y-6">
+    <div ref={containerRef} className="p-6 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
-            Showing {columns} column{columns !== 1 ? 's' : ''} • Screen: {screenWidth}px
+            Showing {columns} column{columns !== 1 ? 's' : ''} • Container: {containerWidth}px
           </p>
         </div>
         <Button variant="outline" className="flex items-center gap-2">
@@ -88,7 +94,10 @@ export const ResponsiveDashboard = ({ isWideScreen }: ResponsiveDashboardProps) 
       </div>
 
       {/* Dynamic Grid Layout */}
-      <div className={`grid gap-6 ${gridCols[columns as keyof typeof gridCols]}`}>
+      <div 
+        className="grid gap-6"
+        style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
+      >
         
         {/* Core Widgets - Always Visible */}
         <DashboardWidget title="System Overview" icon={Activity}>
