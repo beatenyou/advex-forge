@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Settings, Upload, FileText, Globe, Plus, Edit, Trash2, Save } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ interface AdminDashboardProps {
 
 export const AdminDashboard = ({ techniques, onTechniquesUpdate, onClose }: AdminDashboardProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [markdownInput, setMarkdownInput] = useState("");
   const [selectedTechnique, setSelectedTechnique] = useState<ParsedTechnique | null>(null);
   const [editingTechnique, setEditingTechnique] = useState<ParsedTechnique | null>(null);
@@ -482,7 +484,7 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                     Click the button below to open the full analytics dashboard in a new tab.
                   </p>
                   <Button 
-                    onClick={() => window.open('/admin/stats', '_blank')}
+                    onClick={() => navigate('/admin/stats')}
                     className="flex items-center gap-2"
                   >
                     <FileText className="w-4 h-4" />
