@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, Copy, MessageSquare, Plus } from 'lucide-react';
+import { Loader2, Copy, MessageSquare, Plus, Square } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
@@ -37,6 +37,7 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Function to clear all messages and create new session
@@ -205,6 +206,16 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
     }
   };
 
+  const stopStreaming = () => {
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+    }
+    setIsStreaming(false);
+    setStreamingMessage('');
+    setIsLoading(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!question.trim() || isLoading || !currentSession) return;
@@ -214,6 +225,10 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
     setIsLoading(true);
     setStreamingMessage('');
     setIsStreaming(false);
+
+    // Create abort controller for cancellation
+    const controller = new AbortController();
+    setAbortController(controller);
 
     try {
       // Save user message
@@ -243,6 +258,11 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
 
       if (error) throw error;
 
+      // Check if request was aborted
+      if (controller.signal.aborted) {
+        throw new Error('Request was cancelled');
+      }
+
       // Simulate streaming effect
       const fullMessage = data.message;
       setStreamingMessage('');
@@ -252,6 +272,11 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
       let currentText = '';
       
       for (let i = 0; i < words.length; i++) {
+        // Check if streaming was cancelled
+        if (controller.signal.aborted) {
+          break;
+        }
+        
         currentText += (i > 0 ? ' ' : '') + words[i];
         setStreamingMessage(currentText);
         
@@ -262,38 +287,44 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
         scrollToBottom();
       }
 
-      // Streaming complete - save the full message
-      setIsStreaming(false);
-      setStreamingMessage('');
+      // Only save if not cancelled
+      if (!controller.signal.aborted) {
+        // Streaming complete - save the full message
+        setIsStreaming(false);
+        setStreamingMessage('');
 
-      // Save AI response
-      const aiMessage = await saveMessage(
-        currentSession.id, 
-        'assistant', 
-        data.message,
-        data.providerName,
-        data.tokensUsed
-      );
-      
-      setMessages(prev => [...prev, aiMessage as ChatMessage]);
+        // Save AI response
+        const aiMessage = await saveMessage(
+          currentSession.id, 
+          'assistant', 
+          data.message,
+          data.providerName,
+          data.tokensUsed
+        );
+        
+        setMessages(prev => [...prev, aiMessage as ChatMessage]);
 
-      // Update session timestamp
-      await supabase
-        .from('chat_sessions')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', currentSession.id);
+        // Update session timestamp
+        await supabase
+          .from('chat_sessions')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', currentSession.id);
+      }
 
     } catch (error) {
-      console.error('Error in chat:', error);
-      toast({
-        title: "Error",
-        description: "Failed to get AI response. Please try again.",
-        variant: "destructive",
-      });
+      if (error.message !== 'Request was cancelled') {
+        console.error('Error in chat:', error);
+        toast({
+          title: "Error",
+          description: "Failed to get AI response. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsLoading(false);
       setIsStreaming(false);
       setStreamingMessage('');
+      setAbortController(null);
     }
   };
 
@@ -435,13 +466,25 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
               className="flex-1"
               disabled={isLoading}
             />
-            <Button type="submit" disabled={isLoading || !question.trim()}>
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                'Send'
-              )}
-            </Button>
+            {isStreaming ? (
+              <Button 
+                type="button" 
+                variant="destructive" 
+                onClick={stopStreaming}
+                className="flex items-center gap-2"
+              >
+                <Square className="h-4 w-4" />
+                Stop
+              </Button>
+            ) : (
+              <Button type="submit" disabled={isLoading || !question.trim()}>
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  'Send'
+                )}
+              </Button>
+            )}
           </div>
         </form>
       </CardContent>
