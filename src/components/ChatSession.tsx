@@ -325,7 +325,7 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
                   <div
                     className={`max-w-[80%] rounded-lg p-3 ${
                       message.role === 'user'
-                        ? 'bg-primary text-primary-foreground ml-12'
+                        ? 'bg-red-900 text-red-50 ml-12'
                         : 'bg-muted mr-12'
                     }`}
                   >
