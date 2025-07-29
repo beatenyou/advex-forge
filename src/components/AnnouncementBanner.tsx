@@ -21,12 +21,19 @@ export default function AnnouncementBanner() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    console.log('🔔 AnnouncementBanner useEffect triggered, user:', user?.id);
     if (user) {
       checkAdminStatus();
-      fetchAnnouncements();
       loadDismissedBanners();
     }
   }, [user]);
+
+  // Separate effect to fetch announcements after isAdmin is determined
+  useEffect(() => {
+    if (user) {
+      fetchAnnouncements();
+    }
+  }, [user, isAdmin]);
 
   const checkAdminStatus = async () => {
     if (!user) return;
@@ -48,6 +55,8 @@ export default function AnnouncementBanner() {
     if (!user) return;
 
     try {
+      console.log('🔔 Fetching announcements for user:', user.id, 'isAdmin:', isAdmin);
+      
       // Fetch active announcements based on user role
       let query = supabase
         .from('announcements')
@@ -61,15 +70,19 @@ export default function AnnouncementBanner() {
       const { data, error } = await query;
 
       if (error) throw error;
+      
+      console.log('🔔 Raw announcements data:', data);
 
       // Filter announcements based on target audience and user role
       const filteredData = (data?.filter(announcement => {
-        if (announcement.target_audience === 'all') return true;
-        if (announcement.target_audience === 'admins' && isAdmin) return true;
-        if (announcement.target_audience === 'users' && !isAdmin) return true;
-        return false;
+        const shouldShow = announcement.target_audience === 'all' || 
+                          (announcement.target_audience === 'admins' && isAdmin) || 
+                          (announcement.target_audience === 'users' && !isAdmin);
+        console.log('🔔 Filtering announcement:', announcement.id, 'target_audience:', announcement.target_audience, 'isAdmin:', isAdmin, 'shouldShow:', shouldShow);
+        return shouldShow;
       }) || []) as Announcement[];
 
+      console.log('🔔 Filtered announcements:', filteredData);
       setAnnouncements(filteredData);
     } catch (error) {
       console.error('Error fetching announcements:', error);
@@ -78,9 +91,18 @@ export default function AnnouncementBanner() {
 
   const loadDismissedBanners = () => {
     const dismissed = localStorage.getItem('dismissedBanners');
-    if (dismissed) {
-      setDismissedBanners(new Set(JSON.parse(dismissed)));
-    }
+    console.log('🔔 Loading dismissed banners from localStorage:', dismissed);
+    
+    // Temporarily clear dismissed banners for debugging
+    console.log('🔔 Clearing dismissed banners for debugging');
+    localStorage.removeItem('dismissedBanners');
+    setDismissedBanners(new Set());
+    
+    // if (dismissed) {
+    //   const parsedDismissed = new Set<string>(JSON.parse(dismissed));
+    //   console.log('🔔 Parsed dismissed banners:', parsedDismissed);
+    //   setDismissedBanners(parsedDismissed);
+    // }
   };
 
   const saveDismissedBanners = (banners: Set<string>) => {
@@ -143,7 +165,16 @@ export default function AnnouncementBanner() {
     announcement => !dismissedBanners.has(announcement.id)
   );
 
+  console.log('🔔 Final render check:', {
+    announcements: announcements.length,
+    dismissedBanners: Array.from(dismissedBanners),
+    visibleAnnouncements: visibleAnnouncements.length,
+    user: user?.id,
+    isAdmin
+  });
+
   if (visibleAnnouncements.length === 0) {
+    console.log('🔔 No visible announcements, returning null');
     return null;
   }
 
