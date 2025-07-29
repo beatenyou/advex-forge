@@ -264,7 +264,7 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
 
         <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
           <Tabs defaultValue="guidance" className="p-6">
-        <TabsList className="grid w-full grid-cols-9">
+        <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="guidance">Guidance</TabsTrigger>
           <TabsTrigger value="upload">Upload Cards</TabsTrigger>
           <TabsTrigger value="manage">Manage Cards</TabsTrigger>
@@ -273,6 +273,7 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
           <TabsTrigger value="scenarios">Scenarios</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="ai-providers">AI Chat</TabsTrigger>
+          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="webscraper">LLM Webscraper</TabsTrigger>
         </TabsList>
 
@@ -463,6 +464,32 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
 
             <TabsContent value="ai-providers" className="space-y-6 mt-6 overflow-y-auto max-h-[calc(90vh-200px)]">
               <AIProviderManager />
+            </TabsContent>
+
+            <TabsContent value="analytics" className="space-y-6 mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    Analytics Dashboard
+                  </CardTitle>
+                  <CardDescription>
+                    Comprehensive user and system analytics
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4">
+                    Click the button below to open the full analytics dashboard in a new tab.
+                  </p>
+                  <Button 
+                    onClick={() => window.open('/admin/stats', '_blank')}
+                    className="flex items-center gap-2"
+                  >
+                    <FileText className="w-4 h-4" />
+                    Open Analytics Dashboard
+                  </Button>
+                </CardContent>
+              </Card>
             </TabsContent>
 
             <TabsContent value="webscraper" className="space-y-6 mt-6">
