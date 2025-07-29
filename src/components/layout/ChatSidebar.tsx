@@ -8,13 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { 
-  Tooltip, 
-  TooltipContent, 
-  TooltipProvider, 
-  TooltipTrigger 
-} from "@/components/ui/tooltip";
-
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 interface LinkTab {
   id: string;
   title: string;
@@ -25,15 +19,19 @@ interface LinkTab {
   order_index: number;
   is_active: boolean;
 }
-
 interface ChatSidebarProps {
   onClose?: () => void;
 }
-
-export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
+export const ChatSidebar = ({
+  onClose
+}: ChatSidebarProps) => {
   const [linkTabs, setLinkTabs] = useState<LinkTab[]>([]);
-  const { user } = useAuth();
-  const { toast } = useToast();
+  const {
+    user
+  } = useAuth();
+  const {
+    toast
+  } = useToast();
 
   // Function to clear chat that can be passed to ChatSession
   const clearChatAndResetSession = async () => {
@@ -42,71 +40,60 @@ export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
       await (window as any).__clearChatFunction();
     }
   };
-
   useEffect(() => {
     fetchLinkTabs();
   }, []);
-
   const fetchLinkTabs = async () => {
     try {
-      const { data, error } = await supabase
-        .from('ai_link_tabs')
-        .select('*')
-        .eq('is_active', true)
-        .order('order_index');
-
+      const {
+        data,
+        error
+      } = await supabase.from('ai_link_tabs').select('*').eq('is_active', true).order('order_index');
       if (error) throw error;
       setLinkTabs(data || []);
     } catch (error) {
       console.error('Error fetching link tabs:', error);
     }
   };
-
   const handleClearChats = async () => {
     if (!user) return;
-    
     try {
       // Delete all chat sessions for the current user
-      const { error } = await supabase
-        .from('chat_sessions')
-        .delete()
-        .eq('user_id', user.id);
-
+      const {
+        error
+      } = await supabase.from('chat_sessions').delete().eq('user_id', user.id);
       if (error) throw error;
-      
+
       // Clear the current chat interface immediately
       if ((window as any).__clearChatFunction) {
         await (window as any).__clearChatFunction();
       }
-      
       toast({
         title: "Chats cleared",
-        description: "All chat history has been cleared successfully.",
+        description: "All chat history has been cleared successfully."
       });
     } catch (error) {
       console.error('Error clearing chats:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to clear chat history.",
+        description: "Failed to clear chat history."
       });
     }
   };
-
   const handleDownloadChats = async () => {
     if (!user) return;
-    
     try {
       // Fetch all chat sessions and their messages
-      const { data: sessions, error: sessionsError } = await supabase
-        .from('chat_sessions')
-        .select(`
+      const {
+        data: sessions,
+        error: sessionsError
+      } = await supabase.from('chat_sessions').select(`
           *,
           chat_messages (*)
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
+        `).eq('user_id', user.id).order('created_at', {
+        ascending: false
+      });
       if (sessionsError) throw sessionsError;
 
       // Format the data for download
@@ -127,8 +114,8 @@ export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
       };
 
       // Create and download the file
-      const blob = new Blob([JSON.stringify(chatData, null, 2)], { 
-        type: 'application/json' 
+      const blob = new Blob([JSON.stringify(chatData, null, 2)], {
+        type: 'application/json'
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -138,31 +125,26 @@ export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-
       toast({
         title: "Download started",
-        description: "Your chat history is being downloaded.",
+        description: "Your chat history is being downloaded."
       });
     } catch (error) {
       console.error('Error downloading chats:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to download chat history.",
+        description: "Failed to download chat history."
       });
     }
   };
-
   const groupedTabs = linkTabs.reduce((acc, tab) => {
     if (!acc[tab.category]) acc[tab.category] = [];
     acc[tab.category].push(tab);
     return acc;
   }, {} as Record<string, LinkTab[]>);
-
   const hasLinkTabs = linkTabs.length > 0;
-
-  return (
-    <TooltipProvider>
+  return <TooltipProvider>
       <div className="h-full flex flex-col border-r border-border bg-background overflow-hidden">{/* Use h-full to respect parent constraints */}
         {/* Header */}
         <div className="p-4 border-b border-border bg-card/30 backdrop-blur-sm">
@@ -172,7 +154,7 @@ export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
                 <Bot className="w-4 h-4 text-primary" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-foreground text-sm">AI Assistant</h3>
+                <h3 className="font-semibold text-foreground text-sm">RT AI</h3>
                 <div className="flex items-center gap-2 mt-1">
                   <AIStatusIndicator size="sm" showLabel />
                 </div>
@@ -181,12 +163,7 @@ export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
             <div className="flex items-center gap-1">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleDownloadChats}
-                    className="h-7 w-7 p-0 hover:bg-primary/10"
-                  >
+                  <Button variant="ghost" size="sm" onClick={handleDownloadChats} className="h-7 w-7 p-0 hover:bg-primary/10">
                     <Download className="w-3.5 h-3.5" />
                   </Button>
                 </TooltipTrigger>
@@ -196,12 +173,7 @@ export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost" 
-                    size="sm"
-                    onClick={handleClearChats}
-                    className="h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive"
-                  >
+                  <Button variant="ghost" size="sm" onClick={handleClearChats} className="h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive">
                     <Trash2 className="w-3.5 h-3.5" />
                   </Button>
                 </TooltipTrigger>
@@ -209,31 +181,23 @@ export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
                   <p>Clear all chats</p>
                 </TooltipContent>
               </Tooltip>
-              {onClose && (
-                <Tooltip>
+              {onClose && <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={onClose}
-                      className="h-7 w-7 p-0 hover:bg-muted/50"
-                    >
+                    <Button variant="ghost" size="sm" onClick={onClose} className="h-7 w-7 p-0 hover:bg-muted/50">
                       <X className="w-3.5 h-3.5" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Close chat panel</p>
                   </TooltipContent>
-                </Tooltip>
-              )}
+                </Tooltip>}
             </div>
           </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 p-4 bg-background overflow-hidden min-h-0">{/* Added min-h-0 */}
-          {hasLinkTabs ? (
-            <Tabs defaultValue="chat" className="w-full h-full flex flex-col min-h-0">{/* Added min-h-0 */}
+          {hasLinkTabs ? <Tabs defaultValue="chat" className="w-full h-full flex flex-col min-h-0">{/* Added min-h-0 */}
               <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted/50">
                 <TabsTrigger value="chat" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">Chat</TabsTrigger>
                 <TabsTrigger value="links" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">Links</TabsTrigger>
@@ -244,49 +208,33 @@ export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
               </TabsContent>
               <TabsContent value="links" className="mt-0 flex-1 overflow-y-auto">
                 <div className="space-y-3">
-                  {Object.entries(groupedTabs).map(([category, tabs]) => (
-                    <div key={category}>
+                  {Object.entries(groupedTabs).map(([category, tabs]) => <div key={category}>
                       <h4 className="text-xs font-medium text-primary mb-2 uppercase tracking-wide">
                         {category}
                       </h4>
                       <div className="space-y-2">
-                        {tabs.map((tab) => (
-                          <a
-                            key={tab.id}
-                            href={tab.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-start gap-3 p-3 bg-card/60 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/10 transition-all duration-300 group hover:shadow-glow animate-fade-in"
-                          >
+                        {tabs.map(tab => <a key={tab.id} href={tab.url} target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 p-3 bg-card/60 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/10 transition-all duration-300 group hover:shadow-glow animate-fade-in">
                             <ExternalLink className="w-4 h-4 text-primary mt-1 flex-shrink-0 group-hover:scale-110 transition-transform" />
                             <div className="flex-1 min-w-0">
                               <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors block truncate">
                                 {tab.title}
                               </span>
-                              {tab.description && (
-                                <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                              {tab.description && <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
                                   {tab.description}
-                                </p>
-                              )}
+                                </p>}
                               <Badge variant="secondary" className="text-xs mt-2 bg-primary/10 text-primary border-primary/20">
                                 {tab.category}
                               </Badge>
                             </div>
-                          </a>
-                        ))}
+                          </a>)}
                       </div>
-                    </div>
-                  ))}
+                    </div>)}
                 </div>
               </TabsContent>
-            </Tabs>
-          ) : (
-            <div className="h-full flex flex-col min-h-0">{/* Added min-h-0 */}
+            </Tabs> : <div className="h-full flex flex-col min-h-0">{/* Added min-h-0 */}
               <ChatSession onClear={clearChatAndResetSession} />
-            </div>
-          )}
+            </div>}
         </div>
       </div>
-    </TooltipProvider>
-  );
+    </TooltipProvider>;
 };
