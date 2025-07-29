@@ -163,7 +163,7 @@ export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
 
   return (
     <TooltipProvider>
-      <div className="h-full flex flex-col border-r border-border bg-background">
+      <div className="h-screen flex flex-col border-r border-border bg-background">{/* Changed from h-full to h-screen */}
         {/* Header */}
         <div className="p-4 border-b border-border bg-card/30 backdrop-blur-sm">
           <div className="flex items-center justify-between">
@@ -231,15 +231,15 @@ export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-4 bg-background overflow-hidden">
+        <div className="flex-1 p-4 bg-background overflow-hidden min-h-0">{/* Added min-h-0 */}
           {hasLinkTabs ? (
-            <Tabs defaultValue="chat" className="w-full h-full flex flex-col">
+            <Tabs defaultValue="chat" className="w-full h-full flex flex-col min-h-0">{/* Added min-h-0 */}
               <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted/50">
                 <TabsTrigger value="chat" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">Chat</TabsTrigger>
                 <TabsTrigger value="links" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">Links</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="chat" className="mt-0 flex-1 flex flex-col overflow-hidden">
+              <TabsContent value="chat" className="mt-0 flex-1 flex flex-col overflow-hidden min-h-0">{/* Added min-h-0 */}
                 <ChatSession onClear={clearChatAndResetSession} />
               </TabsContent>
               <TabsContent value="links" className="mt-0 flex-1 overflow-y-auto">
@@ -281,7 +281,7 @@ export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
               </TabsContent>
             </Tabs>
           ) : (
-            <div className="h-full flex flex-col">
+            <div className="h-full flex flex-col min-h-0">{/* Added min-h-0 */}
               <ChatSession onClear={clearChatAndResetSession} />
             </div>
           )}
