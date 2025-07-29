@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, UserPlus, Shield, User } from 'lucide-react';
+import { Trash2, UserPlus, Shield, User, Gift, Zap } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface Profile {
@@ -22,18 +23,31 @@ interface Profile {
   updated_at: string;
 }
 
+interface UserBilling {
+  ai_usage_current: number;
+  ai_quota_limit: number;
+  subscription_status: string;
+}
+
 export function UserManager() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [userBilling, setUserBilling] = useState<Record<string, UserBilling>>({});
   const [loading, setLoading] = useState(true);
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
   const [newUserRole, setNewUserRole] = useState<'user' | 'admin'>('user');
   const [isAddingUser, setIsAddingUser] = useState(false);
+  const [grantDialogOpen, setGrantDialogOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [selectedUserEmail, setSelectedUserEmail] = useState<string>('');
+  const [interactionsToGrant, setInteractionsToGrant] = useState<string>('100');
+  const [isGranting, setIsGranting] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
   useEffect(() => {
     fetchProfiles();
+    fetchUserBilling();
   }, []);
 
   const fetchProfiles = async () => {
@@ -54,6 +68,28 @@ export function UserManager() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchUserBilling = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('user_billing')
+        .select('user_id, ai_usage_current, ai_quota_limit, subscription_status');
+
+      if (error) throw error;
+      
+      const billingMap: Record<string, UserBilling> = {};
+      data?.forEach(billing => {
+        billingMap[billing.user_id] = {
+          ai_usage_current: billing.ai_usage_current,
+          ai_quota_limit: billing.ai_quota_limit,
+          subscription_status: billing.subscription_status
+        };
+      });
+      setUserBilling(billingMap);
+    } catch (error) {
+      console.error('Error fetching user billing:', error);
     }
   };
 
@@ -172,6 +208,44 @@ export function UserManager() {
     }
   };
 
+  const openGrantDialog = (userId: string, email: string) => {
+    setSelectedUserId(userId);
+    setSelectedUserEmail(email);
+    setGrantDialogOpen(true);
+  };
+
+  const handleGrantInteractions = async () => {
+    if (!selectedUserId || !user) return;
+
+    setIsGranting(true);
+    try {
+      const { data, error } = await supabase.rpc('admin_add_ai_interactions', {
+        target_user_id: selectedUserId,
+        additional_interactions: parseInt(interactionsToGrant),
+        admin_user_id: user.id
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Granted ${interactionsToGrant} AI interactions to ${selectedUserEmail}`,
+      });
+
+      setGrantDialogOpen(false);
+      fetchUserBilling(); // Refresh billing data
+    } catch (error: any) {
+      console.error('Error granting interactions:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to grant AI interactions",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGranting(false);
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -261,6 +335,7 @@ export function UserManager() {
                 <TableHead>User</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>AI Usage</TableHead>
                 <TableHead>Created</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -294,37 +369,62 @@ export function UserManager() {
                       </SelectContent>
                     </Select>
                   </TableCell>
+                  <TableCell>
+                    {userBilling[profile.user_id] ? (
+                      <div className="text-sm">
+                        <div className="font-medium">
+                          {userBilling[profile.user_id].ai_usage_current} / {userBilling[profile.user_id].ai_quota_limit}
+                        </div>
+                        <Badge variant="secondary" className="text-xs">
+                          {userBilling[profile.user_id].subscription_status}
+                        </Badge>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">No data</span>
+                    )}
+                  </TableCell>
                   <TableCell>{formatDate(profile.created_at)}</TableCell>
                   <TableCell>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={profile.user_id === user?.id}
-                          className="text-destructive hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete User</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete {profile.email}? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDeleteUser(profile.user_id, profile.email)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    <div className="flex gap-2">{/* Grant AI Interactions Button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openGrantDialog(profile.user_id, profile.email)}
+                        className="text-green-600 hover:text-green-700"
+                      >
+                        <Gift className="h-4 w-4" />
+                      </Button>
+                      {/* Delete Button */}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={profile.user_id === user?.id}
+                            className="text-destructive hover:text-destructive"
                           >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete User</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete {profile.email}? This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteUser(profile.user_id, profile.email)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -332,6 +432,46 @@ export function UserManager() {
           </Table>
         </CardContent>
       </Card>
+
+      {/* Grant AI Interactions Dialog */}
+      <Dialog open={grantDialogOpen} onOpenChange={setGrantDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="w-5 h-5" />
+              Grant AI Interactions
+            </DialogTitle>
+            <DialogDescription>
+              Add additional AI interactions to {selectedUserEmail}'s account
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="interactions">Number of interactions to grant</Label>
+              <Select value={interactionsToGrant} onValueChange={setInteractionsToGrant}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select amount" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="100">100 interactions</SelectItem>
+                  <SelectItem value="200">200 interactions</SelectItem>
+                  <SelectItem value="300">300 interactions</SelectItem>
+                  <SelectItem value="500">500 interactions</SelectItem>
+                  <SelectItem value="1000">1000 interactions</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setGrantDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleGrantInteractions} disabled={isGranting}>
+                {isGranting ? 'Granting...' : 'Grant Interactions'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

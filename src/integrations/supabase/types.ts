@@ -932,6 +932,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_add_ai_interactions: {
+        Args: {
+          target_user_id: string
+          additional_interactions: number
+          admin_user_id: string
+        }
+        Returns: boolean
+      }
       calculate_daily_stats: {
         Args: { target_date?: string }
         Returns: undefined
