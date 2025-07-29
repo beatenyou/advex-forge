@@ -367,135 +367,136 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
 
       <Separator />
 
-      <CardContent className="flex flex-col p-0 h-full">
-        <ScrollArea 
-          ref={scrollAreaRef} 
-          className="flex-1 p-4"
-        >
-          {messages.length === 0 ? (
-            <div className="text-center text-muted-foreground py-8">
-              <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Start a conversation by asking a question below</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-lg p-3 ${
-                      message.role === 'user'
-                        ? 'bg-red-950 text-red-100 ml-12'
-                        : 'bg-muted mr-12'
-                    }`}
-                  >
-                    {message.role === 'assistant' ? (
-                      <div className="space-y-2">
-                        <MarkdownRenderer content={message.content} />
-                        <div className="flex items-center justify-between pt-2 border-t border-border/50">
-                          <span className="text-xs text-muted-foreground">
-                            {message.provider_name && `${message.provider_name} • `}
-                            {new Date(message.created_at).toLocaleTimeString()}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyMessage(message.content)}
-                            className="h-6 w-6 p-0"
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <p className="text-sm">{message.content}</p>
-                        <div className="text-xs opacity-70">
-                          {new Date(message.created_at).toLocaleTimeString()}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {isStreaming && streamingMessage && (
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-lg p-3 mr-12">
-                    <div className="space-y-2">
-                      <MarkdownRenderer content={streamingMessage} />
-                      <div className="flex items-center gap-2 pt-2 border-t border-border/50">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        <span className="text-xs text-muted-foreground">Streaming...</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {isLoading && !isStreaming && (
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-lg p-3 mr-12">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm">AI is thinking...</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </ScrollArea>
-
-        {/* Input section - positioned at bottom with proper spacing */}
-        <div className="border-t border-border bg-background/95 backdrop-blur-sm">
-
-        <form onSubmit={handleSubmit} className="p-3">
-          <div className="flex gap-2 items-end">
-            <div className="flex-1">
-              <TextareaAutosize
-                placeholder="Type your message..."
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey && !isLoading && question.trim()) {
-                    e.preventDefault();
-                    handleSubmit(e as any);
-                  }
-                }}
-                className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={isLoading}
-                minRows={1}
-                maxRows={6}
-              />
-            </div>
-            {isStreaming ? (
-              <Button 
-                type="button" 
-                variant="destructive" 
-                size="sm"
-                onClick={stopStreaming}
-                className="flex items-center gap-2 px-3 py-2 shrink-0"
-              >
-                <Square className="h-4 w-4" />
-                Stop
-              </Button>
+      <CardContent className="flex flex-col p-0 h-full max-h-full overflow-hidden">
+        <div className="flex-1 overflow-hidden">
+          <ScrollArea 
+            ref={scrollAreaRef} 
+            className="h-full p-4"
+          >
+            {messages.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">
+                <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Start a conversation by asking a question below</p>
+              </div>
             ) : (
-              <Button 
-                type="submit" 
-                disabled={isLoading || !question.trim()}
-                size="sm"
-                className="px-4 py-2 shrink-0"
-              >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Send'
+              <div className="space-y-4">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[80%] rounded-lg p-3 ${
+                        message.role === 'user'
+                          ? 'bg-red-950 text-red-100 ml-12'
+                          : 'bg-muted mr-12'
+                      }`}
+                    >
+                      {message.role === 'assistant' ? (
+                        <div className="space-y-2">
+                          <MarkdownRenderer content={message.content} />
+                          <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                            <span className="text-xs text-muted-foreground">
+                              {message.provider_name && `${message.provider_name} • `}
+                              {new Date(message.created_at).toLocaleTimeString()}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyMessage(message.content)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <p className="text-sm">{message.content}</p>
+                          <div className="text-xs opacity-70">
+                            {new Date(message.created_at).toLocaleTimeString()}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {isStreaming && streamingMessage && (
+                  <div className="flex justify-start">
+                    <div className="bg-muted rounded-lg p-3 mr-12">
+                      <div className="space-y-2">
+                        <MarkdownRenderer content={streamingMessage} />
+                        <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <span className="text-xs text-muted-foreground">Streaming...</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 )}
-              </Button>
+                {isLoading && !isStreaming && (
+                  <div className="flex justify-start">
+                    <div className="bg-muted rounded-lg p-3 mr-12">
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span className="text-sm">AI is thinking...</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
-          </div>
-        </form>
+          </ScrollArea>
+        </div>
+
+        {/* Input section - directly under messages */}
+        <div className="border-t border-border bg-background/95 backdrop-blur-sm shrink-0">
+          <form onSubmit={handleSubmit} className="p-3">
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <TextareaAutosize
+                  placeholder="Type your message..."
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey && !isLoading && question.trim()) {
+                      e.preventDefault();
+                      handleSubmit(e as any);
+                    }
+                  }}
+                  className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={isLoading}
+                  minRows={1}
+                  maxRows={6}
+                />
+              </div>
+              {isStreaming ? (
+                <Button 
+                  type="button" 
+                  variant="destructive" 
+                  size="sm"
+                  onClick={stopStreaming}
+                  className="flex items-center gap-2 px-3 py-2 shrink-0"
+                >
+                  <Square className="h-4 w-4" />
+                  Stop
+                </Button>
+              ) : (
+                <Button 
+                  type="submit" 
+                  disabled={isLoading || !question.trim()}
+                  size="sm"
+                  className="px-4 py-2 shrink-0"
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Send'
+                  )}
+                </Button>
+              )}
+            </div>
+          </form>
         </div>
       </CardContent>
     </Card>
