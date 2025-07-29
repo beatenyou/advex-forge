@@ -268,19 +268,79 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
 
         <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
           <Tabs defaultValue="guidance" className="p-6">
-        <TabsList className="grid w-full grid-cols-12">
-          <TabsTrigger value="guidance">Guidance</TabsTrigger>
-          <TabsTrigger value="upload">Upload Cards</TabsTrigger>
-          <TabsTrigger value="manage">Manage Cards</TabsTrigger>
-          <TabsTrigger value="cheatsheets">Cheat Sheets</TabsTrigger>
-          <TabsTrigger value="linktabs">Link Tabs</TabsTrigger>
-          <TabsTrigger value="scenarios">Scenarios</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="ai-providers">AI Chat</TabsTrigger>
-          <TabsTrigger value="announcements">Announcements</TabsTrigger>
-          <TabsTrigger value="faq">FAQ</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="webscraper">LLM Webscraper</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-6 lg:grid-cols-12 gap-1 p-2 h-auto">
+          <TabsTrigger 
+            value="guidance" 
+            className="bg-primary/10 hover:bg-primary/20 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2"
+          >
+            Guidance
+          </TabsTrigger>
+          <TabsTrigger 
+            value="upload" 
+            className="bg-secondary/10 hover:bg-secondary/20 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-xs px-2 py-2"
+          >
+            Upload Cards
+          </TabsTrigger>
+          <TabsTrigger 
+            value="manage" 
+            className="bg-primary/10 hover:bg-primary/20 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2"
+          >
+            Manage Cards
+          </TabsTrigger>
+          <TabsTrigger 
+            value="cheatsheets" 
+            className="bg-secondary/10 hover:bg-secondary/20 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-xs px-2 py-2"
+          >
+            Cheat Sheets
+          </TabsTrigger>
+          <TabsTrigger 
+            value="linktabs" 
+            className="bg-primary/10 hover:bg-primary/20 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2"
+          >
+            Link Tabs
+          </TabsTrigger>
+          <TabsTrigger 
+            value="scenarios" 
+            className="bg-secondary/10 hover:bg-secondary/20 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-xs px-2 py-2"
+          >
+            Scenarios
+          </TabsTrigger>
+          <TabsTrigger 
+            value="users" 
+            className="bg-primary/10 hover:bg-primary/20 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2"
+          >
+            Users
+          </TabsTrigger>
+          <TabsTrigger 
+            value="ai-providers" 
+            className="bg-secondary/10 hover:bg-secondary/20 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-xs px-2 py-2"
+          >
+            AI Chat
+          </TabsTrigger>
+          <TabsTrigger 
+            value="announcements" 
+            className="bg-primary/10 hover:bg-primary/20 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2"
+          >
+            Announcements
+          </TabsTrigger>
+          <TabsTrigger 
+            value="faq" 
+            className="bg-secondary/10 hover:bg-secondary/20 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-xs px-2 py-2"
+          >
+            FAQ
+          </TabsTrigger>
+          <TabsTrigger 
+            value="analytics" 
+            className="bg-primary/10 hover:bg-primary/20 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2"
+          >
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger 
+            value="webscraper" 
+            className="bg-secondary/10 hover:bg-secondary/20 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-xs px-2 py-2"
+          >
+            LLM Webscraper
+          </TabsTrigger>
         </TabsList>
 
             <TabsContent value="guidance" className="space-y-6 mt-6">
