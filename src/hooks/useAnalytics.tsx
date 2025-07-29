@@ -38,11 +38,15 @@ export function useAnalytics() {
       
       // Track initial page view
       trackPageView();
-      
-      // Create user session record
-      createUserSession();
     }
   }, []);
+
+  // Create user session when user is authenticated
+  useEffect(() => {
+    if (user && sessionId.current && !sessionStart.current) {
+      createUserSession();
+    }
+  }, [user]);
 
   // Track activity and update session
   useEffect(() => {
@@ -130,14 +134,14 @@ export function useAnalytics() {
   };
 
   const createUserSession = async () => {
-    if (!sessionId.current || !sessionStart.current) return;
+    if (!sessionId.current || !sessionStart.current || !user) return;
 
     try {
       const analyticsData = getAnalyticsData();
       
       await supabase.from('user_sessions').insert({
         id: sessionId.current,
-        user_id: user?.id,
+        user_id: user.id,
         session_start: sessionStart.current.toISOString(),
         pages_visited: pageCount.current,
         referrer: analyticsData.referrer,
