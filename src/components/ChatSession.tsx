@@ -7,6 +7,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { AIStatusIndicator } from '@/components/AIStatusIndicator';
 import TextareaAutosize from 'react-textarea-autosize';
+import { useAuth } from '@/hooks/useAuth';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface ChatMessage {
   id: string;
@@ -30,6 +32,8 @@ interface ChatSessionProps {
 }
 
 export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
+  const { user } = useAuth();
+  const { trackActivity, trackPerformance } = useAnalytics();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [question, setQuestion] = useState('');
@@ -229,11 +233,15 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
     if (!question.trim() || isLoading || isSending || !currentSession) return;
 
     const userQuestion = question.trim();
+    const startTime = performance.now();
     setQuestion('');
     setIsSending(true);
     setStreamingMessage('');
     setIsStreaming(false);
     setCurrentProvider('');
+
+    // Track chat activity
+    await trackActivity('chat_message_sent', `Sent message: ${userQuestion.substring(0, 50)}...`);
 
     // Create abort controller for cancellation
     const controller = new AbortController();
@@ -271,6 +279,29 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       });
 
       if (error) throw error;
+
+      // Track AI interaction metrics
+      const endTime = performance.now();
+      const responseTime = endTime - startTime;
+      await trackPerformance('ai_response_time', responseTime, 'milliseconds', 'ai_chat');
+
+      // Log AI interaction for analytics
+      if (user) {
+        try {
+          await supabase.from('ai_interactions').insert({
+            user_id: user.id,
+            session_id: currentSession.id,
+            request_type: 'chat',
+            provider_name: data.providerName || 'unknown',
+            success: true,
+            response_time_ms: Math.round(responseTime),
+            tokens_used: data.tokensUsed || 0,
+            request_size: userQuestion.length,
+          });
+        } catch (logError) {
+          console.error('Error logging AI interaction:', logError);
+        }
+      }
 
       // Clear timeout and stop button since we got a response
       if (requestTimeout) {
@@ -334,6 +365,9 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
         
         setMessages(prev => [...prev, aiMessage as ChatMessage]);
 
+        // Track successful AI response
+        await trackActivity('ai_response_received', `Received response from ${data.providerName || 'unknown'}`);
+
         // Update session timestamp
         await supabase
           .from('chat_sessions')
@@ -342,6 +376,29 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       }
 
     } catch (error) {
+      // Track failed AI interaction
+      const endTime = performance.now();
+      const responseTime = endTime - startTime;
+      
+      if (user) {
+        try {
+          await supabase.from('ai_interactions').insert({
+            user_id: user.id,
+            session_id: currentSession.id,
+            request_type: 'chat',
+            provider_name: 'unknown',
+            success: false,
+            error_type: error.name || 'Unknown Error',
+            response_time_ms: Math.round(responseTime),
+            request_size: userQuestion.length,
+          });
+        } catch (logError) {
+          console.error('Error logging failed AI interaction:', logError);
+        }
+      }
+
+      await trackActivity('ai_response_error', `AI response failed: ${error.message}`);
+
       // Clear timeout and stop button on error
       if (requestTimeout) {
         clearTimeout(requestTimeout);
