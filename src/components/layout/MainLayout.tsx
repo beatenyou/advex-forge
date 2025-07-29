@@ -5,6 +5,7 @@ import {
   ResizableHandle 
 } from "@/components/ui/resizable";
 import { ChatSidebar } from "./ChatSidebar";
+import AnnouncementBanner from "@/components/AnnouncementBanner";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -80,11 +81,16 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
           className="bg-background"
         >
           <div className="flex-1 flex flex-col min-w-0 h-full">
-            {React.cloneElement(children as React.ReactElement, { 
-              onOpenChat: handleOpenChat, 
-              isChatVisible: isChatVisible,
-              isWideScreen: isWideScreen 
-            })}
+            <div className="flex-shrink-0">
+              <AnnouncementBanner />
+            </div>
+            <div className="flex-1 min-h-0">
+              {React.cloneElement(children as React.ReactElement, { 
+                onOpenChat: handleOpenChat, 
+                isChatVisible: isChatVisible,
+                isWideScreen: isWideScreen 
+              })}
+            </div>
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
