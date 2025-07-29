@@ -721,16 +721,16 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
                             <CommandItem
                               key={prompt.id}
                               onSelect={() => selectPrompt(prompt)}
-                              className="cursor-pointer"
+                              className="cursor-pointer hover:bg-muted/50 data-[selected=true]:bg-muted"
                             >
                               <div className="flex flex-col gap-1 w-full">
                                 <div className="flex items-center justify-between">
-                                  <span className="font-medium">{prompt.title}</span>
+                                  <span className="font-medium text-foreground">{prompt.title}</span>
                                   <div className="flex items-center gap-1">
                                     {prompt.is_favorite && (
                                       <div className="w-2 h-2 bg-yellow-500 rounded-full" />
                                     )}
-                                    <span className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                                    <span className="text-xs bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
                                       {prompt.category}
                                     </span>
                                   </div>
