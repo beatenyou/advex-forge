@@ -19,10 +19,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      async (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Track authentication events
+        if (session?.user && event === 'SIGNED_IN') {
+          try {
+            await supabase.from('user_activity_log').insert({
+              user_id: session.user.id,
+              activity_type: 'sign_in',
+              description: 'User signed in',
+              user_agent: navigator.userAgent,
+            });
+          } catch (error) {
+            console.error('Error logging sign in activity:', error);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          try {
+            // Use the previous user ID if available
+            const userId = user?.id;
+            if (userId) {
+              await supabase.from('user_activity_log').insert({
+                user_id: userId,
+                activity_type: 'sign_out',
+                description: 'User signed out',
+                user_agent: navigator.userAgent,
+              });
+            }
+          } catch (error) {
+            console.error('Error logging sign out activity:', error);
+          }
+        }
       }
     );
 
@@ -34,9 +63,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [user?.id]);
 
   const signOut = async () => {
+    // Log the sign out activity before signing out
+    if (user) {
+      try {
+        await supabase.from('user_activity_log').insert({
+          user_id: user.id,
+          activity_type: 'sign_out_initiated',
+          description: 'User initiated sign out',
+          user_agent: navigator.userAgent,
+        });
+      } catch (error) {
+        console.error('Error logging sign out activity:', error);
+      }
+    }
     await supabase.auth.signOut();
   };
 
