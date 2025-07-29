@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Search, Shield, Users, Settings, Star, Hash, Filter, LogOut, UserCog, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,6 +35,7 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true,
   const {
     toast
   } = useToast();
+  const navigate = useNavigate();
   const [techniques, setTechniques] = useState<ParsedTechnique[]>(initialTechniques);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPhase, setSelectedPhase] = useState("All Phases");
@@ -138,7 +140,7 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true,
                 <Users className="w-4 h-4 mr-2" />
                 {user?.email?.split('@')[0] || 'User'}
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => navigate('/preferences')}>
                 <Settings className="w-4 h-4" />
               </Button>
               <Button 

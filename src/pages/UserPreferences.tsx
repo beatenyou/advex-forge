@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
-import { User, Shield, Bell, CreditCard, Brain, Lock, HelpCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { User, Shield, Bell, CreditCard, Brain, Lock, HelpCircle, ArrowLeft } from 'lucide-react';
 import ProfilePreferences from '@/components/preferences/ProfilePreferences';
 import SecurityPreferences from '@/components/preferences/SecurityPreferences';
 import NotificationPreferences from '@/components/preferences/NotificationPreferences';
@@ -14,6 +15,7 @@ import SupportPreferences from '@/components/preferences/SupportPreferences';
 
 export default function UserPreferences() {
   const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('profile');
 
   if (loading) {
@@ -43,6 +45,12 @@ export default function UserPreferences() {
       <div className="container mx-auto py-8 px-4">
         <div className="max-w-6xl mx-auto">
           <div className="mb-8">
+            <div className="flex items-center gap-4 mb-4">
+              <Button variant="outline" onClick={() => navigate('/')} className="flex items-center gap-2">
+                <ArrowLeft className="w-4 h-4" />
+                Back to Dashboard
+              </Button>
+            </div>
             <h1 className="text-3xl font-bold text-foreground mb-2">User Preferences</h1>
             <p className="text-muted-foreground">Manage your account settings and preferences</p>
           </div>
