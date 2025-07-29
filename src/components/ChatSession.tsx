@@ -367,8 +367,8 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       // Get conversation context (last 20 messages)
       const conversationContext = messages.slice(-19).concat([userMessage as ChatMessage]);
 
-      // Start streaming
       // Call AI with conversation context (keep loading state during API call)
+      console.log('🤖 Making AI chat router call for user:', user?.id, 'session:', currentSession.id);
       const { data, error } = await supabase.functions.invoke('ai-chat-router', {
         body: {
           message: userQuestion,
@@ -376,6 +376,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
           sessionId: currentSession.id
         }
       });
+      console.log('🤖 AI chat router response received:', { data, error });
 
       // Handle quota exceeded error specifically
       if (error && error.message?.includes('quota exceeded')) {

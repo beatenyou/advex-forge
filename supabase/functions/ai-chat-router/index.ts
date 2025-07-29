@@ -65,7 +65,7 @@ serve(async (req) => {
       throw new Error('Message or messages array is required');
     }
 
-    console.log('AI Chat Router - Processing request');
+    console.log('🚀 AI Chat Router - Processing request for user:', userId, 'at', new Date().toISOString());
 
     // Get AI configuration
     const { data: config, error: configError } = await supabase
@@ -217,11 +217,12 @@ serve(async (req) => {
 
     const result = providerResponse.data;
 
-    // Increment AI usage count after successful response
+    console.log('💳 Incrementing AI usage for user:', userId);
     try {
       const { data: incrementResult, error: incrementError } = await supabase.rpc('increment_ai_usage', {
         user_id_param: userId
       });
+      console.log('💳 Increment result:', { incrementResult, incrementError });
       
       if (incrementError) {
         console.error('Failed to increment AI usage:', incrementError);
