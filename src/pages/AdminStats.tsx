@@ -59,18 +59,33 @@ const AdminStats = () => {
 
   useEffect(() => {
     const checkAdminStatus = async () => {
-      if (!user) return;
+      console.log('AdminStats: Starting admin check, user:', user);
+      if (!user) {
+        console.log('AdminStats: No user found');
+        return;
+      }
       
       try {
-        const { data: profile } = await supabase
+        console.log('AdminStats: Checking admin status for user ID:', user.id);
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('role')
           .eq('user_id', user.id)
           .single();
         
-        setIsAdmin(profile?.role === 'admin');
+        console.log('AdminStats: Profile query result:', { profile, error });
+        
+        if (error) {
+          console.error('AdminStats: Error fetching profile:', error);
+          setIsAdmin(false);
+          return;
+        }
+        
+        const isUserAdmin = profile?.role === 'admin';
+        console.log('AdminStats: User role:', profile?.role, 'Is admin:', isUserAdmin);
+        setIsAdmin(isUserAdmin);
       } catch (error) {
-        console.error('Error checking admin status:', error);
+        console.error('AdminStats: Error checking admin status:', error);
         setIsAdmin(false);
       }
     };
@@ -79,12 +94,15 @@ const AdminStats = () => {
   }, [user]);
 
   useEffect(() => {
+    console.log('AdminStats: fetchStatistics useEffect triggered, isAdmin:', isAdmin, 'selectedDateRange:', selectedDateRange);
     if (isAdmin) {
+      console.log('AdminStats: Calling fetchStatistics');
       fetchStatistics();
     }
   }, [isAdmin, selectedDateRange]);
 
   const fetchStatistics = async () => {
+    console.log('AdminStats: fetchStatistics called');
     try {
       setLoading(true);
       
