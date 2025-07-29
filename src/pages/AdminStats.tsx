@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -56,6 +56,10 @@ const AdminStats = () => {
 
   // Check if user is admin
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  
+  // Circuit breaker refs to prevent infinite loops
+  const fetchingRef = useRef(false);
+  const initLoadRef = useRef(false);
 
   useEffect(() => {
     const checkAdminStatus = async () => {
@@ -94,7 +98,16 @@ const AdminStats = () => {
   }, [user]);
 
   const fetchStatistics = useCallback(async () => {
-    console.log('AdminStats: fetchStatistics called');
+    console.log('AdminStats: fetchStatistics called, fetchingRef.current:', fetchingRef.current);
+    
+    // Circuit breaker: prevent multiple simultaneous calls
+    if (fetchingRef.current) {
+      console.log('AdminStats: Already fetching, skipping...');
+      return;
+    }
+    
+    fetchingRef.current = true;
+    
     try {
       setLoading(true);
       
@@ -103,6 +116,8 @@ const AdminStats = () => {
       const startDate = new Date();
       const days = selectedDateRange === '7days' ? 7 : selectedDateRange === '30days' ? 30 : 90;
       startDate.setDate(endDate.getDate() - days);
+
+      console.log('AdminStats: Fetching stats for date range:', startDate.toISOString().split('T')[0], 'to', endDate.toISOString().split('T')[0]);
 
       // Fetch daily stats
       const { data: dailyStatsData, error: statsError } = await supabase
@@ -114,6 +129,7 @@ const AdminStats = () => {
 
       if (statsError) throw statsError;
 
+      console.log('AdminStats: Daily stats fetched:', dailyStatsData?.length || 0, 'records');
       setDailyStats(dailyStatsData || []);
 
       // Calculate realtime metrics
@@ -128,16 +144,28 @@ const AdminStats = () => {
       });
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
-  }, [selectedDateRange, toast]);
+  }, [selectedDateRange]);
 
+  // Initial data load when admin status is confirmed
   useEffect(() => {
-    console.log('AdminStats: fetchStatistics useEffect triggered, isAdmin:', isAdmin, 'selectedDateRange:', selectedDateRange);
-    if (isAdmin) {
-      console.log('AdminStats: Calling fetchStatistics');
+    console.log('AdminStats: Initial load useEffect triggered, isAdmin:', isAdmin, 'initLoadRef.current:', initLoadRef.current);
+    if (isAdmin && !initLoadRef.current) {
+      console.log('AdminStats: First time admin load, calling fetchStatistics');
+      initLoadRef.current = true;
       fetchStatistics();
     }
-  }, [isAdmin, fetchStatistics]);
+  }, [isAdmin]);
+
+  // Handle date range changes
+  useEffect(() => {
+    console.log('AdminStats: Date range change useEffect triggered, selectedDateRange:', selectedDateRange, 'isAdmin:', isAdmin);
+    if (isAdmin && initLoadRef.current) {
+      console.log('AdminStats: Date range changed, calling fetchStatistics');
+      fetchStatistics();
+    }
+  }, [selectedDateRange]);
   const calculateRealtimeMetrics = useCallback(async () => {
     try {
       // Get total users
