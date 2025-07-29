@@ -18,6 +18,18 @@ export const useAIStatus = () => {
 
   useEffect(() => {
     checkAIStatus();
+
+    // Set up realtime channel for AI status updates
+    const channel = supabase
+      .channel('ai-status-updates')
+      .on('broadcast', { event: 'status-refresh' }, () => {
+        checkAIStatus();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const checkAIStatus = async () => {
@@ -108,5 +120,18 @@ export const useAIStatus = () => {
     }
   };
 
-  return { status, loading, refresh: checkAIStatus };
+  const refreshAll = async () => {
+    // Broadcast refresh event to all instances
+    const channel = supabase.channel('ai-status-updates');
+    await channel.send({
+      type: 'broadcast',
+      event: 'status-refresh',
+      payload: {}
+    });
+    
+    // Also refresh this instance
+    checkAIStatus();
+  };
+
+  return { status, loading, refresh: refreshAll };
 };
