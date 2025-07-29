@@ -63,7 +63,13 @@ export default function FAQManager() {
 
     setLoading(true);
     try {
-      const faqData = { ...data, created_by: user.id };
+      const faqData = {
+        question: data.question,
+        answer: data.answer,
+        category: data.category,
+        order_index: data.order_index,
+        created_by: user.id
+      };
 
       if (editingFAQ) {
         const { error } = await supabase
