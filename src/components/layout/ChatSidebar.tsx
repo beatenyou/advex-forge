@@ -163,7 +163,7 @@ export const ChatSidebar = ({ onClose }: ChatSidebarProps) => {
 
   return (
     <TooltipProvider>
-      <div className="h-screen flex flex-col border-r border-border bg-background">{/* Changed from h-full to h-screen */}
+      <div className="h-full flex flex-col border-r border-border bg-background">{/* Changed back to h-full to respect parent container */}
         {/* Header */}
         <div className="p-4 border-b border-border bg-card/30 backdrop-blur-sm">
           <div className="flex items-center justify-between">
