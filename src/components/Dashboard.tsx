@@ -44,7 +44,7 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true,
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   
   const { containerRef, columnCount, gridStyle } = useResponsiveGrid({ 
-    isChatVisible: isChatVisible && isWideScreen 
+    isChatVisible 
   });
   const handleSignOut = async () => {
     try {

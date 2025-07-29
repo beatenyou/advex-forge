@@ -17,25 +17,23 @@ export const useResponsiveGrid = ({
   const calculateColumns = useCallback((containerWidth: number) => {
     if (containerWidth === 0) return 1;
     
-    // Calculate how many columns can fit
-    const availableWidth = containerWidth - gap;
-    const columnWidth = minCardWidth + gap;
-    const maxColumns = Math.floor(availableWidth / columnWidth) || 1;
+    // Calculate how many columns can fit based on card width + gap
+    const cardWithGap = minCardWidth + gap;
+    const maxPossibleColumns = Math.floor(containerWidth / cardWithGap) || 1;
     
     // Define breakpoints based on chat visibility
     if (isChatVisible) {
-      // More conservative when chat is open
-      if (containerWidth < 768) return 1;      // Mobile
-      if (containerWidth < 1200) return 2;     // Tablet
-      if (containerWidth < 1600) return 2;     // Desktop
-      return Math.min(3, maxColumns);          // Large desktop (max 3)
+      // More conservative when chat is open (2 columns max usually)
+      if (containerWidth < 700) return 1;      // Mobile/small tablet
+      if (containerWidth < 1100) return Math.min(2, maxPossibleColumns);     // Tablet/small desktop
+      return Math.min(2, maxPossibleColumns);  // Large desktop (usually 2 columns when chat open)
     } else {
-      // More aggressive when chat is closed
-      if (containerWidth < 640) return 1;      // Mobile
-      if (containerWidth < 1024) return 2;     // Tablet
-      if (containerWidth < 1400) return 3;     // Desktop
-      if (containerWidth < 1800) return 4;     // Wide
-      return Math.min(5, maxColumns);          // Ultra-wide (max 5)
+      // More aggressive when chat is closed (can go up to 5 columns)
+      if (containerWidth < 700) return 1;      // Mobile
+      if (containerWidth < 1100) return Math.min(2, maxPossibleColumns);     // Tablet
+      if (containerWidth < 1500) return Math.min(3, maxPossibleColumns);     // Desktop
+      if (containerWidth < 1900) return Math.min(4, maxPossibleColumns);     // Wide
+      return Math.min(5, maxPossibleColumns);  // Ultra-wide
     }
   }, [isChatVisible, minCardWidth, gap]);
 
@@ -43,19 +41,20 @@ export const useResponsiveGrid = ({
     const container = containerRef.current;
     if (!container) return;
 
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const containerWidth = entry.contentRect.width;
-        const newColumnCount = calculateColumns(containerWidth);
-        setColumnCount(newColumnCount);
-      }
+    const updateColumns = () => {
+      const containerWidth = container.offsetWidth;
+      const newColumnCount = calculateColumns(containerWidth);
+      setColumnCount(newColumnCount);
+    };
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateColumns();
     });
 
     resizeObserver.observe(container);
-
-    // Initial calculation
-    const initialWidth = container.offsetWidth;
-    setColumnCount(calculateColumns(initialWidth));
+    
+    // Initial calculation with a small delay to ensure proper rendering
+    setTimeout(updateColumns, 0);
 
     return () => {
       resizeObserver.disconnect();
