@@ -247,13 +247,16 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
       const fullMessage = data.message;
       setStreamingMessage('');
       
-      // Stream the message character by character
-      for (let i = 0; i <= fullMessage.length; i++) {
-        const partialMessage = fullMessage.slice(0, i);
-        setStreamingMessage(partialMessage);
+      // Stream the message with optimized speed
+      const words = fullMessage.split(' ');
+      let currentText = '';
+      
+      for (let i = 0; i < words.length; i++) {
+        currentText += (i > 0 ? ' ' : '') + words[i];
+        setStreamingMessage(currentText);
         
-        // Add slight delay for streaming effect
-        await new Promise(resolve => setTimeout(resolve, 20));
+        // Faster streaming with word-by-word display
+        await new Promise(resolve => setTimeout(resolve, 50));
         
         // Scroll to bottom during streaming
         scrollToBottom();
