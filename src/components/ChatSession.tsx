@@ -35,6 +35,8 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [streamingMessage, setStreamingMessage] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Function to clear all messages and create new session
@@ -210,6 +212,8 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
     const userQuestion = question.trim();
     setQuestion('');
     setIsLoading(true);
+    setStreamingMessage('');
+    setIsStreaming(false);
 
     try {
       // Save user message
@@ -224,6 +228,10 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
       // Get conversation context (last 20 messages)
       const conversationContext = messages.slice(-19).concat([userMessage as ChatMessage]);
 
+      // Start streaming
+      setIsLoading(false);
+      setIsStreaming(true);
+
       // Call AI with conversation context
       const { data, error } = await supabase.functions.invoke('ai-chat-router', {
         body: {
@@ -234,6 +242,26 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
       });
 
       if (error) throw error;
+
+      // Simulate streaming effect
+      const fullMessage = data.message;
+      setStreamingMessage('');
+      
+      // Stream the message character by character
+      for (let i = 0; i <= fullMessage.length; i++) {
+        const partialMessage = fullMessage.slice(0, i);
+        setStreamingMessage(partialMessage);
+        
+        // Add slight delay for streaming effect
+        await new Promise(resolve => setTimeout(resolve, 20));
+        
+        // Scroll to bottom during streaming
+        scrollToBottom();
+      }
+
+      // Streaming complete - save the full message
+      setIsStreaming(false);
+      setStreamingMessage('');
 
       // Save AI response
       const aiMessage = await saveMessage(
@@ -261,6 +289,8 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
       });
     } finally {
       setIsLoading(false);
+      setIsStreaming(false);
+      setStreamingMessage('');
     }
   };
 
@@ -325,7 +355,7 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
                   <div
                     className={`max-w-[80%] rounded-lg p-3 ${
                       message.role === 'user'
-                        ? 'bg-red-900 text-red-50 ml-12'
+                        ? 'bg-red-950 text-red-100 ml-12'
                         : 'bg-muted mr-12'
                     }`}
                   >
@@ -358,7 +388,20 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
                   </div>
                 </div>
               ))}
-              {isLoading && (
+              {isStreaming && streamingMessage && (
+                <div className="flex justify-start">
+                  <div className="bg-muted rounded-lg p-3 mr-12">
+                    <div className="space-y-2">
+                      <MarkdownRenderer content={streamingMessage} />
+                      <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <span className="text-xs text-muted-foreground">Streaming...</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {isLoading && !isStreaming && (
                 <div className="flex justify-start">
                   <div className="bg-muted rounded-lg p-3 mr-12">
                     <div className="flex items-center gap-2">
