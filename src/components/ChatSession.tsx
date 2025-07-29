@@ -214,6 +214,7 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
       // Call AI with conversation context
       const { data, error } = await supabase.functions.invoke('ai-chat-router', {
         body: {
+          message: userQuestion,
           messages: conversationContext,
           sessionId: currentSession.id
         }
