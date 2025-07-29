@@ -9,6 +9,7 @@ import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { AIStatusIndicator } from '@/components/AIStatusIndicator';
+import TextareaAutosize from 'react-textarea-autosize';
 
 interface ChatMessage {
   id: string;
@@ -366,14 +367,10 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
 
       <Separator />
 
-      <CardContent className={`flex flex-col p-0 ${messages.length === 0 ? '' : 'flex-1'}`}>
+      <CardContent className="flex flex-col p-0 h-full">
         <ScrollArea 
           ref={scrollAreaRef} 
-          className={`p-4 transition-all duration-300 ${
-            messages.length === 0 
-              ? 'h-auto min-h-[120px]' 
-              : 'flex-1 max-h-[60vh]'
-          }`}
+          className="flex-1 p-4"
         >
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
@@ -450,35 +447,46 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
           )}
         </ScrollArea>
 
-        <Separator />
+        {/* Input section - positioned at bottom with proper spacing */}
+        <div className="border-t border-border bg-background/95 backdrop-blur-sm">
 
-        <form onSubmit={handleSubmit} className="p-4">
-          <div className="flex gap-2">
-            <Input
-              placeholder="Type your message..."
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey && !isLoading && question.trim()) {
-                  e.preventDefault();
-                  handleSubmit(e as any);
-                }
-              }}
-              className="flex-1"
-              disabled={isLoading}
-            />
+        <form onSubmit={handleSubmit} className="p-3">
+          <div className="flex gap-2 items-end">
+            <div className="flex-1">
+              <TextareaAutosize
+                placeholder="Type your message..."
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey && !isLoading && question.trim()) {
+                    e.preventDefault();
+                    handleSubmit(e as any);
+                  }
+                }}
+                className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={isLoading}
+                minRows={1}
+                maxRows={6}
+              />
+            </div>
             {isStreaming ? (
               <Button 
                 type="button" 
                 variant="destructive" 
+                size="sm"
                 onClick={stopStreaming}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 px-3 py-2 shrink-0"
               >
                 <Square className="h-4 w-4" />
                 Stop
               </Button>
             ) : (
-              <Button type="submit" disabled={isLoading || !question.trim()}>
+              <Button 
+                type="submit" 
+                disabled={isLoading || !question.trim()}
+                size="sm"
+                className="px-4 py-2 shrink-0"
+              >
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
@@ -488,6 +496,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
             )}
           </div>
         </form>
+        </div>
       </CardContent>
     </Card>
   );
