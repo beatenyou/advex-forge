@@ -28,9 +28,10 @@ interface ChatSession {
 
 interface ChatSessionProps {
   onClear?: () => void;
+  sessionId?: string;
 }
 
-export const ChatSession = ({ onClear }: ChatSessionProps) => {
+export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [question, setQuestion] = useState('');
