@@ -150,7 +150,7 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true,
                 size="sm" 
                 onClick={onOpenChat}
                 title="Open AI Chat"
-                className="hover-scale border-red-700 text-red-700 hover:bg-red-700/10"
+                className="hover-scale text-red-700 hover:bg-red-700/10"
               >
                 <MessageSquare className="w-4 h-4" />
               </Button>
