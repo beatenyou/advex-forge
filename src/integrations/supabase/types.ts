@@ -823,7 +823,7 @@ export type Database = {
           session_end: string | null
           session_start: string
           user_agent: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -836,7 +836,7 @@ export type Database = {
           session_end?: string | null
           session_start?: string
           user_agent?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -849,7 +849,7 @@ export type Database = {
           session_end?: string | null
           session_start?: string
           user_agent?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }

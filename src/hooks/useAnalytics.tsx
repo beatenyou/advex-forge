@@ -43,7 +43,7 @@ export function useAnalytics() {
 
   // Create user session when user is authenticated
   useEffect(() => {
-    if (user && sessionId.current && !sessionStart.current) {
+    if (user && sessionId.current && sessionStart.current) {
       createUserSession();
     }
   }, [user]);
