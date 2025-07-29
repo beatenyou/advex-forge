@@ -73,18 +73,12 @@ const AdminStats = () => {
       try {
         console.log('AdminStats: Checking admin status for user ID:', user.id);
         
-        // Add timeout wrapper to prevent hanging
-        const queryPromise = supabase
+        // Simplified query without timeout - let it complete naturally
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('role')
           .eq('user_id', user.id)
-          .single();
-        
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Admin check timeout')), 10000)
-        );
-        
-        const { data: profile, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
+          .maybeSingle(); // Use maybeSingle instead of single to avoid errors if no profile exists
         
         console.log('AdminStats: Profile query result:', { profile, error });
         
@@ -100,9 +94,6 @@ const AdminStats = () => {
         
       } catch (error) {
         console.error('AdminStats: Error checking admin status:', error);
-        if (error.name === 'AbortError') {
-          console.error('AdminStats: Admin check timed out');
-        }
         setIsAdmin(false);
       }
     };
