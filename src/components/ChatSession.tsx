@@ -453,13 +453,14 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
                 <div className="flex justify-start">
                   <div className="bg-muted rounded-lg p-3 mr-12">
                     <div className="flex items-center justify-center space-x-3">
-                      <div className="relative">
-                        <div className="bg-cyber text-cyber-foreground px-3 py-1 rounded-full text-xs font-mono font-bold animate-pulse">
+                      <div className="relative flex items-center justify-center">
+                        <div className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-mono font-bold animate-pulse border border-red-400 shadow-lg shadow-red-500/20">
                           RT
                         </div>
-                        <div className="absolute inset-0 bg-cyber/20 rounded-full animate-ping"></div>
+                        <div className="absolute inset-0 bg-red-500/30 rounded-lg animate-ping"></div>
+                        <div className="absolute inset-0 bg-red-400/10 rounded-lg animate-pulse"></div>
                       </div>
-                      <span className="text-sm animate-pulse">Processing request...</span>
+                      <span className="text-sm text-muted-foreground animate-pulse">AI Processing...</span>
                     </div>
                   </div>
                 </div>
