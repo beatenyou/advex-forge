@@ -390,23 +390,8 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       const responseTime = endTime - startTime;
       await trackPerformance('ai_response_time', responseTime, 'milliseconds', 'ai_chat');
 
-      // Log AI interaction for analytics
-      if (user) {
-        try {
-          await supabase.from('ai_interactions').insert({
-            user_id: user.id,
-            session_id: currentSession.id,
-            request_type: 'chat',
-            provider_name: data.providerName || 'unknown',
-            success: true,
-            response_time_ms: Math.round(responseTime),
-            tokens_used: data.tokensUsed || 0,
-            request_size: userQuestion.length,
-          });
-        } catch (logError) {
-          console.error('Error logging AI interaction:', logError);
-        }
-      }
+      // AI interaction logging is now handled by the AI chat router edge function
+      // No need to log here to avoid double counting
 
       // Clear timeout and stop button since we got a response
       if (requestTimeout) {
@@ -488,22 +473,9 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       const endTime = performance.now();
       const responseTime = endTime - startTime;
       
-      if (user) {
-        try {
-          await supabase.from('ai_interactions').insert({
-            user_id: user.id,
-            session_id: currentSession.id,
-            request_type: 'chat',
-            provider_name: 'unknown',
-            success: false,
-            error_type: error.name || 'Unknown Error',
-            response_time_ms: Math.round(responseTime),
-            request_size: userQuestion.length,
-          });
-        } catch (logError) {
-          console.error('Error logging failed AI interaction:', logError);
-        }
-      }
+      // AI interaction error logging is handled by the AI chat router edge function
+      // No need to log here to avoid double counting - just log to console for debugging
+      console.error('AI Chat Error for user:', user?.id, error.message);
 
       await trackActivity('ai_response_error', `AI response failed: ${error.message}`);
 
