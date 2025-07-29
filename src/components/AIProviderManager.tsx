@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { AIStatusIndicator } from '@/components/AIStatusIndicator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AIProvider {
   id: string;
@@ -486,7 +487,8 @@ const AIProviderManager = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <ScrollArea className="h-full w-full">
+      <div className="space-y-6 p-6">
       {/* Global Configuration */}
       {config && (
         <Card>
@@ -1123,7 +1125,8 @@ const AIProviderManager = () => {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </ScrollArea>
   );
 };
 
