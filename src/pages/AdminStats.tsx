@@ -65,17 +65,26 @@ const AdminStats = () => {
     const checkAdminStatus = async () => {
       console.log('AdminStats: Starting admin check, user:', user);
       if (!user) {
-        console.log('AdminStats: No user found');
+        console.log('AdminStats: No user found, setting isAdmin to false');
+        setIsAdmin(false);
         return;
       }
       
       try {
         console.log('AdminStats: Checking admin status for user ID:', user.id);
-        const { data: profile, error } = await supabase
+        
+        // Add timeout wrapper to prevent hanging
+        const queryPromise = supabase
           .from('profiles')
           .select('role')
           .eq('user_id', user.id)
           .single();
+        
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Admin check timeout')), 10000)
+        );
+        
+        const { data: profile, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
         
         console.log('AdminStats: Profile query result:', { profile, error });
         
@@ -88,8 +97,12 @@ const AdminStats = () => {
         const isUserAdmin = profile?.role === 'admin';
         console.log('AdminStats: User role:', profile?.role, 'Is admin:', isUserAdmin);
         setIsAdmin(isUserAdmin);
+        
       } catch (error) {
         console.error('AdminStats: Error checking admin status:', error);
+        if (error.name === 'AbortError') {
+          console.error('AdminStats: Admin check timed out');
+        }
         setIsAdmin(false);
       }
     };
