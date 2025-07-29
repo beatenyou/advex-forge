@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Loader2, Copy, MessageSquare, Plus, Square, Send, Check, Hash } from 'lucide-react';
+import { Loader2, Copy, MessageSquare, Plus, Square, Send, Check } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
@@ -703,11 +703,6 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
                       minRows={1}
                       maxRows={6}
                     />
-                    {question.startsWith('/') && (
-                      <div className="absolute left-3 top-2 pointer-events-none">
-                        <Hash className="w-4 h-4 text-primary/60" />
-                      </div>
-                    )}
                   </div>
                 </PopoverTrigger>
                 {showPromptSuggestions && filteredPrompts.length > 0 && (
