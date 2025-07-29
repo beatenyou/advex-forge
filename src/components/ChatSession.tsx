@@ -340,7 +340,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full max-h-full min-h-0 relative">
       <div className="flex-shrink-0 p-3 border-b border-border">
         <div className="flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-lg font-semibold">
@@ -362,10 +362,10 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden min-h-0">
         <ScrollArea 
           ref={scrollAreaRef} 
-          className="h-full p-4"
+          className="h-full max-h-full p-4"
         >
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
@@ -443,8 +443,8 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
         </ScrollArea>
       </div>
 
-      {/* Input section - directly under messages */}
-      <div className="border-t border-border bg-background/95 backdrop-blur-sm shrink-0">
+      {/* Input section - absolutely positioned within container */}
+      <div className="border-t border-border bg-background/95 backdrop-blur-sm shrink-0 relative">
         <form onSubmit={handleSubmit} className="p-3">
           <div className="flex gap-2 items-end">
             <div className="flex-1">

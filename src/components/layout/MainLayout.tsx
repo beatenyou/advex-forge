@@ -54,14 +54,15 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
 
   return (
     <div className="min-h-screen w-full bg-background">
-      <ResizablePanelGroup direction="horizontal" className="min-h-screen">
+      <ResizablePanelGroup direction="horizontal" className="min-h-screen h-screen">
         {isChatVisible && (
           <>
             <ResizablePanel 
               defaultSize={chatPanelConfig.default} 
               minSize={chatPanelConfig.min} 
               maxSize={chatPanelConfig.max}
-              className="bg-background"
+              className="bg-background h-full overflow-hidden"
+              style={{ contain: 'layout', isolation: 'isolate' }}
             >
               <ChatSidebar onClose={handleCloseChat} />
             </ResizablePanel>
