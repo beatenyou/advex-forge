@@ -461,7 +461,7 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
               <UserManager />
             </TabsContent>
 
-            <TabsContent value="ai-providers" className="space-y-6 mt-6">
+            <TabsContent value="ai-providers" className="space-y-6 mt-6 overflow-y-auto max-h-[calc(90vh-200px)]">
               <AIProviderManager />
             </TabsContent>
 
