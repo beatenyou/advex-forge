@@ -35,28 +35,39 @@ serve(async (req) => {
 
     console.log('Sending request to Mistral with model:', model, agentId ? `using agent: ${agentId}` : '');
 
-    // If agent_id is provided, use the Conversations API
+    // If agent_id is provided, use the Agents API
     if (agentId) {
-      let apiUrl;
-      let requestBody;
-
-      if (conversationId) {
-        // Continue existing conversation
-        apiUrl = 'https://api.mistral.ai/v1/beta/conversations/append';
-        requestBody = {
-          conversation_id: conversationId,
-          inputs: message || (messages && messages.length > 0 ? messages[messages.length - 1].content : '')
-        };
-      } else {
-        // Start new conversation with agent
-        apiUrl = 'https://api.mistral.ai/v1/beta/conversations/start';
-        requestBody = {
-          agent_id: agentId,
-          inputs: message || (messages && messages.length > 0 ? messages[messages.length - 1].content : '')
-        };
+      // Build conversation messages
+      let conversationMessages = [];
+      
+      // Add system prompt if provided
+      if (systemPrompt && systemPrompt !== 'You are a helpful AI assistant.') {
+        conversationMessages.push({
+          role: 'system',
+          content: systemPrompt
+        });
       }
 
-      const response = await fetch(apiUrl, {
+      if (messages && Array.isArray(messages) && messages.length > 0) {
+        // Use conversation context
+        conversationMessages.push(...messages);
+      } else if (message) {
+        // Single message
+        conversationMessages.push({
+          role: 'user',
+          content: message
+        });
+      }
+
+      const requestBody = {
+        agent_id: agentId,
+        messages: conversationMessages,
+        max_tokens: maxTokens,
+        temperature: temperature,
+        stream: false
+      };
+
+      const response = await fetch('https://api.mistral.ai/v1/agents/completions', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${mistralApiKey}`,
@@ -67,12 +78,12 @@ serve(async (req) => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Mistral Conversations API Error:', errorData);
+        console.error('Mistral Agents API Error:', errorData);
         throw new Error(errorData.error?.message || 'Failed to get response from Mistral Agent');
       }
 
       const data = await response.json();
-      const aiResponse = data.outputs[0]?.content || 'No response from agent';
+      const aiResponse = data.choices[0].message.content;
 
       console.log('Successfully received response from Mistral Agent');
 
@@ -81,7 +92,6 @@ serve(async (req) => {
         model,
         provider: 'mistral',
         tokensUsed: data.usage?.total_tokens || 0,
-        conversationId: data.conversation_id,
         agentId: agentId
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
