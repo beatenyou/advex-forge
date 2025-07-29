@@ -37,13 +37,21 @@ serve(async (req) => {
 
     // If agent_id is provided, use the Conversations API
     if (agentId) {
+      // URL encode the agent ID to handle special characters like colons
+      const encodedAgentId = encodeURIComponent(agentId);
+      const apiUrl = `https://api.mistral.ai/v1/agents/${encodedAgentId}/conversations`;
+      
+      console.log('Making request to URL:', apiUrl);
+      
       // For agents, use the conversations API with proper format
       const requestBody = {
         inputs: message || (messages && messages.length > 0 ? messages[messages.length - 1].content : ''),
         model: model
       };
 
-      const response = await fetch(`https://api.mistral.ai/v1/agents/${agentId}/conversations`, {
+      console.log('Request body:', JSON.stringify(requestBody, null, 2));
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${mistralApiKey}`,
@@ -52,10 +60,14 @@ serve(async (req) => {
         body: JSON.stringify(requestBody),
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
         const errorData = await response.json();
         console.error('Mistral Agents Conversations API Error:', errorData);
-        throw new Error(errorData.error?.message || `Failed to get response from Mistral Agent. Status: ${response.status}`);
+        console.error('Full response details:', { status: response.status, statusText: response.statusText, url: apiUrl });
+        throw new Error(errorData.error?.message || errorData.detail || `Failed to get response from Mistral Agent. Status: ${response.status}`);
       }
 
       const data = await response.json();
