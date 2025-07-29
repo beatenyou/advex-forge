@@ -73,7 +73,26 @@ serve(async (req) => {
       }
 
       const data = await response.json();
-      const aiResponse = data.choices[0].message.content;
+      console.log('Full API response:', JSON.stringify(data, null, 2));
+      
+      // Handle different response formats for agents API
+      let aiResponse;
+      if (data.choices && data.choices[0] && data.choices[0].message) {
+        // Standard chat completions format
+        aiResponse = data.choices[0].message.content;
+      } else if (data.content) {
+        // Direct content field
+        aiResponse = data.content;
+      } else if (data.message) {
+        // Message field
+        aiResponse = data.message;
+      } else if (data.text) {
+        // Text field
+        aiResponse = data.text;
+      } else {
+        console.error('Unknown response format:', data);
+        throw new Error('Unable to parse response from Mistral Agent API');
+      }
 
       console.log('Successfully received response from Mistral Agent');
 
