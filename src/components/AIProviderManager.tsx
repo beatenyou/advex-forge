@@ -543,14 +543,14 @@ const AIProviderManager = () => {
               <div className="space-y-2">
                 <Label htmlFor="primary-provider">Primary Provider</Label>
                 <Select 
-                  value={config.primary_provider_id || config.default_provider_id || ''} 
-                  onValueChange={(value) => setConfig({ ...config, primary_provider_id: value || null })}
+                  value={config.primary_provider_id || config.default_provider_id || 'none'} 
+                  onValueChange={(value) => setConfig({ ...config, primary_provider_id: value === 'none' ? null : value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select primary provider" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No primary provider</SelectItem>
+                    <SelectItem value="none">No primary provider</SelectItem>
                     {providers.filter(p => p.is_active).map((provider) => (
                       <SelectItem key={provider.id} value={provider.id}>
                         {provider.name} ({provider.type})
@@ -562,14 +562,14 @@ const AIProviderManager = () => {
               <div className="space-y-2">
                 <Label htmlFor="secondary-provider">Secondary Provider (Fallback)</Label>
                 <Select 
-                  value={config.secondary_provider_id || ''} 
-                  onValueChange={(value) => setConfig({ ...config, secondary_provider_id: value || null })}
+                  value={config.secondary_provider_id || 'none'} 
+                  onValueChange={(value) => setConfig({ ...config, secondary_provider_id: value === 'none' ? null : value })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select secondary provider" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No secondary provider</SelectItem>
+                    <SelectItem value="none">No secondary provider</SelectItem>
                     {providers.filter(p => p.is_active && p.id !== (config.primary_provider_id || config.default_provider_id)).map((provider) => (
                       <SelectItem key={provider.id} value={provider.id}>
                         {provider.name} ({provider.type})
