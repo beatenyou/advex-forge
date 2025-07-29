@@ -936,6 +936,19 @@ export type Database = {
         Args: { target_date?: string }
         Returns: undefined
       }
+      check_ai_quota: {
+        Args: { user_id_param: string }
+        Returns: {
+          can_use_ai: boolean
+          current_usage: number
+          quota_limit: number
+          plan_name: string
+        }[]
+      }
+      increment_ai_usage: {
+        Args: { user_id_param: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "user"
