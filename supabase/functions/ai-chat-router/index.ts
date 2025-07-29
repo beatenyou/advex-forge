@@ -19,7 +19,7 @@ serve(async (req) => {
   }
 
   try {
-    const { message, messages, providerId, sessionId } = await req.json();
+    const { message, messages, providerId, sessionId, conversationId } = await req.json();
 
     // Support both single message (legacy) and conversation context (new)
     if (!message && !messages) {
@@ -95,7 +95,9 @@ serve(async (req) => {
         model: provider.model_name,
         systemPrompt: config.system_prompt,
         maxTokens: config.max_tokens,
-        temperature: parseFloat(config.temperature)
+        temperature: parseFloat(config.temperature),
+        agentId: provider.agent_id,
+        conversationId: conversationId
       }
     });
 

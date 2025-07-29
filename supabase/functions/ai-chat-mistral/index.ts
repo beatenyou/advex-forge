@@ -19,7 +19,9 @@ serve(async (req) => {
       model = 'mistral-large-latest', 
       systemPrompt = 'You are a helpful AI assistant.', 
       maxTokens = 1000, 
-      temperature = 0.7 
+      temperature = 0.7,
+      agentId = null,
+      conversationId = null
     } = await req.json();
 
     if (!message && !messages) {
@@ -31,8 +33,62 @@ serve(async (req) => {
       throw new Error('Mistral API key not configured');
     }
 
-    console.log('Sending request to Mistral with model:', model);
+    console.log('Sending request to Mistral with model:', model, agentId ? `using agent: ${agentId}` : '');
 
+    // If agent_id is provided, use the Conversations API
+    if (agentId) {
+      let apiUrl;
+      let requestBody;
+
+      if (conversationId) {
+        // Continue existing conversation
+        apiUrl = 'https://api.mistral.ai/v1/beta/conversations/append';
+        requestBody = {
+          conversation_id: conversationId,
+          inputs: message || (messages && messages.length > 0 ? messages[messages.length - 1].content : '')
+        };
+      } else {
+        // Start new conversation with agent
+        apiUrl = 'https://api.mistral.ai/v1/beta/conversations/start';
+        requestBody = {
+          agent_id: agentId,
+          inputs: message || (messages && messages.length > 0 ? messages[messages.length - 1].content : '')
+        };
+      }
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${mistralApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Mistral Conversations API Error:', errorData);
+        throw new Error(errorData.error?.message || 'Failed to get response from Mistral Agent');
+      }
+
+      const data = await response.json();
+      const aiResponse = data.outputs[0]?.content || 'No response from agent';
+
+      console.log('Successfully received response from Mistral Agent');
+
+      return new Response(JSON.stringify({ 
+        message: aiResponse,
+        model,
+        provider: 'mistral',
+        tokensUsed: data.usage?.total_tokens || 0,
+        conversationId: data.conversation_id,
+        agentId: agentId
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Traditional chat completions for non-agent requests
     // Build conversation messages
     let conversationMessages = [];
     

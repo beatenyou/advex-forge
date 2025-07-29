@@ -96,6 +96,9 @@ export type Database = {
       }
       ai_providers: {
         Row: {
+          agent_description: string | null
+          agent_id: string | null
+          agent_name: string | null
           api_key_secret_name: string
           base_url: string | null
           created_at: string
@@ -108,6 +111,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          agent_description?: string | null
+          agent_id?: string | null
+          agent_name?: string | null
           api_key_secret_name: string
           base_url?: string | null
           created_at?: string
@@ -120,6 +126,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          agent_description?: string | null
+          agent_id?: string | null
+          agent_name?: string | null
           api_key_secret_name?: string
           base_url?: string | null
           created_at?: string

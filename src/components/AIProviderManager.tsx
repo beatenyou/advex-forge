@@ -21,6 +21,9 @@ interface AIProvider {
   model_name: string;
   is_active: boolean;
   created_at: string;
+  agent_id?: string | null;
+  agent_name?: string | null;
+  agent_description?: string | null;
 }
 
 interface AIConfig {
@@ -46,7 +49,10 @@ const AIProviderManager = () => {
     type: 'openai' as 'openai' | 'mistral',
     api_key_secret_name: '',
     base_url: '',
-    model_name: ''
+    model_name: '',
+    agent_id: '',
+    agent_name: '',
+    agent_description: ''
   });
 
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -55,7 +61,10 @@ const AIProviderManager = () => {
     type: 'openai' as 'openai' | 'mistral',
     api_key_secret_name: '',
     base_url: '',
-    model_name: ''
+    model_name: '',
+    agent_id: '',
+    agent_name: '',
+    agent_description: ''
   });
 
   // Model suggestions based on provider type
@@ -135,7 +144,10 @@ const AIProviderManager = () => {
     try {
       const { error } = await supabase.from('ai_providers').insert([{
         ...newProvider,
-        base_url: newProvider.base_url || null
+        base_url: newProvider.base_url || null,
+        agent_id: newProvider.agent_id || null,
+        agent_name: newProvider.agent_name || null,
+        agent_description: newProvider.agent_description || null
       }]);
 
       if (error) throw error;
@@ -151,7 +163,10 @@ const AIProviderManager = () => {
         type: 'openai',
         api_key_secret_name: '',
         base_url: '',
-        model_name: ''
+        model_name: '',
+        agent_id: '',
+        agent_name: '',
+        agent_description: ''
       });
       fetchData();
     } catch (error) {
@@ -182,7 +197,10 @@ const AIProviderManager = () => {
         .from('ai_providers')
         .update({
           ...editProvider,
-          base_url: editProvider.base_url || null
+          base_url: editProvider.base_url || null,
+          agent_id: editProvider.agent_id || null,
+          agent_name: editProvider.agent_name || null,
+          agent_description: editProvider.agent_description || null
         })
         .eq('id', editingProvider.id);
 
@@ -213,7 +231,10 @@ const AIProviderManager = () => {
       type: provider.type,
       api_key_secret_name: provider.api_key_secret_name,
       base_url: provider.base_url || '',
-      model_name: provider.model_name
+      model_name: provider.model_name,
+      agent_id: provider.agent_id || '',
+      agent_name: provider.agent_name || '',
+      agent_description: provider.agent_description || ''
     });
     setShowEditDialog(true);
   };
@@ -515,6 +536,51 @@ const AIProviderManager = () => {
                 </div>
               </div>
 
+              {/* Mistral Agent Configuration */}
+              {newProvider.type === 'mistral' && (
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium text-muted-foreground">Mistral Agent Configuration (Optional)</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Configure a Mistral Agent ID to use specialized agents with built-in tools and instructions.
+                    Leave empty to use standard chat completions.
+                  </p>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="agent-id">Agent ID</Label>
+                    <Input
+                      id="agent-id"
+                      value={newProvider.agent_id}
+                      onChange={(e) => setNewProvider({...newProvider, agent_id: e.target.value})}
+                      placeholder="ag_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    />
+                    <p className="text-xs text-muted-foreground">Your Mistral Agent ID (e.g., ag_0684fe0e0b98773e8000323fc71a3986)</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="agent-name">Agent Name</Label>
+                    <Input
+                      id="agent-name"
+                      value={newProvider.agent_name}
+                      onChange={(e) => setNewProvider({...newProvider, agent_name: e.target.value})}
+                      placeholder="e.g., Web Search Agent"
+                    />
+                    <p className="text-xs text-muted-foreground">Display name for the agent</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="agent-description">Agent Description</Label>
+                    <Textarea
+                      id="agent-description"
+                      value={newProvider.agent_description}
+                      onChange={(e) => setNewProvider({...newProvider, agent_description: e.target.value})}
+                      placeholder="e.g., Agent able to search information over the web"
+                      rows={2}
+                    />
+                    <p className="text-xs text-muted-foreground">Description of what the agent does</p>
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-2 pt-4">
                 <Button onClick={handleAddProvider} className="flex-1">Add Provider</Button>
                 <Button variant="outline" onClick={() => setShowAddDialog(false)}>Cancel</Button>
@@ -545,6 +611,14 @@ const AIProviderManager = () => {
                   </div>
                   <p className="text-sm text-muted-foreground">Model: {provider.model_name}</p>
                   <p className="text-sm text-muted-foreground">API Key: {provider.api_key_secret_name}</p>
+                  {provider.agent_id && (
+                    <div className="mt-2 p-2 bg-muted/30 rounded border">
+                      <p className="text-sm font-medium text-foreground">Mistral Agent</p>
+                      <p className="text-xs text-muted-foreground">ID: {provider.agent_id}</p>
+                      {provider.agent_name && <p className="text-xs text-muted-foreground">Name: {provider.agent_name}</p>}
+                      {provider.agent_description && <p className="text-xs text-muted-foreground">Description: {provider.agent_description}</p>}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="flex gap-2">
@@ -696,7 +770,52 @@ const AIProviderManager = () => {
                 />
                 <p className="text-xs text-muted-foreground">Custom API endpoint URL. Leave empty to use the default endpoint.</p>
               </div>
-            </div>
+              </div>
+
+              {/* Mistral Agent Configuration */}
+              {editProvider.type === 'mistral' && (
+                <div className="space-y-4">
+                  <h4 className="text-sm font-medium text-muted-foreground">Mistral Agent Configuration (Optional)</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Configure a Mistral Agent ID to use specialized agents with built-in tools and instructions.
+                    Leave empty to use standard chat completions.
+                  </p>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-agent-id">Agent ID</Label>
+                    <Input
+                      id="edit-agent-id"
+                      value={editProvider.agent_id}
+                      onChange={(e) => setEditProvider({...editProvider, agent_id: e.target.value})}
+                      placeholder="ag_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    />
+                    <p className="text-xs text-muted-foreground">Your Mistral Agent ID (e.g., ag_0684fe0e0b98773e8000323fc71a3986)</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-agent-name">Agent Name</Label>
+                    <Input
+                      id="edit-agent-name"
+                      value={editProvider.agent_name}
+                      onChange={(e) => setEditProvider({...editProvider, agent_name: e.target.value})}
+                      placeholder="e.g., Web Search Agent"
+                    />
+                    <p className="text-xs text-muted-foreground">Display name for the agent</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-agent-description">Agent Description</Label>
+                    <Textarea
+                      id="edit-agent-description"
+                      value={editProvider.agent_description}
+                      onChange={(e) => setEditProvider({...editProvider, agent_description: e.target.value})}
+                      placeholder="e.g., Agent able to search information over the web"
+                      rows={2}
+                    />
+                    <p className="text-xs text-muted-foreground">Description of what the agent does</p>
+                  </div>
+                </div>
+              )}
 
             <div className="flex gap-2 pt-4">
               <Button onClick={handleEditProvider} className="flex-1">Update Provider</Button>
