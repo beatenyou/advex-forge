@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -93,15 +93,7 @@ const AdminStats = () => {
     checkAdminStatus();
   }, [user]);
 
-  useEffect(() => {
-    console.log('AdminStats: fetchStatistics useEffect triggered, isAdmin:', isAdmin, 'selectedDateRange:', selectedDateRange);
-    if (isAdmin) {
-      console.log('AdminStats: Calling fetchStatistics');
-      fetchStatistics();
-    }
-  }, [isAdmin, selectedDateRange]);
-
-  const fetchStatistics = async () => {
+  const fetchStatistics = useCallback(async () => {
     console.log('AdminStats: fetchStatistics called');
     try {
       setLoading(true);
@@ -128,7 +120,7 @@ const AdminStats = () => {
       await calculateRealtimeMetrics();
 
     } catch (error) {
-      console.error('Error fetching statistics:', error);
+      console.error('AdminStats: Error fetching statistics:', error);
       toast({
         title: 'Error',
         description: 'Failed to fetch statistics',
@@ -137,9 +129,16 @@ const AdminStats = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedDateRange, toast]);
 
-  const calculateRealtimeMetrics = async () => {
+  useEffect(() => {
+    console.log('AdminStats: fetchStatistics useEffect triggered, isAdmin:', isAdmin, 'selectedDateRange:', selectedDateRange);
+    if (isAdmin) {
+      console.log('AdminStats: Calling fetchStatistics');
+      fetchStatistics();
+    }
+  }, [isAdmin, fetchStatistics]);
+  const calculateRealtimeMetrics = useCallback(async () => {
     try {
       // Get total users
       const { count: totalUsers } = await supabase
@@ -181,9 +180,9 @@ const AdminStats = () => {
     } catch (error) {
       console.error('Error calculating realtime metrics:', error);
     }
-  };
+  }, []);
 
-  const refreshData = async () => {
+  const refreshData = useCallback(async () => {
     // Calculate daily stats for today
     try {
       await supabase.rpc('calculate_daily_stats');
@@ -199,7 +198,7 @@ const AdminStats = () => {
         variant: 'destructive'
       });
     }
-  };
+  }, [fetchStatistics, toast]);
 
   if (!user) {
     return <Navigate to="/auth" replace />;
