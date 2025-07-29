@@ -246,10 +246,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       const conversationContext = messages.slice(-19).concat([userMessage as ChatMessage]);
 
       // Start streaming
-      setIsLoading(false);
-      setIsStreaming(true);
-
-      // Call AI with conversation context
+      // Call AI with conversation context (keep loading state during API call)
       const { data, error } = await supabase.functions.invoke('ai-chat-router', {
         body: {
           message: userQuestion,
@@ -264,6 +261,10 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       if (controller.signal.aborted) {
         throw new Error('Request was cancelled');
       }
+
+      // Now switch to streaming state after receiving API response
+      setIsLoading(false);
+      setIsStreaming(true);
 
       // Simulate streaming effect
       const fullMessage = data.message;
