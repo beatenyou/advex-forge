@@ -13,6 +13,7 @@ import { Sidebar } from "./Sidebar";
 import { QuickReference } from "./QuickReference";
 import { AdminDashboard } from "./AdminDashboard";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
+import { useResponsiveGrid } from "@/hooks/useResponsiveGrid";
 import { sampleMarkdownTechniques, parseMultipleMarkdownTechniques, ParsedTechnique } from "@/lib/markdownParser";
 
 // Parse techniques from markdown
@@ -22,9 +23,10 @@ interface DashboardProps {
   onTechniqueSelect?: (technique: ParsedTechnique) => void;
   onOpenChat?: () => void;
   isChatVisible?: boolean;
+  isWideScreen?: boolean;
 }
 
-export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true }: DashboardProps) => {
+export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true, isWideScreen = false }: DashboardProps) => {
   const {
     user,
     signOut
@@ -40,6 +42,10 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true 
   const [selectedTechnique, setSelectedTechnique] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
+  
+  const { containerRef, columnCount, gridStyle } = useResponsiveGrid({ 
+    isChatVisible: isChatVisible && isWideScreen 
+  });
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -199,8 +205,8 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true 
               </Badge>
             </div>
 
-            {/* Technique Cards Grid - Responsive columns based on chat visibility */}
-            <div className={`grid grid-cols-1 gap-8 mb-8 ${isChatVisible ? 'xl:grid-cols-2' : 'lg:grid-cols-2 xl:grid-cols-3'}`}>
+            {/* Technique Cards Grid - Dynamic responsive columns */}
+            <div ref={containerRef} style={gridStyle} className="mb-8">
               {filteredTechniques.map(technique => (
                 <TechniqueCard 
                   key={technique.id} 
