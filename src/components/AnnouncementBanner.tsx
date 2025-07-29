@@ -19,21 +19,33 @@ export default function AnnouncementBanner() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [dismissedBanners, setDismissedBanners] = useState<Set<string>>(new Set());
   const [isAdmin, setIsAdmin] = useState(false);
+  const [hasShownForSession, setHasShownForSession] = useState(false);
 
   useEffect(() => {
     console.log('🔔 AnnouncementBanner useEffect triggered, user:', user?.id);
-    if (user) {
-      checkAdminStatus();
-      loadDismissedBanners();
+    if (user && !hasShownForSession) {
+      // Check if announcements have been shown for this login session
+      const sessionKey = `announcements_shown_${user.id}`;
+      const shownThisSession = sessionStorage.getItem(sessionKey);
+      
+      if (!shownThisSession) {
+        checkAdminStatus();
+        loadDismissedBanners();
+        // Mark that we've shown announcements for this session
+        sessionStorage.setItem(sessionKey, 'true');
+        setHasShownForSession(true);
+      } else {
+        setHasShownForSession(true);
+      }
     }
-  }, [user]);
+  }, [user, hasShownForSession]);
 
   // Separate effect to fetch announcements after isAdmin is determined
   useEffect(() => {
-    if (user) {
+    if (user && !hasShownForSession) {
       fetchAnnouncements();
     }
-  }, [user, isAdmin]);
+  }, [user, isAdmin, hasShownForSession]);
 
   const checkAdminStatus = async () => {
     if (!user) return;
@@ -93,16 +105,11 @@ export default function AnnouncementBanner() {
     const dismissed = localStorage.getItem('dismissedBanners');
     console.log('🔔 Loading dismissed banners from localStorage:', dismissed);
     
-    // Temporarily clear dismissed banners for debugging
-    console.log('🔔 Clearing dismissed banners for debugging');
-    localStorage.removeItem('dismissedBanners');
-    setDismissedBanners(new Set());
-    
-    // if (dismissed) {
-    //   const parsedDismissed = new Set<string>(JSON.parse(dismissed));
-    //   console.log('🔔 Parsed dismissed banners:', parsedDismissed);
-    //   setDismissedBanners(parsedDismissed);
-    // }
+    if (dismissed) {
+      const parsedDismissed = new Set<string>(JSON.parse(dismissed));
+      console.log('🔔 Parsed dismissed banners:', parsedDismissed);
+      setDismissedBanners(parsedDismissed);
+    }
   };
 
   const saveDismissedBanners = (banners: Set<string>) => {
@@ -170,11 +177,13 @@ export default function AnnouncementBanner() {
     dismissedBanners: Array.from(dismissedBanners),
     visibleAnnouncements: visibleAnnouncements.length,
     user: user?.id,
-    isAdmin
+    isAdmin,
+    hasShownForSession
   });
 
-  if (visibleAnnouncements.length === 0) {
-    console.log('🔔 No visible announcements, returning null');
+  // Don't show announcements if we've already shown them for this session
+  if (hasShownForSession || visibleAnnouncements.length === 0) {
+    console.log('🔔 No visible announcements or already shown for session, returning null');
     return null;
   }
 
