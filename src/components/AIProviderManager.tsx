@@ -493,12 +493,16 @@ const AIProviderManager = () => {
                 
                 <div className="space-y-2">
                   <Label htmlFor="api-key">API Key Secret Name *</Label>
-                  <Input
-                    id="api-key"
-                    value={newProvider.api_key_secret_name}
-                    onChange={(e) => setNewProvider({...newProvider, api_key_secret_name: e.target.value.toUpperCase()})}
-                    placeholder={newProvider.type === 'openai' ? 'OPENAI_API_KEY' : 'MISTRAL_API_KEY'}
-                  />
+                  <Select value={newProvider.api_key_secret_name} onValueChange={(value) => 
+                    setNewProvider({...newProvider, api_key_secret_name: value})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={newProvider.type === 'openai' ? 'OPENAI_API_KEY' : 'MISTRAL_API_KEY'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {newProvider.type === 'openai' && <SelectItem value="OPENAI_API_KEY">OPENAI_API_KEY</SelectItem>}
+                      {newProvider.type === 'mistral' && <SelectItem value="MISTRAL_API_KEY">MISTRAL_API_KEY</SelectItem>}
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-muted-foreground">Reference to the secret name configured in Supabase (UPPERCASE_SNAKE_CASE)</p>
                 </div>
 
@@ -729,12 +733,16 @@ const AIProviderManager = () => {
               
               <div className="space-y-2">
                 <Label htmlFor="edit-api-key">API Key Secret Name *</Label>
-                <Input
-                  id="edit-api-key"
-                  value={editProvider.api_key_secret_name}
-                  onChange={(e) => setEditProvider({...editProvider, api_key_secret_name: e.target.value.toUpperCase()})}
-                  placeholder={editProvider.type === 'openai' ? 'OPENAI_API_KEY' : 'MISTRAL_API_KEY'}
-                />
+                <Select value={editProvider.api_key_secret_name} onValueChange={(value) => 
+                  setEditProvider({...editProvider, api_key_secret_name: value})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={editProvider.type === 'openai' ? 'OPENAI_API_KEY' : 'MISTRAL_API_KEY'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {editProvider.type === 'openai' && <SelectItem value="OPENAI_API_KEY">OPENAI_API_KEY</SelectItem>}
+                    {editProvider.type === 'mistral' && <SelectItem value="MISTRAL_API_KEY">MISTRAL_API_KEY</SelectItem>}
+                  </SelectContent>
+                </Select>
                 <p className="text-xs text-muted-foreground">Reference to the secret name configured in Supabase (UPPERCASE_SNAKE_CASE)</p>
               </div>
 
