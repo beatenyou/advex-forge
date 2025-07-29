@@ -39,8 +39,9 @@ serve(async (req) => {
       throw new Error('AI chat is not configured or disabled');
     }
 
-    // Determine which provider to use
-    let targetProviderId = providerId || config.default_provider_id;
+    // Determine which provider to use - prioritize primary, fallback to secondary
+    let targetProviderId = providerId || config.primary_provider_id || config.default_provider_id;
+    let isUsingFallback = false;
     
     if (!targetProviderId) {
       // Get the first active provider if no default is set
@@ -70,48 +71,119 @@ serve(async (req) => {
       throw new Error('AI provider not found or inactive');
     }
 
-    console.log('Using provider:', provider.name, 'Type:', provider.type);
+    console.log('Using provider:', provider.name, 'Type:', provider.type, 'Fallback:', isUsingFallback);
 
     // Route to appropriate provider function
     const functionName = provider.type === 'openai' ? 'ai-chat-openai' : 'ai-chat-mistral';
     
-    // Prepare conversation context or single message
-    let conversationMessages = [];
-    if (messages && Array.isArray(messages)) {
-      // Use conversation context (new format)
-      conversationMessages = messages.slice(-20).map((msg: any) => ({
-        role: msg.role,
-        content: msg.content
-      }));
-    } else if (message) {
-      // Legacy single message format
-      conversationMessages = [{ role: 'user', content: message }];
-    }
-    
-    const providerResponse = await supabase.functions.invoke(functionName, {
-      body: {
-        message: message || conversationMessages[conversationMessages.length - 1]?.content,
-        messages: conversationMessages,
-        model: provider.model_name,
-        systemPrompt: config.system_prompt,
-        maxTokens: config.max_tokens,
-        temperature: parseFloat(config.temperature),
-        agentId: provider.agent_id,
-        conversationId: conversationId,
-        baseUrl: provider.base_url
-      }
-    });
+    let providerResponse;
+    let finalProvider = provider;
 
-    if (providerResponse.error) {
-      throw new Error(providerResponse.error.message || 'Provider function error');
+    try {
+    
+      // Prepare conversation context or single message
+      let conversationMessages = [];
+      if (messages && Array.isArray(messages)) {
+        // Use conversation context (new format)
+        conversationMessages = messages.slice(-20).map((msg: any) => ({
+          role: msg.role,
+          content: msg.content
+        }));
+      } else if (message) {
+        // Legacy single message format
+        conversationMessages = [{ role: 'user', content: message }];
+      }
+      
+      providerResponse = await supabase.functions.invoke(functionName, {
+        body: {
+          message: message || conversationMessages[conversationMessages.length - 1]?.content,
+          messages: conversationMessages,
+          model: provider.model_name,
+          systemPrompt: config.system_prompt,
+          maxTokens: config.max_tokens,
+          temperature: parseFloat(config.temperature),
+          agentId: provider.agent_id,
+          conversationId: conversationId,
+          baseUrl: provider.base_url
+        }
+      });
+
+      if (providerResponse.error) {
+        throw new Error(providerResponse.error.message || 'Provider function error');
+      }
+    } catch (primaryError) {
+      console.error('Primary provider error:', primaryError);
+      
+      // Try fallback to secondary provider if enabled and available
+      if (config.failover_enabled && config.secondary_provider_id && !isUsingFallback) {
+        console.log('Attempting fallback to secondary provider');
+        
+        try {
+          // Get secondary provider details
+          const { data: secondaryProvider, error: secondaryProviderError } = await supabase
+            .from('ai_providers')
+            .select('*')
+            .eq('id', config.secondary_provider_id)
+            .eq('is_active', true)
+            .single();
+
+          if (secondaryProviderError || !secondaryProvider) {
+            throw new Error('Secondary provider not found or inactive');
+          }
+
+          finalProvider = secondaryProvider;
+          isUsingFallback = true;
+          console.log('Using secondary provider:', secondaryProvider.name, 'Type:', secondaryProvider.type);
+
+          const secondaryFunctionName = secondaryProvider.type === 'openai' ? 'ai-chat-openai' : 'ai-chat-mistral';
+          
+          // Prepare conversation context again for secondary provider
+          let conversationMessages = [];
+          if (messages && Array.isArray(messages)) {
+            conversationMessages = messages.slice(-20).map((msg: any) => ({
+              role: msg.role,
+              content: msg.content
+            }));
+          } else if (message) {
+            conversationMessages = [{ role: 'user', content: message }];
+          }
+
+          providerResponse = await supabase.functions.invoke(secondaryFunctionName, {
+            body: {
+              message: message || conversationMessages[conversationMessages.length - 1]?.content,
+              messages: conversationMessages,
+              model: secondaryProvider.model_name,
+              systemPrompt: config.system_prompt,
+              maxTokens: config.max_tokens,
+              temperature: parseFloat(config.temperature),
+              agentId: secondaryProvider.agent_id,
+              conversationId: conversationId,
+              baseUrl: secondaryProvider.base_url
+            }
+          });
+
+          if (providerResponse.error) {
+            throw new Error(providerResponse.error.message || 'Secondary provider function error');
+          }
+
+          console.log('Successfully used secondary provider');
+        } catch (secondaryError) {
+          console.error('Secondary provider also failed:', secondaryError);
+          throw primaryError; // Throw original error if both fail
+        }
+      } else {
+        throw primaryError; // No fallback available or enabled
+      }
     }
 
     const result = providerResponse.data;
 
     return new Response(JSON.stringify({
       ...result,
-      providerId: provider.id,
-      providerName: provider.name
+      providerId: finalProvider.id,
+      providerName: finalProvider.name,
+      usedFallback: isUsingFallback,
+      originalProvider: isUsingFallback ? provider.name : undefined
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

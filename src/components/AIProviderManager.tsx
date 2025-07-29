@@ -10,6 +10,7 @@ import { Trash2, Edit, Plus, TestTube, Star, Key, Eye, EyeOff } from 'lucide-rea
 import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { AIStatusIndicator } from '@/components/AIStatusIndicator';
 
 interface AIProvider {
@@ -29,10 +30,14 @@ interface AIProvider {
 interface AIConfig {
   id: string;
   default_provider_id: string | null;
+  primary_provider_id: string | null;
+  secondary_provider_id: string | null;
   system_prompt: string;
   max_tokens: number;
   temperature: number;
   is_enabled: boolean;
+  failover_enabled: boolean;
+  request_timeout_seconds: number;
 }
 
 const AIProviderManager = () => {
@@ -324,7 +329,11 @@ const AIProviderManager = () => {
           system_prompt: config.system_prompt,
           max_tokens: config.max_tokens,
           temperature: config.temperature,
-          is_enabled: config.is_enabled
+          is_enabled: config.is_enabled,
+          primary_provider_id: config.primary_provider_id,
+          secondary_provider_id: config.secondary_provider_id,
+          failover_enabled: config.failover_enabled,
+          request_timeout_seconds: config.request_timeout_seconds
         })
         .eq('id', config.id);
 
@@ -518,6 +527,69 @@ const AIProviderManager = () => {
                   value={config.temperature}
                   onChange={(e) => setConfig({...config, temperature: parseFloat(e.target.value)})}
                 />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="primary-provider">Primary Provider</Label>
+                <Select 
+                  value={config.primary_provider_id || ''} 
+                  onValueChange={(value) => setConfig({ ...config, primary_provider_id: value || null })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select primary provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No primary provider</SelectItem>
+                    {providers.filter(p => p.is_active).map((provider) => (
+                      <SelectItem key={provider.id} value={provider.id}>
+                        {provider.name} ({provider.type})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="secondary-provider">Secondary Provider (Fallback)</Label>
+                <Select 
+                  value={config.secondary_provider_id || ''} 
+                  onValueChange={(value) => setConfig({ ...config, secondary_provider_id: value || null })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select secondary provider" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No secondary provider</SelectItem>
+                    {providers.filter(p => p.is_active && p.id !== config.primary_provider_id).map((provider) => (
+                      <SelectItem key={provider.id} value={provider.id}>
+                        {provider.name} ({provider.type})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="request-timeout">Request Timeout (seconds)</Label>
+                <Input
+                  id="request-timeout"
+                  type="number"
+                  value={config.request_timeout_seconds || 30}
+                  onChange={(e) => setConfig({ ...config, request_timeout_seconds: parseInt(e.target.value) })}
+                  min="10"
+                  max="300"
+                />
+              </div>
+              <div className="flex items-center space-x-2 pt-6">
+                <Switch
+                  id="failover-enabled"
+                  checked={config.failover_enabled !== false}
+                  onCheckedChange={(checked) => setConfig({ ...config, failover_enabled: checked })}
+                />
+                <Label htmlFor="failover-enabled">Enable Failover</Label>
               </div>
             </div>
 

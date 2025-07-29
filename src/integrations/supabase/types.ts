@@ -18,9 +18,13 @@ export type Database = {
         Row: {
           created_at: string
           default_provider_id: string | null
+          failover_enabled: boolean
           id: string
           is_enabled: boolean
           max_tokens: number | null
+          primary_provider_id: string | null
+          request_timeout_seconds: number
+          secondary_provider_id: string | null
           system_prompt: string | null
           temperature: number | null
           updated_at: string
@@ -28,9 +32,13 @@ export type Database = {
         Insert: {
           created_at?: string
           default_provider_id?: string | null
+          failover_enabled?: boolean
           id?: string
           is_enabled?: boolean
           max_tokens?: number | null
+          primary_provider_id?: string | null
+          request_timeout_seconds?: number
+          secondary_provider_id?: string | null
           system_prompt?: string | null
           temperature?: number | null
           updated_at?: string
@@ -38,9 +46,13 @@ export type Database = {
         Update: {
           created_at?: string
           default_provider_id?: string | null
+          failover_enabled?: boolean
           id?: string
           is_enabled?: boolean
           max_tokens?: number | null
+          primary_provider_id?: string | null
+          request_timeout_seconds?: number
+          secondary_provider_id?: string | null
           system_prompt?: string | null
           temperature?: number | null
           updated_at?: string
@@ -49,6 +61,20 @@ export type Database = {
           {
             foreignKeyName: "ai_chat_config_default_provider_id_fkey"
             columns: ["default_provider_id"]
+            isOneToOne: false
+            referencedRelation: "ai_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_primary_provider"
+            columns: ["primary_provider_id"]
+            isOneToOne: false
+            referencedRelation: "ai_providers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_secondary_provider"
+            columns: ["secondary_provider_id"]
             isOneToOne: false
             referencedRelation: "ai_providers"
             referencedColumns: ["id"]

@@ -38,6 +38,9 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
   const [streamingMessage, setStreamingMessage] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [requestTimeout, setRequestTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [showStopButton, setShowStopButton] = useState(false);
+  const [currentProvider, setCurrentProvider] = useState<string>('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   // Function to clear all messages and create new session
@@ -211,9 +214,14 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       abortController.abort();
       setAbortController(null);
     }
+    if (requestTimeout) {
+      clearTimeout(requestTimeout);
+      setRequestTimeout(null);
+    }
     setIsStreaming(false);
     setStreamingMessage('');
     setIsLoading(false);
+    setShowStopButton(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -225,10 +233,17 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
     setIsSending(true);
     setStreamingMessage('');
     setIsStreaming(false);
+    setCurrentProvider('');
 
     // Create abort controller for cancellation
     const controller = new AbortController();
     setAbortController(controller);
+
+    // Set timeout to show stop button after 30 seconds
+    const timeout = setTimeout(() => {
+      setShowStopButton(true);
+    }, 30000);
+    setRequestTimeout(timeout);
 
     try {
       // Save user message
@@ -256,6 +271,18 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       });
 
       if (error) throw error;
+
+      // Clear timeout and stop button since we got a response
+      if (requestTimeout) {
+        clearTimeout(requestTimeout);
+        setRequestTimeout(null);
+      }
+      setShowStopButton(false);
+
+      // Set provider information
+      if (data.providerName) {
+        setCurrentProvider(data.providerName);
+      }
 
       // Check if request was aborted
       if (controller.signal.aborted) {
@@ -315,6 +342,13 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       }
 
     } catch (error) {
+      // Clear timeout and stop button on error
+      if (requestTimeout) {
+        clearTimeout(requestTimeout);
+        setRequestTimeout(null);
+      }
+      setShowStopButton(false);
+      
       if (error.message !== 'Request was cancelled') {
         console.error('Error in chat:', error);
         toast({
@@ -462,10 +496,34 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
                         <div className="absolute inset-0 bg-red-400/10 rounded-lg animate-pulse"></div>
                       </div>
                       <span className="text-sm text-muted-foreground animate-pulse">Processing...</span>
+                      {currentProvider && (
+                        <span className="text-xs text-muted-foreground/60 ml-2">
+                          via {currentProvider}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
               )}
+
+              {(isStreaming && !isSending) || showStopButton ? (
+                <div className="flex justify-center p-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={stopStreaming}
+                    className="bg-background/50 backdrop-blur-sm border-red-500/20 hover:bg-red-500/10"
+                  >
+                    <Square className="h-4 w-4 mr-2" />
+                    {showStopButton ? 'Stop Request' : 'Stop'}
+                  </Button>
+                  {showStopButton && (
+                    <span className="text-xs text-muted-foreground ml-2 flex items-center">
+                      Request taking longer than expected
+                    </span>
+                  )}
+                </div>
+              ) : null}
             </div>
           )}
         </ScrollArea>
