@@ -97,7 +97,8 @@ serve(async (req) => {
         maxTokens: config.max_tokens,
         temperature: parseFloat(config.temperature),
         agentId: provider.agent_id,
-        conversationId: conversationId
+        conversationId: conversationId,
+        baseUrl: provider.base_url
       }
     });
 

@@ -21,7 +21,8 @@ serve(async (req) => {
       maxTokens = 1000, 
       temperature = 0.7,
       agentId = null,
-      conversationId = null
+      conversationId = null,
+      baseUrl = null
     } = await req.json();
 
     if (!message && !messages) {
@@ -35,18 +36,19 @@ serve(async (req) => {
 
     console.log('Sending request to Mistral with model:', model, agentId ? `using agent: ${agentId}` : '');
 
-    // If agent_id is provided, use the Conversations API
+    // If agent_id is provided, use the Agents Completions API
     if (agentId) {
-      // URL encode the agent ID to handle special characters like colons
-      const encodedAgentId = encodeURIComponent(agentId);
-      const apiUrl = `https://api.mistral.ai/v1/agents/${encodedAgentId}/conversations`;
+      // Use the configured base_url which should be https://api.mistral.ai/v1/agents/completions
+      const apiUrl = baseUrl || 'https://api.mistral.ai/v1/agents/completions';
       
       console.log('Making request to URL:', apiUrl);
       
-      // For agents, use the conversations API with proper format
+      // For agents completions API, the format is different
       const requestBody = {
-        inputs: message || (messages && messages.length > 0 ? messages[messages.length - 1].content : ''),
-        model: model
+        agent_id: agentId,
+        messages: messages && Array.isArray(messages) && messages.length > 0 
+          ? messages 
+          : [{ role: 'user', content: message }]
       };
 
       console.log('Request body:', JSON.stringify(requestBody, null, 2));
@@ -65,7 +67,7 @@ serve(async (req) => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Mistral Agents Conversations API Error:', errorData);
+        console.error('Mistral Agents Completions API Error:', errorData);
         console.error('Full response details:', { status: response.status, statusText: response.statusText, url: apiUrl });
         throw new Error(errorData.error?.message || errorData.detail || `Failed to get response from Mistral Agent. Status: ${response.status}`);
       }
@@ -80,7 +82,6 @@ serve(async (req) => {
         model,
         provider: 'mistral',
         tokensUsed: data.usage?.total_tokens || 0,
-        conversationId: data.id,
         agentId: agentId
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
