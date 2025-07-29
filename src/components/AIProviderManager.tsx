@@ -6,8 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Edit, Plus, TestTube, Star } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { Trash2, Edit, Plus, TestTube, Star, Key, Eye, EyeOff } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { AIStatusIndicator } from '@/components/AIStatusIndicator';
@@ -43,6 +43,13 @@ const AIProviderManager = () => {
   const [editingProvider, setEditingProvider] = useState<AIProvider | null>(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [testingProvider, setTestingProvider] = useState<string | null>(null);
+  
+  // Secret management state
+  const [showSecretDialog, setShowSecretDialog] = useState(false);
+  const [secretName, setSecretName] = useState('');
+  const [secretValue, setSecretValue] = useState('');
+  const [showSecretValue, setShowSecretValue] = useState(false);
+  const [editingSecret, setEditingSecret] = useState<string | null>(null);
 
   const [newProvider, setNewProvider] = useState({
     name: '',
@@ -365,6 +372,97 @@ const AIProviderManager = () => {
     }
   };
 
+  // Secret management functions
+  const handleSaveSecret = async () => {
+    if (!secretName.trim() || !secretValue.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Secret name and value are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate secret name format
+    const secretNamePattern = /^[A-Z_]+$/;
+    if (!secretNamePattern.test(secretName)) {
+      toast({
+        title: "Validation Error",
+        description: "Secret name should be in UPPERCASE_SNAKE_CASE format (e.g., MISTRAL_API_KEY)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // Use Supabase Edge Function to manage secrets securely
+      const { error } = await supabase.functions.invoke('manage-secrets', {
+        body: {
+          action: editingSecret ? 'update' : 'create',
+          secretName,
+          secretValue
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Secret ${editingSecret ? 'updated' : 'created'} successfully`,
+      });
+
+      setShowSecretDialog(false);
+      setSecretName('');
+      setSecretValue('');
+      setEditingSecret(null);
+    } catch (error) {
+      console.error('Error managing secret:', error);
+      toast({
+        title: "Error",
+        description: `Failed to ${editingSecret ? 'update' : 'create'} secret. Use Supabase dashboard to manage secrets.`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteSecret = async (name: string) => {
+    try {
+      const { error } = await supabase.functions.invoke('manage-secrets', {
+        body: {
+          action: 'delete',
+          secretName: name
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Secret deleted successfully",
+      });
+    } catch (error) {
+      console.error('Error deleting secret:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete secret. Use Supabase dashboard to manage secrets.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openSecretDialog = (name?: string) => {
+    if (name) {
+      setEditingSecret(name);
+      setSecretName(name);
+      setSecretValue('');
+    } else {
+      setEditingSecret(null);
+      setSecretName('');
+      setSecretValue('');
+    }
+    setShowSecretDialog(true);
+  };
+
   if (loading) {
     return <div>Loading AI providers...</div>;
   }
@@ -440,6 +538,118 @@ const AIProviderManager = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* API Secret Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Key className="w-5 h-5" />
+            API Secret Management
+          </CardTitle>
+          <CardDescription>Manage your API keys securely in Supabase</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3">
+            {/* Existing secrets display */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">OPENAI_API_KEY</span>
+                <div className="flex gap-1">
+                  <Button variant="outline" size="sm" onClick={() => openSecretDialog('OPENAI_API_KEY')}>
+                    <Edit className="w-3 h-3" />
+                    Update
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleDeleteSecret('OPENAI_API_KEY')}>
+                    <Trash2 className="w-3 h-3" />
+                    Delete
+                  </Button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">MISTRAL_API_KEY</span>
+                <div className="flex gap-1">
+                  <Button variant="outline" size="sm" onClick={() => openSecretDialog('MISTRAL_API_KEY')}>
+                    <Edit className="w-3 h-3" />
+                    Update
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => handleDeleteSecret('MISTRAL_API_KEY')}>
+                    <Trash2 className="w-3 h-3" />
+                    Delete
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <Button onClick={() => openSecretDialog()} variant="outline" className="w-full">
+            <Plus className="w-4 h-4 mr-2" />
+            Add New API Secret
+          </Button>
+          
+          <p className="text-xs text-muted-foreground">
+            For security, secret values are managed through Supabase. You can update or add new secrets here, 
+            or use the <a href="https://supabase.com/dashboard/project/csknxtzjfdqoaoforrfm/settings/functions" 
+            target="_blank" rel="noopener noreferrer" className="text-primary underline">Supabase dashboard</a>.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Secret Management Dialog */}
+      <Dialog open={showSecretDialog} onOpenChange={setShowSecretDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingSecret ? 'Update API Secret' : 'Add New API Secret'}</DialogTitle>
+            <DialogDescription>
+              {editingSecret ? 'Update the value for this API secret' : 'Add a new API secret to use with your providers'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="secret-name">Secret Name *</Label>
+              <Input
+                id="secret-name"
+                value={secretName}
+                onChange={(e) => setSecretName(e.target.value.toUpperCase())}
+                placeholder="e.g., MISTRAL_API_KEY"
+                disabled={!!editingSecret}
+              />
+              <p className="text-xs text-muted-foreground">Must be in UPPERCASE_SNAKE_CASE format</p>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="secret-value">Secret Value *</Label>
+              <div className="relative">
+                <Input
+                  id="secret-value"
+                  type={showSecretValue ? "text" : "password"}
+                  value={secretValue}
+                  onChange={(e) => setSecretValue(e.target.value)}
+                  placeholder="Enter your API key"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowSecretValue(!showSecretValue)}
+                >
+                  {showSecretValue ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {editingSecret ? 'Enter the new value for this secret' : 'Your API key will be stored securely'}
+              </p>
+            </div>
+            
+            <div className="flex gap-2 pt-4">
+              <Button onClick={handleSaveSecret} className="flex-1">
+                {editingSecret ? 'Update Secret' : 'Add Secret'}
+              </Button>
+              <Button variant="outline" onClick={() => setShowSecretDialog(false)}>Cancel</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Providers List */}
       <div className="flex justify-between items-center">
