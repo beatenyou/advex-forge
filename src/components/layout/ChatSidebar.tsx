@@ -84,34 +84,99 @@ export const ChatSidebar = ({
   const handleDownloadChats = async () => {
     if (!user) return;
     try {
-      // Fetch all chat sessions and their messages
+      console.log('Starting chat download for user:', user.id);
+      
+      // Add a small delay to ensure any pending messages are saved
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Fetch all chat sessions for the user
       const {
         data: sessions,
         error: sessionsError
-      } = await supabase.from('chat_sessions').select(`
-          *,
-          chat_messages (*)
-        `).eq('user_id', user.id).order('created_at', {
-        ascending: false
-      });
-      if (sessionsError) throw sessionsError;
-
+      } = await supabase
+        .from('chat_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (sessionsError) {
+        console.error('Error fetching sessions:', sessionsError);
+        throw sessionsError;
+      }
+      
+      console.log('Found sessions:', sessions?.length || 0);
+      
+      // Fetch all messages for all sessions in one query
+      const sessionIds = sessions?.map(s => s.id) || [];
+      console.log('Session IDs:', sessionIds);
+      
+      if (sessionIds.length === 0) {
+        toast({
+          title: "No chat history found",
+          description: "You don't have any chat sessions to download."
+        });
+        return;
+      }
+      
+      const {
+        data: allMessages,
+        error: messagesError
+      } = await supabase
+        .from('chat_messages')
+        .select('*')
+        .in('session_id', sessionIds)
+        .order('created_at', { ascending: true });
+      
+      if (messagesError) {
+        console.error('Error fetching messages:', messagesError);
+        throw messagesError;
+      }
+      
+      console.log('Found total messages:', allMessages?.length || 0);
+      console.log('Message breakdown by role:', 
+        allMessages?.reduce((acc, msg) => {
+          acc[msg.role] = (acc[msg.role] || 0) + 1;
+          return acc;
+        }, {} as Record<string, number>)
+      );
+      
+      // Group messages by session
+      const messagesBySession = allMessages?.reduce((acc, msg) => {
+        if (!acc[msg.session_id]) acc[msg.session_id] = [];
+        acc[msg.session_id].push(msg);
+        return acc;
+      }, {} as Record<string, any[]>) || {};
+      
       // Format the data for download
       const chatData = {
         exportDate: new Date().toISOString(),
         user: user.email,
+        totalSessions: sessions?.length || 0,
+        totalMessages: allMessages?.length || 0,
         sessions: sessions?.map(session => ({
           id: session.id,
           title: session.title,
           createdAt: session.created_at,
-          messages: session.chat_messages?.map(msg => ({
+          updatedAt: session.updated_at,
+          messageCount: messagesBySession[session.id]?.length || 0,
+          messages: (messagesBySession[session.id] || []).map(msg => ({
             role: msg.role,
             content: msg.content,
             timestamp: msg.created_at,
-            provider: msg.provider_name
+            provider: msg.provider_name,
+            tokensUsed: msg.tokens_used
           }))
         }))
       };
+      
+      console.log('Final chat data structure:', {
+        sessions: chatData.sessions.length,
+        totalMessages: chatData.totalMessages,
+        messagesPerSession: chatData.sessions.map(s => ({ 
+          title: s.title, 
+          messageCount: s.messageCount 
+        }))
+      });
 
       // Create and download the file
       const blob = new Blob([JSON.stringify(chatData, null, 2)], {
@@ -125,16 +190,17 @@ export const ChatSidebar = ({
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      
       toast({
-        title: "Download started",
-        description: "Your chat history is being downloaded."
+        title: "Download completed",
+        description: `Downloaded ${chatData.totalSessions} sessions with ${chatData.totalMessages} messages.`
       });
     } catch (error) {
       console.error('Error downloading chats:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to download chat history."
+        description: "Failed to download chat history. Check console for details."
       });
     }
   };
