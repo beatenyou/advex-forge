@@ -1,13 +1,13 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { MainPageModules } from "@/components/MainPageModules";
+import { ResponsiveDashboard } from "@/components/ResponsiveDashboard";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Shield, Loader2 } from "lucide-react";
 
-const Index = () => {
+const Admin = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -39,10 +39,10 @@ const Index = () => {
           <CardContent className="text-center p-8 space-y-4">
             <Shield className="h-16 w-16 text-primary mx-auto" />
             <h1 className="text-2xl font-bold bg-gradient-cyber bg-clip-text text-transparent">
-              AD Dashboard
+              Admin Dashboard
             </h1>
             <p className="text-muted-foreground">
-              Please sign in to access the Active Directory Attack & Enumeration Platform
+              Please sign in to access the admin dashboard
             </p>
             <Button 
               onClick={() => navigate("/auth")} 
@@ -59,9 +59,9 @@ const Index = () => {
 
   return (
     <MainLayout>
-      <MainPageModules />
+      <ResponsiveDashboard />
     </MainLayout>
   );
 };
 
-export default Index;
+export default Admin;
