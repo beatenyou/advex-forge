@@ -19,6 +19,45 @@ serve(async (req) => {
   }
 
   try {
+    // Get user from auth header for quota checking
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authentication required for AI chat');
+    }
+
+    // Create client with service role to check quotas
+    const authToken = authHeader.replace('Bearer ', '');
+    const { data: userData, error: userError } = await supabase.auth.getUser(authToken);
+    
+    if (userError || !userData.user) {
+      throw new Error('Invalid authentication token');
+    }
+
+    const userId = userData.user.id;
+    
+    // Check AI usage quota before processing
+    const { data: quotaData, error: quotaError } = await supabase.rpc('check_ai_quota', {
+      user_id_param: userId
+    });
+
+    if (quotaError) {
+      console.error('Quota check error:', quotaError);
+      throw new Error('Failed to check AI usage quota');
+    }
+
+    if (!quotaData || quotaData.length === 0 || !quotaData[0].can_use_ai) {
+      return new Response(JSON.stringify({ 
+        error: 'AI usage quota exceeded',
+        quota_exceeded: true,
+        current_usage: quotaData?.[0]?.current_usage || 0,
+        quota_limit: quotaData?.[0]?.quota_limit || 50,
+        plan_name: quotaData?.[0]?.plan_name || 'Free'
+      }), {
+        status: 429, // Too Many Requests
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { message, messages, providerId, sessionId, conversationId } = await req.json();
 
     // Support both single message (legacy) and conversation context (new)
@@ -177,6 +216,21 @@ serve(async (req) => {
     }
 
     const result = providerResponse.data;
+
+    // Increment AI usage count after successful response
+    try {
+      const { data: incrementResult, error: incrementError } = await supabase.rpc('increment_ai_usage', {
+        user_id_param: userId
+      });
+      
+      if (incrementError) {
+        console.error('Failed to increment AI usage:', incrementError);
+        // Don't fail the request, just log the error
+      }
+    } catch (usageError) {
+      console.error('Error tracking AI usage:', usageError);
+      // Don't fail the request, just log the error
+    }
 
     return new Response(JSON.stringify({
       ...result,

@@ -11,6 +11,7 @@ import { AIStatusIndicator } from '@/components/AIStatusIndicator';
 import TextareaAutosize from 'react-textarea-autosize';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
+import { useAIUsage } from '@/hooks/useAIUsage';
 
 interface ChatMessage {
   id: string;
@@ -44,6 +45,7 @@ interface ChatSessionProps {
 export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
   const { user } = useAuth();
   const { trackActivity, trackPerformance } = useAnalytics();
+  const { canUseAI, currentUsage, quotaLimit, planName, refreshQuota } = useAIUsage();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [question, setQuestion] = useState('');
@@ -319,6 +321,16 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
     e.preventDefault();
     if (!question.trim() || isLoading || isSending || !currentSession) return;
 
+    // Check AI quota before sending
+    if (!canUseAI) {
+      toast({
+        title: "AI Usage Limit Reached",
+        description: `You've reached your ${planName} plan limit of ${quotaLimit} AI interactions this month. Upgrade your plan for more usage.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
     const userQuestion = question.trim();
     const startTime = performance.now();
     setQuestion('');
@@ -364,6 +376,12 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
           sessionId: currentSession.id
         }
       });
+
+      // Handle quota exceeded error specifically
+      if (error && error.message?.includes('quota exceeded')) {
+        await refreshQuota(); // Refresh quota state
+        throw new Error(`AI usage quota exceeded. You've used ${currentUsage}/${quotaLimit} AI interactions this month.`);
+      }
 
       if (error) throw error;
 
@@ -454,6 +472,9 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
 
         // Track successful AI response
         await trackActivity('ai_response_received', `Received response from ${data.providerName || 'unknown'}`);
+        
+        // Refresh quota after successful interaction
+        await refreshQuota();
 
         // Update session timestamp
         await supabase
