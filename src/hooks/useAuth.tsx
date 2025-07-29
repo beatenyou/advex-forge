@@ -19,38 +19,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
         
-        // Track authentication events
+        // Defer database operations to prevent infinite loops
         if (session?.user && event === 'SIGNED_IN') {
-          try {
-            await supabase.from('user_activity_log').insert({
-              user_id: session.user.id,
-              activity_type: 'sign_in',
-              description: 'User signed in',
-              user_agent: navigator.userAgent,
-            });
-          } catch (error) {
-            console.error('Error logging sign in activity:', error);
-          }
-        } else if (event === 'SIGNED_OUT') {
-          try {
-            // Use the previous user ID if available
-            const userId = user?.id;
-            if (userId) {
+          setTimeout(async () => {
+            try {
               await supabase.from('user_activity_log').insert({
-                user_id: userId,
-                activity_type: 'sign_out',
-                description: 'User signed out',
+                user_id: session.user.id,
+                activity_type: 'sign_in',
+                description: 'User signed in',
                 user_agent: navigator.userAgent,
               });
+            } catch (error) {
+              console.error('Error logging sign in activity:', error);
             }
-          } catch (error) {
-            console.error('Error logging sign out activity:', error);
-          }
+          }, 0);
+        } else if (event === 'SIGNED_OUT') {
+          // Store previous user ID before state changes
+          const previousUserId = user?.id;
+          setTimeout(async () => {
+            if (previousUserId) {
+              try {
+                await supabase.from('user_activity_log').insert({
+                  user_id: previousUserId,
+                  activity_type: 'sign_out',
+                  description: 'User signed out',
+                  user_agent: navigator.userAgent,
+                });
+              } catch (error) {
+                console.error('Error logging sign out activity:', error);
+              }
+            }
+          }, 0);
         }
       }
     );
@@ -63,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, [user?.id]);
+  }, []); // Remove problematic dependency that was causing infinite loop
 
   const signOut = async () => {
     // Log the sign out activity before signing out
