@@ -452,9 +452,14 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
               {isLoading && !isStreaming && (
                 <div className="flex justify-start">
                   <div className="bg-muted rounded-lg p-3 mr-12">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm">AI is thinking...</span>
+                    <div className="flex items-center justify-center space-x-3">
+                      <div className="relative">
+                        <div className="bg-cyber text-cyber-foreground px-3 py-1 rounded-full text-xs font-mono font-bold animate-pulse">
+                          RT
+                        </div>
+                        <div className="absolute inset-0 bg-cyber/20 rounded-full animate-ping"></div>
+                      </div>
+                      <span className="text-sm animate-pulse">Processing request...</span>
                     </div>
                   </div>
                 </div>
