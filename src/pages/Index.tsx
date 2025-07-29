@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { MainPageModules } from "@/components/MainPageModules";
+import { Dashboard } from "@/components/Dashboard";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,7 +59,7 @@ const Index = () => {
 
   return (
     <MainLayout>
-      <MainPageModules />
+      <Dashboard />
     </MainLayout>
   );
 };
