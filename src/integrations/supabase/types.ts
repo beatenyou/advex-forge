@@ -940,6 +940,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      admin_edit_ai_usage: {
+        Args: {
+          target_user_id: string
+          admin_user_id: string
+          new_quota_limit?: number
+          new_current_usage?: number
+        }
+        Returns: boolean
+      }
       calculate_daily_stats: {
         Args: { target_date?: string }
         Returns: undefined

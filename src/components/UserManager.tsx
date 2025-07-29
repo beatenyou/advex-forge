@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, UserPlus, Shield, User, Gift, Zap } from 'lucide-react';
+import { Trash2, UserPlus, Shield, User, Gift, Zap, Edit2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface Profile {
@@ -38,10 +38,14 @@ export function UserManager() {
   const [newUserRole, setNewUserRole] = useState<'user' | 'admin'>('user');
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [grantDialogOpen, setGrantDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [selectedUserEmail, setSelectedUserEmail] = useState<string>('');
   const [interactionsToGrant, setInteractionsToGrant] = useState<string>('100');
+  const [newQuotaLimit, setNewQuotaLimit] = useState<string>('');
+  const [newCurrentUsage, setNewCurrentUsage] = useState<string>('');
   const [isGranting, setIsGranting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -214,6 +218,15 @@ export function UserManager() {
     setGrantDialogOpen(true);
   };
 
+  const openEditDialog = (userId: string, email: string) => {
+    setSelectedUserId(userId);
+    setSelectedUserEmail(email);
+    const billing = userBilling[userId];
+    setNewQuotaLimit(billing?.ai_quota_limit?.toString() || '50');
+    setNewCurrentUsage(billing?.ai_usage_current?.toString() || '0');
+    setEditDialogOpen(true);
+  };
+
   const handleGrantInteractions = async () => {
     if (!selectedUserId || !user) return;
 
@@ -243,6 +256,39 @@ export function UserManager() {
       });
     } finally {
       setIsGranting(false);
+    }
+  };
+
+  const handleEditUsage = async () => {
+    if (!selectedUserId || !user) return;
+
+    setIsEditing(true);
+    try {
+      const { data, error } = await supabase.rpc('admin_edit_ai_usage', {
+        target_user_id: selectedUserId,
+        admin_user_id: user.id,
+        new_quota_limit: parseInt(newQuotaLimit) || null,
+        new_current_usage: parseInt(newCurrentUsage) || null
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Updated AI usage for ${selectedUserEmail}`,
+      });
+
+      setEditDialogOpen(false);
+      fetchUserBilling(); // Refresh billing data
+    } catch (error: any) {
+      console.error('Error editing usage:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to edit AI usage",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEditing(false);
     }
   };
 
@@ -385,7 +431,18 @@ export function UserManager() {
                   </TableCell>
                   <TableCell>{formatDate(profile.created_at)}</TableCell>
                   <TableCell>
-                    <div className="flex gap-2">{/* Grant AI Interactions Button */}
+                    <div className="flex gap-2">
+                      {/* Edit AI Usage Button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditDialog(profile.user_id, profile.email)}
+                        className="text-blue-600 hover:text-blue-700"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      
+                      {/* Grant AI Interactions Button */}
                       <Button
                         variant="outline"
                         size="sm"
@@ -467,6 +524,59 @@ export function UserManager() {
               </Button>
               <Button onClick={handleGrantInteractions} disabled={isGranting}>
                 {isGranting ? 'Granting...' : 'Grant Interactions'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit AI Usage Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit2 className="w-5 h-5" />
+              Edit AI Usage
+            </DialogTitle>
+            <DialogDescription>
+              Manually edit AI usage and quota for {selectedUserEmail}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="quota-limit">Monthly Quota Limit</Label>
+              <Input
+                id="quota-limit"
+                type="number"
+                min="0"
+                value={newQuotaLimit}
+                onChange={(e) => setNewQuotaLimit(e.target.value)}
+                placeholder="e.g., 500"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Set the maximum AI interactions allowed per month
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="current-usage">Current Usage</Label>
+              <Input
+                id="current-usage"
+                type="number"
+                min="0"
+                value={newCurrentUsage}
+                onChange={(e) => setNewCurrentUsage(e.target.value)}
+                placeholder="e.g., 47"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Set the current AI interactions used this month (useful for resetting or reducing usage)
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleEditUsage} disabled={isEditing}>
+                {isEditing ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </div>
