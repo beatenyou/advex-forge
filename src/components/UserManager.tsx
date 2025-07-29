@@ -69,26 +69,19 @@ export function UserManager() {
 
     setIsAddingUser(true);
     try {
-      // Create user account
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: newUserEmail,
-        password: newUserPassword,
-        email_confirm: true,
-        user_metadata: {
-          display_name: newUserEmail.split('@')[0]
+      // Call the admin-create-user edge function
+      const { data, error } = await supabase.functions.invoke('admin-create-user', {
+        body: {
+          email: newUserEmail,
+          password: newUserPassword,
+          role: newUserRole
         }
       });
 
-      if (authError) throw authError;
+      if (error) throw error;
 
-      if (authData.user) {
-        // Update the user's role in the profiles table
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({ role: newUserRole })
-          .eq('user_id', authData.user.id);
-
-        if (profileError) throw profileError;
+      if (data.error) {
+        throw new Error(data.error);
       }
 
       toast({
