@@ -81,6 +81,51 @@ export type Database = {
           },
         ]
       }
+      ai_interactions: {
+        Row: {
+          created_at: string
+          error_type: string | null
+          id: string
+          provider_name: string | null
+          request_size: number | null
+          request_type: string | null
+          response_time_ms: number | null
+          session_id: string | null
+          success: boolean | null
+          tokens_used: number | null
+          user_id: string | null
+          user_satisfaction: number | null
+        }
+        Insert: {
+          created_at?: string
+          error_type?: string | null
+          id?: string
+          provider_name?: string | null
+          request_size?: number | null
+          request_type?: string | null
+          response_time_ms?: number | null
+          session_id?: string | null
+          success?: boolean | null
+          tokens_used?: number | null
+          user_id?: string | null
+          user_satisfaction?: number | null
+        }
+        Update: {
+          created_at?: string
+          error_type?: string | null
+          id?: string
+          provider_name?: string | null
+          request_size?: number | null
+          request_type?: string | null
+          response_time_ms?: number | null
+          session_id?: string | null
+          success?: boolean | null
+          tokens_used?: number | null
+          user_id?: string | null
+          user_satisfaction?: number | null
+        }
+        Relationships: []
+      }
       ai_link_tabs: {
         Row: {
           category: string
@@ -277,6 +322,78 @@ export type Database = {
           },
         ]
       }
+      daily_stats: {
+        Row: {
+          active_users: number | null
+          ai_success_rate: number | null
+          avg_response_time_ms: number | null
+          avg_session_duration: number | null
+          bounce_rate: number | null
+          created_at: string
+          error_count: number | null
+          id: string
+          new_users: number | null
+          stat_date: string
+          total_ai_interactions: number | null
+          total_sessions: number | null
+        }
+        Insert: {
+          active_users?: number | null
+          ai_success_rate?: number | null
+          avg_response_time_ms?: number | null
+          avg_session_duration?: number | null
+          bounce_rate?: number | null
+          created_at?: string
+          error_count?: number | null
+          id?: string
+          new_users?: number | null
+          stat_date: string
+          total_ai_interactions?: number | null
+          total_sessions?: number | null
+        }
+        Update: {
+          active_users?: number | null
+          ai_success_rate?: number | null
+          avg_response_time_ms?: number | null
+          avg_session_duration?: number | null
+          bounce_rate?: number | null
+          created_at?: string
+          error_count?: number | null
+          id?: string
+          new_users?: number | null
+          stat_date?: string
+          total_ai_interactions?: number | null
+          total_sessions?: number | null
+        }
+        Relationships: []
+      }
+      performance_metrics: {
+        Row: {
+          id: string
+          metric_type: string
+          metric_unit: string
+          metric_value: number
+          recorded_at: string
+          service_name: string | null
+        }
+        Insert: {
+          id?: string
+          metric_type: string
+          metric_unit: string
+          metric_value: number
+          recorded_at?: string
+          service_name?: string | null
+        }
+        Update: {
+          id?: string
+          metric_type?: string
+          metric_unit?: string
+          metric_value?: number
+          recorded_at?: string
+          service_name?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -349,12 +466,96 @@ export type Database = {
         }
         Relationships: []
       }
+      traffic_analytics: {
+        Row: {
+          browser: string | null
+          city: string | null
+          country_code: string | null
+          device_type: string | null
+          id: string
+          operating_system: string | null
+          page_path: string
+          referrer_source: string | null
+          session_id: string | null
+          visit_timestamp: string
+        }
+        Insert: {
+          browser?: string | null
+          city?: string | null
+          country_code?: string | null
+          device_type?: string | null
+          id?: string
+          operating_system?: string | null
+          page_path: string
+          referrer_source?: string | null
+          session_id?: string | null
+          visit_timestamp?: string
+        }
+        Update: {
+          browser?: string | null
+          city?: string | null
+          country_code?: string | null
+          device_type?: string | null
+          id?: string
+          operating_system?: string | null
+          page_path?: string
+          referrer_source?: string | null
+          session_id?: string | null
+          visit_timestamp?: string
+        }
+        Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          created_at: string
+          duration_seconds: number | null
+          id: string
+          ip_address: unknown | null
+          is_bounce: boolean | null
+          pages_visited: number | null
+          referrer: string | null
+          session_end: string | null
+          session_start: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          ip_address?: unknown | null
+          is_bounce?: boolean | null
+          pages_visited?: number | null
+          referrer?: string | null
+          session_end?: string | null
+          session_start?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number | null
+          id?: string
+          ip_address?: unknown | null
+          is_bounce?: boolean | null
+          pages_visited?: number | null
+          referrer?: string | null
+          session_end?: string | null
+          session_start?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_daily_stats: {
+        Args: { target_date?: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"
