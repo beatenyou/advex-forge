@@ -1,0 +1,1 @@
+UPDATE announcements SET is_active = true WHERE id = 'fbe25fd9-079c-4fe2-83d5-985b7ed1402e';
