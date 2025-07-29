@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Copy, MessageSquare, Plus, Square } from 'lucide-react';
+import { Loader2, Copy, MessageSquare, Plus, Square, Send, Check } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
@@ -34,6 +34,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [question, setQuestion] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
@@ -217,11 +218,11 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!question.trim() || isLoading || !currentSession) return;
+    if (!question.trim() || isLoading || isSending || !currentSession) return;
 
     const userQuestion = question.trim();
     setQuestion('');
-    setIsLoading(true);
+    setIsSending(true);
     setStreamingMessage('');
     setIsStreaming(false);
 
@@ -233,6 +234,8 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       // Save user message
       const userMessage = await saveMessage(currentSession.id, 'user', userQuestion);
       setMessages(prev => [...prev, userMessage as ChatMessage]);
+      setIsSending(false);
+      setIsLoading(true);
 
       // Update session title if this is the first message
       if (messages.length === 0) {
@@ -321,6 +324,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       }
     } finally {
       setIsLoading(false);
+      setIsSending(false);
       setIsStreaming(false);
       setStreamingMessage('');
       setAbortController(null);
@@ -407,14 +411,31 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
                     ) : (
                       <div className="space-y-2">
                         <p className="text-sm">{message.content}</p>
-                        <div className="text-xs opacity-70">
-                          {new Date(message.created_at).toLocaleTimeString()}
+                        <div className="flex items-center justify-between text-xs opacity-70">
+                          <span>{new Date(message.created_at).toLocaleTimeString()}</span>
+                          <Check className="h-3 w-3 text-green-400" />
                         </div>
                       </div>
                     )}
                   </div>
                 </div>
               ))}
+              {isSending && (
+                <div className="flex justify-end">
+                  <div className="bg-red-950 text-red-100 rounded-lg p-3 ml-12 max-w-[80%]">
+                    <div className="space-y-2">
+                      <p className="text-sm">{question || "Sending message..."}</p>
+                      <div className="flex items-center justify-between text-xs opacity-70">
+                        <span>Sending...</span>
+                        <div className="flex items-center gap-1">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <Send className="h-3 w-3" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
               {isStreaming && streamingMessage && (
                 <div className="flex justify-start">
                   <div className="bg-muted rounded-lg p-3 mr-12">
@@ -453,13 +474,13 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey && !isLoading && question.trim()) {
+                  if (e.key === 'Enter' && !e.shiftKey && !isLoading && !isSending && question.trim()) {
                     e.preventDefault();
                     handleSubmit(e as any);
                   }
                 }}
                 className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={isLoading}
+                disabled={isLoading || isSending}
                 minRows={1}
                 maxRows={6}
               />
@@ -478,11 +499,11 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
             ) : (
               <Button 
                 type="submit" 
-                disabled={isLoading || !question.trim()}
+                disabled={isLoading || isSending || !question.trim()}
                 size="sm"
                 className="px-4 py-2 shrink-0"
               >
-                {isLoading ? (
+                {isLoading || isSending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   'Send'
