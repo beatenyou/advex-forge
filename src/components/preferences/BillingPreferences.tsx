@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { CreditCard, Crown, Zap, CheckCircle, ArrowUpCircle } from 'lucide-react';
+import { CreditCard, Crown, Zap, CheckCircle, ArrowUpCircle, Lock, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface BillingPlan {
@@ -28,6 +28,9 @@ interface UserBilling {
   current_period_end: string;
   ai_usage_current: number;
   ai_quota_limit: number;
+  account_locked: boolean;
+  account_lock_date: string | null;
+  account_lock_reason: string | null;
 }
 
 export default function BillingPreferences() {
@@ -94,6 +97,9 @@ export default function BillingPreferences() {
               current_period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
               ai_usage_current: 0,
               ai_quota_limit: freePlan.ai_quota_monthly,
+              account_locked: false,
+              account_lock_date: null,
+              account_lock_reason: null,
             });
             setCurrentPlan(freePlan);
           }
@@ -163,11 +169,37 @@ export default function BillingPreferences() {
         <CardContent className="space-y-4">
           {userBilling && (
             <>
+              {/* Account Lock Warning */}
+              {userBilling.account_locked && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2 text-destructive mb-2">
+                    <Lock className="h-4 w-4" />
+                    <span className="font-semibold">Account Locked</span>
+                  </div>
+                  <p className="text-sm text-destructive/80">
+                    {userBilling.account_lock_reason || 'Your account has been locked by an administrator.'}
+                  </p>
+                  {userBilling.account_lock_date && (
+                    <p className="text-xs text-destructive/70 mt-1">
+                      Lock date: {format(new Date(userBilling.account_lock_date), 'MMM dd, yyyy HH:mm')}
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <span>Status</span>
-                <Badge variant={userBilling.subscription_status === 'active' ? 'default' : 'secondary'}>
-                  {userBilling.subscription_status.toUpperCase()}
-                </Badge>
+                <div className="flex gap-2">
+                  <Badge variant={userBilling.subscription_status === 'active' ? 'default' : 'secondary'}>
+                    {userBilling.subscription_status.toUpperCase()}
+                  </Badge>
+                  {userBilling.account_locked && (
+                    <Badge variant="destructive">
+                      <Lock className="h-3 w-3 mr-1" />
+                      Locked
+                    </Badge>
+                  )}
+                </div>
               </div>
 
               <div className="space-y-2">

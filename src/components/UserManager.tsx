@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, UserPlus, Shield, User, Gift, Zap, Edit2 } from 'lucide-react';
+import { Trash2, UserPlus, Shield, User, Gift, Zap, Edit2, Lock, Unlock, Calendar } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface Profile {
@@ -27,6 +27,9 @@ interface UserBilling {
   ai_usage_current: number;
   ai_quota_limit: number;
   subscription_status: string;
+  account_locked: boolean;
+  account_lock_date: string | null;
+  account_lock_reason: string | null;
 }
 
 export function UserManager() {
@@ -39,13 +42,17 @@ export function UserManager() {
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [grantDialogOpen, setGrantDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [lockDialogOpen, setLockDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [selectedUserEmail, setSelectedUserEmail] = useState<string>('');
   const [interactionsToGrant, setInteractionsToGrant] = useState<string>('100');
   const [newQuotaLimit, setNewQuotaLimit] = useState<string>('');
   const [newCurrentUsage, setNewCurrentUsage] = useState<string>('');
+  const [lockDate, setLockDate] = useState<string>('');
+  const [lockReason, setLockReason] = useState<string>('');
   const [isGranting, setIsGranting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isLocking, setIsLocking] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -79,7 +86,7 @@ export function UserManager() {
     try {
       const { data, error } = await supabase
         .from('user_billing')
-        .select('user_id, ai_usage_current, ai_quota_limit, subscription_status');
+        .select('user_id, ai_usage_current, ai_quota_limit, subscription_status, account_locked, account_lock_date, account_lock_reason');
 
       if (error) throw error;
       
@@ -88,7 +95,10 @@ export function UserManager() {
         billingMap[billing.user_id] = {
           ai_usage_current: billing.ai_usage_current,
           ai_quota_limit: billing.ai_quota_limit,
-          subscription_status: billing.subscription_status
+          subscription_status: billing.subscription_status,
+          account_locked: billing.account_locked,
+          account_lock_date: billing.account_lock_date,
+          account_lock_reason: billing.account_lock_reason
         };
       });
       setUserBilling(billingMap);
@@ -225,6 +235,82 @@ export function UserManager() {
     setNewQuotaLimit(billing?.ai_quota_limit?.toString() || '50');
     setNewCurrentUsage(billing?.ai_usage_current?.toString() || '0');
     setEditDialogOpen(true);
+  };
+
+  const openLockDialog = (userId: string, email: string) => {
+    setSelectedUserId(userId);
+    setSelectedUserEmail(email);
+    setLockDate('');
+    setLockReason('');
+    setLockDialogOpen(true);
+  };
+
+  const handleLockAccount = async () => {
+    if (!selectedUserId) return;
+
+    setIsLocking(true);
+    try {
+      const lockDateValue = lockDate ? new Date(lockDate).toISOString() : null;
+      
+      const { error } = await supabase
+        .from('user_billing')
+        .upsert({
+          user_id: selectedUserId,
+          account_locked: true,
+          account_lock_date: lockDateValue,
+          account_lock_reason: lockReason || 'Account locked by administrator',
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Account locked for ${selectedUserEmail}`,
+      });
+
+      setLockDialogOpen(false);
+      fetchUserBilling();
+    } catch (error: any) {
+      console.error('Error locking account:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to lock account",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLocking(false);
+    }
+  };
+
+  const handleUnlockAccount = async (userId: string, email: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_billing')
+        .upsert({
+          user_id: userId,
+          account_locked: false,
+          account_lock_date: null,
+          account_lock_reason: null,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Account unlocked for ${email}`,
+      });
+
+      fetchUserBilling();
+    } catch (error: any) {
+      console.error('Error unlocking account:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to unlock account",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleGrantInteractions = async () => {
@@ -421,9 +507,17 @@ export function UserManager() {
                         <div className="font-medium">
                           {userBilling[profile.user_id].ai_usage_current} / {userBilling[profile.user_id].ai_quota_limit}
                         </div>
-                        <Badge variant="secondary" className="text-xs">
-                          {userBilling[profile.user_id].subscription_status}
-                        </Badge>
+                        <div className="flex gap-1">
+                          <Badge variant="secondary" className="text-xs">
+                            {userBilling[profile.user_id].subscription_status}
+                          </Badge>
+                          {userBilling[profile.user_id].account_locked && (
+                            <Badge variant="destructive" className="text-xs">
+                              <Lock className="h-3 w-3 mr-1" />
+                              Locked
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                     ) : (
                       <span className="text-muted-foreground text-sm">No data</span>
@@ -451,6 +545,29 @@ export function UserManager() {
                       >
                         <Gift className="h-4 w-4" />
                       </Button>
+
+                      {/* Lock/Unlock Account Button */}
+                      {userBilling[profile.user_id]?.account_locked ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleUnlockAccount(profile.user_id, profile.email)}
+                          className="text-green-600 hover:text-green-700"
+                          disabled={profile.user_id === user?.id}
+                        >
+                          <Unlock className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openLockDialog(profile.user_id, profile.email)}
+                          className="text-orange-600 hover:text-orange-700"
+                          disabled={profile.user_id === user?.id}
+                        >
+                          <Lock className="h-4 w-4" />
+                        </Button>
+                      )}
                       {/* Delete Button */}
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -577,6 +694,52 @@ export function UserManager() {
               </Button>
               <Button onClick={handleEditUsage} disabled={isEditing}>
                 {isEditing ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Lock Account Dialog */}
+      <Dialog open={lockDialogOpen} onOpenChange={setLockDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5" />
+              Lock Account
+            </DialogTitle>
+            <DialogDescription>
+              Lock {selectedUserEmail}'s account and optionally set an automatic lock date
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="lock-reason">Lock Reason</Label>
+              <Input
+                id="lock-reason"
+                value={lockReason}
+                onChange={(e) => setLockReason(e.target.value)}
+                placeholder="e.g., Policy violation, security concern..."
+              />
+            </div>
+            <div>
+              <Label htmlFor="lock-date">Lock Date (Optional)</Label>
+              <Input
+                id="lock-date"
+                type="datetime-local"
+                value={lockDate}
+                onChange={(e) => setLockDate(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Leave empty to lock immediately, or set a future date for automatic locking
+              </p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setLockDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleLockAccount} disabled={isLocking} variant="destructive">
+                {isLocking ? 'Locking...' : 'Lock Account'}
               </Button>
             </div>
           </div>

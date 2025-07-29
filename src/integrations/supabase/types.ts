@@ -785,6 +785,9 @@ export type Database = {
       }
       user_billing: {
         Row: {
+          account_lock_date: string | null
+          account_lock_reason: string | null
+          account_locked: boolean | null
           ai_quota_limit: number | null
           ai_usage_current: number | null
           billing_cycle: string | null
@@ -800,6 +803,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          account_lock_date?: string | null
+          account_lock_reason?: string | null
+          account_locked?: boolean | null
           ai_quota_limit?: number | null
           ai_usage_current?: number | null
           billing_cycle?: string | null
@@ -815,6 +821,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          account_lock_date?: string | null
+          account_lock_reason?: string | null
+          account_locked?: boolean | null
           ai_quota_limit?: number | null
           ai_usage_current?: number | null
           billing_cycle?: string | null
