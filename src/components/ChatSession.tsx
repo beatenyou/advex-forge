@@ -277,7 +277,7 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
   };
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card className={`flex flex-col ${messages.length === 0 ? 'h-auto' : 'h-full'}`}>
       <CardHeader className="flex-shrink-0">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -301,8 +301,15 @@ export const ChatSession = ({ onClear }: ChatSessionProps) => {
 
       <Separator />
 
-      <CardContent className="flex-1 flex flex-col p-0">
-        <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
+      <CardContent className={`flex flex-col p-0 ${messages.length === 0 ? '' : 'flex-1'}`}>
+        <ScrollArea 
+          ref={scrollAreaRef} 
+          className={`p-4 transition-all duration-300 ${
+            messages.length === 0 
+              ? 'h-auto min-h-[120px]' 
+              : 'flex-1 max-h-[60vh]'
+          }`}
+        >
           {messages.length === 0 ? (
             <div className="text-center text-muted-foreground py-8">
               <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
