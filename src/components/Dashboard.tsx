@@ -136,22 +136,49 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true,
             </div>
             <div className="ml-auto flex items-center gap-4">
               <AIStatusIndicator size="sm" />
-              <Button variant="outline" size="sm">
+              <Button 
+                variant="outline" 
+                size="sm"
+                title="User Profile"
+                className="hover-scale"
+              >
                 <Users className="w-4 h-4 mr-2" />
                 {user?.email?.split('@')[0] || 'User'}
               </Button>
-              <Button variant="outline" size="sm" onClick={() => navigate('/preferences')}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={onOpenChat}
+                title="Open AI Chat"
+                className="hover-scale"
+              >
+                <MessageSquare className="w-4 h-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => navigate('/preferences')}
+                title="User Preferences"
+                className="hover-scale"
+              >
                 <Settings className="w-4 h-4" />
               </Button>
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={() => setShowAdminDashboard(true)}
-                className="border-primary/50 text-primary hover:bg-primary/10"
+                title="Admin Dashboard"
+                className="border-primary/50 text-primary hover:bg-primary/10 hover-scale"
               >
                 <UserCog className="w-4 h-4" />
               </Button>
-              <Button variant="outline" size="sm" onClick={handleSignOut}>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleSignOut}
+                title="Sign Out"
+                className="hover-scale"
+              >
                 <LogOut className="w-4 h-4" />
               </Button>
             </div>
