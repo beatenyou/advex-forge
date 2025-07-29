@@ -11,19 +11,15 @@ interface MainLayoutProps {
 }
 
 export const MainLayout = ({ children }: MainLayoutProps) => {
-  const [isChatVisible, setIsChatVisible] = useState(true);
+  const [isChatVisible, setIsChatVisible] = useState(false); // Start hidden
   const [isWideScreen, setIsWideScreen] = useState(false);
 
-  // Check screen width and adjust layout accordingly
+  // Check screen width but don't auto-show chat
   useEffect(() => {
     const checkScreenWidth = () => {
       const width = window.innerWidth;
       setIsWideScreen(width >= 1400); // Wide screen threshold
-      
-      // Auto-show chat on wide screens, but respect user preference on smaller screens
-      if (width >= 1400) {
-        setIsChatVisible(true);
-      }
+      // Remove auto-show chat logic - let user control visibility
     };
 
     checkScreenWidth();

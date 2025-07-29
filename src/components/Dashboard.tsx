@@ -192,8 +192,9 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true,
           onPhaseSelect={setSelectedPhase}
         />
 
-        {/* Main Content - Added better padding and responsive spacing */}
-        <main className="flex-1 p-8 lg:p-12 max-w-7xl mx-auto w-full">
+        {/* Main Content - Better container structure for responsive grid */}
+        <main className="flex-1 max-w-none w-full">
+          <div className="p-8 lg:p-12 max-w-full mx-auto">
           {/* Phase Section */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-6">
@@ -206,7 +207,11 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true,
             </div>
 
             {/* Technique Cards Grid - Dynamic responsive columns */}
-            <div ref={containerRef} style={gridStyle} className="mb-8">
+            <div 
+              ref={containerRef} 
+              style={gridStyle} 
+              className="mb-8 w-full"
+            >
               {filteredTechniques.map(technique => (
                 <TechniqueCard 
                   key={technique.id} 
@@ -229,6 +234,7 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true,
 
           {/* Quick Reference Section */}
           <QuickReference />
+          </div>
         </main>
       </div>
 
