@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Copy, MessageSquare, Plus, Square, Send, Check } from 'lucide-react';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Loader2, Copy, MessageSquare, Plus, Square, Send, Check, Hash } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
@@ -26,6 +28,14 @@ interface ChatSession {
   updated_at: string;
 }
 
+interface SavedPrompt {
+  id: string;
+  title: string;
+  prompt_text: string;
+  category: string;
+  is_favorite: boolean;
+}
+
 interface ChatSessionProps {
   onClear?: () => void;
   sessionId?: string;
@@ -45,7 +55,12 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
   const [requestTimeout, setRequestTimeout] = useState<NodeJS.Timeout | null>(null);
   const [showStopButton, setShowStopButton] = useState(false);
   const [currentProvider, setCurrentProvider] = useState<string>('');
+  const [savedPrompts, setSavedPrompts] = useState<SavedPrompt[]>([]);
+  const [showPromptSuggestions, setShowPromptSuggestions] = useState(false);
+  const [filteredPrompts, setFilteredPrompts] = useState<SavedPrompt[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Function to clear all messages and create new session
   const clearChatAndResetSession = async () => {
@@ -58,6 +73,8 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
 
   useEffect(() => {
     loadOrCreateSession();
+    fetchSavedPrompts();
+    checkAdminStatus();
   }, []);
 
   useEffect(() => {
@@ -75,6 +92,76 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       }
     };
   }, [onClear]);
+
+  const checkAdminStatus = async () => {
+    if (!user) return;
+
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      setIsAdmin(profile?.role === 'admin');
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+    }
+  };
+
+  const fetchSavedPrompts = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('saved_prompts')
+        .select('id, title, prompt_text, category, is_favorite')
+        .eq('user_id', user.id)
+        .order('is_favorite', { ascending: false })
+        .order('title', { ascending: true });
+
+      if (error) throw error;
+      setSavedPrompts(data || []);
+    } catch (error) {
+      console.error('Error fetching saved prompts:', error);
+    }
+  };
+
+  const handlePromptSearch = (searchTerm: string) => {
+    if (!searchTerm || !searchTerm.startsWith('/')) {
+      setShowPromptSuggestions(false);
+      setFilteredPrompts([]);
+      return;
+    }
+
+    const searchQuery = searchTerm.slice(1).toLowerCase(); // Remove the '/'
+    
+    if (searchQuery === '') {
+      // Show all prompts when user just types '/'
+      setFilteredPrompts(savedPrompts);
+      setShowPromptSuggestions(true);
+    } else {
+      // Filter prompts by title, category, or content
+      const filtered = savedPrompts.filter(prompt => 
+        prompt.title.toLowerCase().includes(searchQuery) ||
+        prompt.category.toLowerCase().includes(searchQuery) ||
+        prompt.prompt_text.toLowerCase().includes(searchQuery)
+      );
+      setFilteredPrompts(filtered);
+      setShowPromptSuggestions(filtered.length > 0);
+    }
+  };
+
+  const selectPrompt = (prompt: SavedPrompt) => {
+    setQuestion(prompt.prompt_text);
+    setShowPromptSuggestions(false);
+    setFilteredPrompts([]);
+    
+    // Focus the textarea after selection
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  };
 
   const scrollToBottom = () => {
     if (scrollAreaRef.current) {
@@ -590,22 +677,76 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       <div className="border-t border-border bg-background/95 backdrop-blur-sm shrink-0 relative">
         <form onSubmit={handleSubmit} className="p-3">
           <div className="flex gap-2 items-end">
-            <div className="flex-1">
-              <TextareaAutosize
-                placeholder="Type your message..."
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey && !isLoading && !isSending && question.trim()) {
-                    e.preventDefault();
-                    handleSubmit(e as any);
-                  }
-                }}
-                className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={isLoading || isSending}
-                minRows={1}
-                maxRows={6}
-              />
+            <div className="flex-1 relative">
+              <Popover open={showPromptSuggestions} onOpenChange={setShowPromptSuggestions}>
+                <PopoverTrigger asChild>
+                  <div className="relative">
+                    <TextareaAutosize
+                      ref={textareaRef}
+                      placeholder="Type your message... (Use / for saved prompts)"
+                      value={question}
+                      onChange={(e) => {
+                        setQuestion(e.target.value);
+                        handlePromptSearch(e.target.value);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey && !isLoading && !isSending && question.trim()) {
+                          e.preventDefault();
+                          handleSubmit(e as any);
+                        }
+                        if (e.key === 'Escape') {
+                          setShowPromptSuggestions(false);
+                        }
+                      }}
+                      className="w-full resize-none rounded-md border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={isLoading || isSending}
+                      minRows={1}
+                      maxRows={6}
+                    />
+                    {question.startsWith('/') && (
+                      <div className="absolute left-3 top-2 pointer-events-none">
+                        <Hash className="w-4 h-4 text-primary/60" />
+                      </div>
+                    )}
+                  </div>
+                </PopoverTrigger>
+                {showPromptSuggestions && filteredPrompts.length > 0 && (
+                  <PopoverContent className="w-[400px] p-0" align="start" side="top">
+                    <Command>
+                      <CommandInput placeholder="Search saved prompts..." className="h-9" />
+                      <CommandList>
+                        <CommandEmpty>No saved prompts found.</CommandEmpty>
+                        <CommandGroup heading="Saved Prompts">
+                          {filteredPrompts.map((prompt) => (
+                            <CommandItem
+                              key={prompt.id}
+                              onSelect={() => selectPrompt(prompt)}
+                              className="cursor-pointer"
+                            >
+                              <div className="flex flex-col gap-1 w-full">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium">{prompt.title}</span>
+                                  <div className="flex items-center gap-1">
+                                    {prompt.is_favorite && (
+                                      <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+                                    )}
+                                    <span className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                                      {prompt.category}
+                                    </span>
+                                  </div>
+                                </div>
+                                <span className="text-xs text-muted-foreground line-clamp-1">
+                                  {prompt.prompt_text}
+                                </span>
+                              </div>
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                )}
+              </Popover>
             </div>
             {isStreaming ? (
               <Button 
