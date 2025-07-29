@@ -35,15 +35,15 @@ serve(async (req) => {
 
     console.log('Sending request to Mistral with model:', model, agentId ? `using agent: ${agentId}` : '');
 
-    // If agent_id is provided, use the Agents API
+    // If agent_id is provided, use the Conversations API
     if (agentId) {
-      // For agents, use the correct agents completions API format
+      // For agents, use the conversations API with proper format
       const requestBody = {
-        model: model,
-        inputs: message || (messages && messages.length > 0 ? messages[messages.length - 1].content : '')
+        inputs: message || (messages && messages.length > 0 ? messages[messages.length - 1].content : ''),
+        model: model
       };
 
-      const response = await fetch(`https://api.mistral.ai/v1/agents/${agentId}/completions`, {
+      const response = await fetch(`https://api.mistral.ai/v1/agents/${agentId}/conversations`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${mistralApiKey}`,
@@ -54,7 +54,7 @@ serve(async (req) => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error('Mistral Agents API Error:', errorData);
+        console.error('Mistral Agents Conversations API Error:', errorData);
         throw new Error(errorData.error?.message || `Failed to get response from Mistral Agent. Status: ${response.status}`);
       }
 
