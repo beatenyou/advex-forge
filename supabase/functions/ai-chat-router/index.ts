@@ -271,17 +271,55 @@ serve(async (req) => {
         request_headers: Object.fromEntries(req.headers.entries())
       };
 
-      // Log error to ai_interactions table
+      // Enhanced error classification logic
+      const classifyError = (errorMessage: string, errorDetails: any) => {
+        const message = errorMessage.toLowerCase();
+        
+        // Check for specific error patterns
+        if (message.includes('quota') || message.includes('usage quota exceeded') || message.includes('limit')) {
+          return 'quota_exceeded';
+        }
+        if (message.includes('timeout') || message.includes('timed out') || message.includes('request timeout')) {
+          return 'timeout';
+        }
+        if (message.includes('authentication') || message.includes('unauthorized') || message.includes('invalid token')) {
+          return 'auth_error';
+        }
+        if (message.includes('api key') || message.includes('invalid key') || message.includes('forbidden')) {
+          return 'api_key_error';
+        }
+        if (message.includes('rate limit') || message.includes('too many requests')) {
+          return 'rate_limit_error';
+        }
+        if (message.includes('provider') || message.includes('model') || provider?.name) {
+          return 'provider_error';
+        }
+        if (message.includes('network') || message.includes('connection') || message.includes('fetch')) {
+          return 'network_error';
+        }
+        if (message.includes('configuration') || message.includes('not configured')) {
+          return 'configuration_error';
+        }
+        
+        // Check error details for more context
+        if (errorDetails?.error_message) {
+          const detailMessage = errorDetails.error_message.toLowerCase();
+          if (detailMessage.includes('functionsfetcherror')) {
+            return 'network_error';
+          }
+        }
+        
+        return 'system_error';
+      };
+
+      // Log error to ai_interactions table with enhanced classification
       await supabase
         .from('ai_interactions')
         .insert({
           user_id: userId,
           session_id: sessionId,
           success: false,
-          error_type: error.message?.includes('quota') ? 'quota_exceeded' : 
-                     error.message?.includes('timeout') ? 'timeout' :
-                     error.message?.includes('provider') ? 'provider_error' :
-                     error.message?.includes('authentication') ? 'auth_error' : 'system_error',
+          error_type: classifyError(error.message, errorDetails),
           provider_name: provider?.name || 'unknown',
           request_type: 'chat_router',
           error_details: errorDetails,

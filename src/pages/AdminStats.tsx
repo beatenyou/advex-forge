@@ -105,7 +105,41 @@ const AIErrorsSection = () => {
       case 'timeout': return 'bg-red-100 text-red-800';
       case 'provider_error': return 'bg-purple-100 text-purple-800';
       case 'auth_error': return 'bg-orange-100 text-orange-800';
+      case 'api_key_error': return 'bg-red-100 text-red-800';
+      case 'rate_limit_error': return 'bg-yellow-100 text-yellow-800';
+      case 'network_error': return 'bg-blue-100 text-blue-800';
+      case 'configuration_error': return 'bg-indigo-100 text-indigo-800';
       default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getErrorTypeLabel = (type: string) => {
+    switch (type) {
+      case 'quota_exceeded': return 'AI Quota Exceeded';
+      case 'timeout': return 'Request Timeout';
+      case 'provider_error': return 'AI Provider Error';
+      case 'auth_error': return 'Authentication Error';
+      case 'api_key_error': return 'API Key Error';
+      case 'rate_limit_error': return 'Rate Limit Exceeded';
+      case 'network_error': return 'Network Connection Error';
+      case 'configuration_error': return 'Configuration Error';
+      case 'system_error': return 'System Error';
+      default: return type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+  };
+
+  const getErrorDescription = (type: string) => {
+    switch (type) {
+      case 'quota_exceeded': return 'User has reached their AI interaction limit. They need to upgrade their plan or purchase additional credits.';
+      case 'timeout': return 'AI request took too long to complete. This could indicate provider slowness or network issues.';
+      case 'provider_error': return 'The AI provider (OpenAI, Mistral) returned an error. Check provider status and configuration.';
+      case 'auth_error': return 'Authentication failed for the user or system. Check user sessions and authentication tokens.';
+      case 'api_key_error': return 'Invalid or missing API key for the AI provider. Check API key configuration in secrets.';
+      case 'rate_limit_error': return 'AI provider rate limits exceeded. Consider upgrading provider plan or implementing request throttling.';
+      case 'network_error': return 'Network connection failed between edge function and AI provider. Check connectivity and DNS.';
+      case 'configuration_error': return 'AI system is not properly configured. Check provider settings and configuration.';
+      case 'system_error': return 'General system error occurred. Check logs for specific details.';
+      default: return 'An unclassified error occurred. Review error details for more information.';
     }
   };
 
@@ -124,10 +158,14 @@ const AIErrorsSection = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Errors</SelectItem>
-            <SelectItem value="quota_exceeded">Quota Exceeded</SelectItem>
-            <SelectItem value="timeout">Timeout</SelectItem>
-            <SelectItem value="provider_error">Provider Error</SelectItem>
-            <SelectItem value="auth_error">Auth Error</SelectItem>
+            <SelectItem value="quota_exceeded">AI Quota Exceeded</SelectItem>
+            <SelectItem value="timeout">Request Timeout</SelectItem>
+            <SelectItem value="provider_error">AI Provider Error</SelectItem>
+            <SelectItem value="auth_error">Authentication Error</SelectItem>
+            <SelectItem value="api_key_error">API Key Error</SelectItem>
+            <SelectItem value="rate_limit_error">Rate Limit Exceeded</SelectItem>
+            <SelectItem value="network_error">Network Connection Error</SelectItem>
+            <SelectItem value="configuration_error">Configuration Error</SelectItem>
             <SelectItem value="system_error">System Error</SelectItem>
           </SelectContent>
         </Select>
@@ -144,8 +182,8 @@ const AIErrorsSection = () => {
             <CardContent className="p-4">
               <div className="text-center">
                 <div className="text-2xl font-bold">{count}</div>
-                <p className="text-xs text-muted-foreground capitalize">
-                  {type.replace('_', ' ')}
+                <p className="text-xs text-muted-foreground">
+                  {getErrorTypeLabel(type)}
                 </p>
               </div>
             </CardContent>
@@ -178,9 +216,9 @@ const AIErrorsSection = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Badge className={getErrorTypeColor(error.error_type)}>
-                        {error.error_type}
+                        {getErrorTypeLabel(error.error_type)}
                       </Badge>
-                      {error.provider_name && (
+                      {error.provider_name && error.provider_name !== 'unknown' && (
                         <Badge variant="outline">{error.provider_name}</Badge>
                       )}
                     </div>
@@ -198,12 +236,18 @@ const AIErrorsSection = () => {
                     </div>
                   </div>
                   
-                  <div className="text-sm">
-                    <p><strong>User ID:</strong> {error.user_id}</p>
-                    {error.session_id && <p><strong>Session ID:</strong> {error.session_id}</p>}
-                    {error.browser_info && (
-                      <p><strong>Browser:</strong> {error.browser_info.substring(0, 80)}...</p>
-                    )}
+                  <div className="text-sm space-y-1">
+                    <p className="text-muted-foreground">{getErrorDescription(error.error_type)}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                      <p><strong>User ID:</strong> {error.user_id}</p>
+                      {error.session_id && <p><strong>Session ID:</strong> {error.session_id}</p>}
+                      {error.user_context?.quota_limit && error.user_context?.current_usage && (
+                        <p><strong>Usage:</strong> {error.user_context.current_usage}/{error.user_context.quota_limit}</p>
+                      )}
+                      {error.user_context?.plan_name && (
+                        <p><strong>Plan:</strong> {error.user_context.plan_name}</p>
+                      )}
+                    </div>
                   </div>
 
                   {selectedError?.id === error.id && (
