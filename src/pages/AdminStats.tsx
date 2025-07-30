@@ -223,91 +223,103 @@ const AIErrorsSection = () => {
         ))}
       </div>
 
-      {/* Recent Errors */}
+      {/* Recent Errors Toggle */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5" />
-            Recent AI Errors
-          </CardTitle>
-          <CardDescription>
-            Detailed error logs for troubleshooting AI interactions
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-            </div>
-          ) : errors.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No errors found</p>
-          ) : (
-            <div className="space-y-4">
-              {errors.map((error) => (
-                <div key={error.id} className="border rounded-lg p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Badge className={getErrorTypeColor(error.error_type)}>
-                        {getErrorTypeLabel(error.error_type)}
-                      </Badge>
-                      {error.provider_name && error.provider_name !== 'unknown' && (
-                        <Badge variant="outline">{error.provider_name}</Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-muted-foreground">
-                        {new Date(error.created_at).toLocaleString()}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedError(selectedError?.id === error.id ? null : error)}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="text-sm space-y-1">
-                    <p className="text-muted-foreground">{getErrorDescription(error.error_type)}</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
-                      <p><strong>User ID:</strong> {error.user_id}</p>
-                      {error.session_id && <p><strong>Session ID:</strong> {error.session_id}</p>}
-                      {error.user_context?.quota_limit && error.user_context?.current_usage && (
-                        <p><strong>Usage:</strong> {error.user_context.current_usage}/{error.user_context.quota_limit}</p>
-                      )}
-                      {error.user_context?.plan_name && (
-                        <p><strong>Plan:</strong> {error.user_context.plan_name}</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {selectedError?.id === error.id && (
-                    <div className="mt-4 p-4 bg-muted rounded-lg">
-                      <h4 className="font-medium mb-2">Detailed Error Information</h4>
-                      {error.error_details && (
-                        <div className="mb-3">
-                          <strong>Error Details:</strong>
-                          <pre className="text-xs bg-background p-2 rounded mt-1 overflow-auto">
-                            {JSON.stringify(error.error_details, null, 2)}
-                          </pre>
-                        </div>
-                      )}
-                      {error.user_context && (
-                        <div>
-                          <strong>User Context:</strong>
-                          <pre className="text-xs bg-background p-2 rounded mt-1 overflow-auto">
-                            {JSON.stringify(error.user_context, null, 2)}
-                          </pre>
-                        </div>
-                      )}
-                    </div>
-                  )}
+        <Collapsible>
+          <CollapsibleTrigger asChild>
+            <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5" />
+                    Recent AI Errors
+                  </CardTitle>
+                  <CardDescription>
+                    Detailed error logs for troubleshooting AI interactions
+                  </CardDescription>
                 </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
+                <ChevronDown className="w-5 h-5" />
+              </div>
+            </CardHeader>
+          </CollapsibleTrigger>
+          
+          <CollapsibleContent>
+            <CardContent>
+              {loading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                </div>
+              ) : errors.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">No errors found</p>
+              ) : (
+                <div className="space-y-4">
+                  {errors.map((error) => (
+                    <div key={error.id} className="border rounded-lg p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Badge className={getErrorTypeColor(error.error_type)}>
+                            {getErrorTypeLabel(error.error_type)}
+                          </Badge>
+                          {error.provider_name && error.provider_name !== 'unknown' && (
+                            <Badge variant="outline">{error.provider_name}</Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-muted-foreground">
+                            {new Date(error.created_at).toLocaleString()}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setSelectedError(selectedError?.id === error.id ? null : error)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="text-sm space-y-1">
+                        <p className="text-muted-foreground">{getErrorDescription(error.error_type)}</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                          <p><strong>User ID:</strong> {error.user_id}</p>
+                          {error.session_id && <p><strong>Session ID:</strong> {error.session_id}</p>}
+                          {error.user_context?.quota_limit && error.user_context?.current_usage && (
+                            <p><strong>Usage:</strong> {error.user_context.current_usage}/{error.user_context.quota_limit}</p>
+                          )}
+                          {error.user_context?.plan_name && (
+                            <p><strong>Plan:</strong> {error.user_context.plan_name}</p>
+                          )}
+                        </div>
+                      </div>
+
+                      {selectedError?.id === error.id && (
+                        <div className="mt-4 p-4 bg-muted rounded-lg">
+                          <h4 className="font-medium mb-2">Detailed Error Information</h4>
+                          {error.error_details && (
+                            <div className="mb-3">
+                              <strong>Error Details:</strong>
+                              <pre className="text-xs bg-background p-2 rounded mt-1 overflow-auto">
+                                {JSON.stringify(error.error_details, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+                          {error.user_context && (
+                            <div>
+                              <strong>User Context:</strong>
+                              <pre className="text-xs bg-background p-2 rounded mt-1 overflow-auto">
+                                {JSON.stringify(error.user_context, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
       </Card>
     </div>
   );
