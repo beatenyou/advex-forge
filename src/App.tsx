@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AdminStats from "./pages/AdminStats";
 import UserPreferences from "./pages/UserPreferences";
+import FullScreenChat from "./pages/FullScreenChat";
 import NotFound from "./pages/NotFound";
 
 // Component to initialize tracking
@@ -34,6 +35,8 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/preferences" element={<UserPreferences />} />
               <Route path="/admin/stats" element={<AdminStats />} />
+              <Route path="/chat" element={<FullScreenChat />} />
+              <Route path="/chat/:sessionId" element={<FullScreenChat />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

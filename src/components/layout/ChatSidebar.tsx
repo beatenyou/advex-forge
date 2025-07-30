@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAIUsage } from '@/hooks/useAIUsage';
-import { EnhancedUsageDisplay } from '@/components/EnhancedUsageDisplay';
+import { EnhancedUsageToggle } from '@/components/EnhancedUsageToggle';
 interface LinkTab {
   id: string;
   title: string;
@@ -292,25 +292,11 @@ export const ChatSidebar = ({
               </TabsList>
               
               <TabsContent value="chat" className="mt-0 flex-1 flex flex-col overflow-hidden min-h-0 space-y-3">
-                <div className="flex items-center justify-between mb-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowUsage(!showUsage)}
-                    className="text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    AI Usage {showUsage ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
-                  </Button>
-                </div>
-                {showUsage && (
-                  <EnhancedUsageDisplay 
-                    currentUsage={currentUsage}
-                    quotaLimit={quotaLimit}
-                    planName={planName}
-                    canUseAI={canUseAI}
-                    className="mb-3"
-                  />
-                )}
+                <EnhancedUsageToggle 
+                  className="mb-3"
+                  defaultExpanded={false}
+                  showCompactWhenCollapsed={true}
+                />
                 <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} />
               </TabsContent>
               
@@ -349,25 +335,11 @@ export const ChatSidebar = ({
             </Tabs>
           ) : (
             <div className="h-full flex flex-col min-h-0 space-y-3">
-              <div className="flex items-center justify-between mb-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowUsage(!showUsage)}
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                >
-                  AI Usage {showUsage ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
-                </Button>
-              </div>
-              {showUsage && (
-                <EnhancedUsageDisplay 
-                  currentUsage={currentUsage}
-                  quotaLimit={quotaLimit}
-                  planName={planName}
-                  canUseAI={canUseAI}
-                  className="mb-3"
-                />
-              )}
+              <EnhancedUsageToggle 
+                className="mb-3"
+                defaultExpanded={false}
+                showCompactWhenCollapsed={true}
+              />
               <SessionHistory 
                 currentSessionId={currentSessionId}
                 onSessionSelect={handleSessionSelect}

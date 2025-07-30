@@ -16,6 +16,7 @@ import { Sidebar } from "./Sidebar";
 import { QuickReference } from "./QuickReference";
 import { AdminDashboard } from "./AdminDashboard";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
+import { ChatModeToggle } from "./ChatModeToggle";
 import { useResponsiveGrid } from "@/hooks/useResponsiveGrid";
 import { sampleMarkdownTechniques, parseMultipleMarkdownTechniques, ParsedTechnique } from "@/lib/markdownParser";
 
@@ -299,5 +300,7 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
           onClose={() => setShowAdminDashboard(false)}
         />
       )}
+      
+      <ChatModeToggle />
     </div>;
 };
