@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Search, Shield, Users, Settings, Star, Hash, Filter, LogOut, UserCog, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true,
     user,
     signOut
   } = useAuth();
+  const { isAdmin, loading: adminLoading } = useAdminCheck();
   const {
     toast
   } = useToast();
@@ -171,15 +173,17 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true,
               >
                 <Settings className="w-4 h-4" />
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setShowAdminDashboard(true)}
-                title="Admin Dashboard"
-                className="border-primary/50 text-primary hover:bg-primary/10 hover-scale"
-              >
-                <UserCog className="w-4 h-4" />
-              </Button>
+              {isAdmin && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowAdminDashboard(true)}
+                  title="Admin Dashboard"
+                  className="border-primary/50 text-primary hover:bg-primary/10 hover-scale"
+                >
+                  <UserCog className="w-4 h-4" />
+                </Button>
+              )}
               <Button 
                 variant="outline" 
                 size="sm" 

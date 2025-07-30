@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { Settings, Upload, FileText, Globe, Plus, Edit, Trash2, Save } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ interface AdminDashboardProps {
 export const AdminDashboard = ({ techniques, onTechniquesUpdate, onClose }: AdminDashboardProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { isAdmin, loading: adminLoading } = useAdminCheck();
   const [markdownInput, setMarkdownInput] = useState("");
   const [selectedTechnique, setSelectedTechnique] = useState<ParsedTechnique | null>(null);
   const [editingTechnique, setEditingTechnique] = useState<ParsedTechnique | null>(null);
@@ -254,6 +256,38 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
       description: "LLM webscraper prompt copied to clipboard. Use this with ChatGPT or similar LLM to extract techniques from the target URL."
     });
   };
+
+  // Show loading state while checking admin status
+  if (adminLoading) {
+    return (
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-card border border-border rounded-lg shadow-lg p-8">
+          <div className="text-center">
+            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Checking permissions...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show access denied if user is not admin
+  if (!isAdmin) {
+    return (
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-card border border-border rounded-lg shadow-lg p-8 max-w-md">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-destructive/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Settings className="w-8 h-8 text-destructive" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">Access Denied</h3>
+            <p className="text-muted-foreground mb-4">You don't have permission to access the admin dashboard.</p>
+            <Button onClick={onClose}>Close</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
