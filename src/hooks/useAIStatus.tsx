@@ -75,38 +75,13 @@ export const useAIStatus = () => {
         return;
       }
 
-      // Test the default provider to ensure it's working
-      try {
-        const testResult = await supabase.functions.invoke('ai-chat-router', {
-          body: {
-            message: 'Status check',
-            providerId: defaultProvider.id
-          }
-        });
-
-        if (testResult.error) {
-          setStatus({
-            status: 'issues',
-            message: 'Provider Issues',
-            details: `Default provider test failed: ${testResult.error.message}`
-          });
-          return;
-        }
-
-        // All checks passed
-        setStatus({
-          status: 'operational',
-          message: 'AI System Online',
-          details: `Using ${defaultProvider.name} (${defaultProvider.type.toUpperCase()})`
-        });
-
-      } catch (testError) {
-        setStatus({
-          status: 'issues',
-          message: 'Connection Issues',
-          details: 'Unable to reach AI provider endpoints'
-        });
-      }
+      // All configuration checks passed - assume operational without AI test call
+      // Only actual user interactions should count toward usage
+      setStatus({
+        status: 'operational',
+        message: 'AI System Online', 
+        details: `Using ${defaultProvider.name} (${defaultProvider.type.toUpperCase()})`
+      });
 
     } catch (error) {
       console.error('Error checking AI status:', error);

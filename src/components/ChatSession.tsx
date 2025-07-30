@@ -499,9 +499,6 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
 
         // Track successful AI response
         await trackActivity('ai_response_received', `Received response from ${data.providerName || 'unknown'}`);
-        
-        // Refresh quota after successful interaction
-        await refreshQuota();
 
         // Update session timestamp
         await supabase

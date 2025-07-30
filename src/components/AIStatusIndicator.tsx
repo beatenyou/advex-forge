@@ -2,6 +2,7 @@ import { Circle, AlertTriangle, XCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAIStatus, AIStatusType } from '@/hooks/useAIStatus';
+import { useAdminCheck } from '@/hooks/useAdminCheck';
 import { cn } from '@/lib/utils';
 
 interface AIStatusIndicatorProps {
@@ -56,6 +57,7 @@ export const AIStatusIndicator = ({
   className 
 }: AIStatusIndicatorProps) => {
   const { status: aiStatus, loading, refresh } = useAIStatus();
+  const { isAdmin } = useAdminCheck();
   const statusConfig = getStatusConfig(aiStatus.status);
   const sizeConfig = getSizeConfig(size);
   const StatusIcon = statusConfig.icon;
@@ -114,15 +116,21 @@ export const AIStatusIndicator = ({
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="p-0 h-auto hover:bg-transparent"
-            onClick={refresh}
-            disabled={loading}
-          >
-            {indicator}
-          </Button>
+          {isAdmin ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="p-0 h-auto hover:bg-transparent"
+              onClick={refresh}
+              disabled={loading}
+            >
+              {indicator}
+            </Button>
+          ) : (
+            <div className="cursor-default">
+              {indicator}
+            </div>
+          )}
         </TooltipTrigger>
         <TooltipContent>
           <div className="space-y-1">
@@ -130,7 +138,11 @@ export const AIStatusIndicator = ({
             {aiStatus.details && (
               <p className="text-xs text-muted-foreground">{aiStatus.details}</p>
             )}
-            <p className="text-xs text-muted-foreground">Click to refresh status</p>
+            {isAdmin ? (
+              <p className="text-xs text-muted-foreground">Click to refresh status</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">System status</p>
+            )}
           </div>
         </TooltipContent>
       </Tooltip>
