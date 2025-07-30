@@ -9,6 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Navigate } from 'react-router-dom';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   Users,
   Activity,
@@ -23,7 +25,9 @@ import {
   RefreshCw,
   Filter,
   Download,
-  Eye
+  Eye,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 
 interface DailyStats {
@@ -59,6 +63,34 @@ interface AIError {
   user_context?: any;
   browser_info?: string;
   created_at: string;
+}
+
+interface UserSession {
+  id: string;
+  user_id: string;
+  session_start: string;
+  session_end?: string;
+  duration_seconds?: number;
+  pages_visited: number;
+  is_bounce: boolean;
+  user_agent?: string;
+  referrer?: string;
+  user_email?: string;
+}
+
+interface UserAIUsage {
+  user_id: string;
+  user_email?: string;
+  daily_interactions: number;
+  success_rate: number;
+  total_interactions: number;
+  providers_used: string[];
+  last_interaction: string;
+  quota_usage?: {
+    current: number;
+    limit: number;
+    plan: string;
+  };
 }
 
 // AI Errors Section Component
@@ -278,6 +310,358 @@ const AIErrorsSection = () => {
         </CardContent>
       </Card>
     </div>
+  );
+};
+
+// User Engagement Section Component
+const UserEngagementSection = ({ selectedDateRange }: { selectedDateRange: string }) => {
+  const [engagementOpen, setEngagementOpen] = useState(false);
+  const [userSessions, setUserSessions] = useState<UserSession[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchUserSessions = async () => {
+    try {
+      setLoading(true);
+      const endDate = new Date();
+      const startDate = new Date();
+      const days = selectedDateRange === '7days' ? 7 : selectedDateRange === '30days' ? 30 : 90;
+      startDate.setDate(endDate.getDate() - days);
+
+      const { data, error } = await supabase
+        .from('user_sessions')
+        .select(`
+          id, user_id, session_start, session_end, duration_seconds, 
+          pages_visited, is_bounce, user_agent, referrer,
+          profiles!inner(email)
+        `)
+        .gte('session_start', startDate.toISOString())
+        .order('session_start', { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      const formattedSessions: UserSession[] = (data || []).map(session => ({
+        id: session.id,
+        user_id: session.user_id,
+        session_start: session.session_start,
+        session_end: session.session_end,
+        duration_seconds: session.duration_seconds,
+        pages_visited: session.pages_visited,
+        is_bounce: session.is_bounce,
+        user_agent: session.user_agent,
+        referrer: session.referrer,
+        user_email: (session.profiles as any)?.email
+      }));
+
+      setUserSessions(formattedSessions);
+    } catch (error) {
+      console.error('Error fetching user sessions:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDuration = (seconds?: number) => {
+    if (!seconds) return 'N/A';
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const remainingSeconds = seconds % 60;
+    
+    if (hours > 0) return `${hours}h ${minutes}m ${remainingSeconds}s`;
+    if (minutes > 0) return `${minutes}m ${remainingSeconds}s`;
+    return `${remainingSeconds}s`;
+  };
+
+  useEffect(() => {
+    if (engagementOpen) {
+      fetchUserSessions();
+    }
+  }, [engagementOpen, selectedDateRange]);
+
+  return (
+    <Card>
+      <Collapsible open={engagementOpen} onOpenChange={setEngagementOpen}>
+        <CollapsibleTrigger asChild>
+          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  Engagement Trends
+                </CardTitle>
+                <CardDescription>
+                  Detailed user sessions with email addresses and activity data
+                </CardDescription>
+              </div>
+              {engagementOpen ? (
+                <ChevronDown className="w-5 h-5" />
+              ) : (
+                <ChevronRight className="w-5 h-5" />
+              )}
+            </div>
+          </CardHeader>
+        </CollapsibleTrigger>
+        
+        <CollapsibleContent>
+          <CardContent>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              </div>
+            ) : userSessions.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No user sessions found</p>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">Recent User Sessions</h4>
+                  <Button variant="outline" size="sm" onClick={fetchUserSessions}>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Refresh
+                  </Button>
+                </div>
+                
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User Email</TableHead>
+                      <TableHead>Duration</TableHead>
+                      <TableHead>Pages</TableHead>
+                      <TableHead>Start Time</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {userSessions.map((session) => (
+                      <TableRow key={session.id}>
+                        <TableCell className="font-medium">
+                          {session.user_email || 'Unknown User'}
+                        </TableCell>
+                        <TableCell>{formatDuration(session.duration_seconds)}</TableCell>
+                        <TableCell>{session.pages_visited}</TableCell>
+                        <TableCell>
+                          {new Date(session.session_start).toLocaleString()}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={session.is_bounce ? "destructive" : "default"}>
+                            {session.is_bounce ? "Bounce" : "Engaged"}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
+  );
+};
+
+// AI Interaction Section Component
+const AIInteractionSection = ({ selectedDateRange }: { selectedDateRange: string }) => {
+  const [aiOpen, setAiOpen] = useState(false);
+  const [userAIUsage, setUserAIUsage] = useState<UserAIUsage[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchUserAIUsage = async () => {
+    try {
+      setLoading(true);
+      const endDate = new Date();
+      const startDate = new Date();
+      const days = selectedDateRange === '7days' ? 7 : selectedDateRange === '30days' ? 30 : 90;
+      startDate.setDate(endDate.getDate() - days);
+
+      // Get AI interactions with user details
+      const { data, error } = await supabase
+        .from('ai_interactions')
+        .select(`
+          user_id, success, provider_name, created_at,
+          profiles!inner(email)
+        `)
+        .gte('created_at', startDate.toISOString())
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      // Get user billing info for quota data
+      const { data: billingData } = await supabase
+        .from('user_billing')
+        .select('user_id, ai_usage_current, ai_quota_limit, billing_plans(name)');
+
+      const billingMap = new Map(
+        billingData?.map(b => [b.user_id, {
+          current: b.ai_usage_current,
+          limit: b.ai_quota_limit,
+          plan: (b.billing_plans as any)?.name || 'Free'
+        }]) || []
+      );
+
+      // Aggregate data by user
+      const userStats = new Map<string, {
+        user_id: string;
+        user_email: string;
+        daily_interactions: number;
+        success_count: number;
+        total_interactions: number;
+        providers: Set<string>;
+        last_interaction: string;
+      }>();
+
+      data?.forEach(interaction => {
+        const userId = interaction.user_id;
+        const userEmail = (interaction.profiles as any)?.email || 'Unknown User';
+        const today = new Date().toISOString().split('T')[0];
+        const interactionDate = interaction.created_at.split('T')[0];
+        
+        if (!userStats.has(userId)) {
+          userStats.set(userId, {
+            user_id: userId,
+            user_email: userEmail,
+            daily_interactions: 0,
+            success_count: 0,
+            total_interactions: 0,
+            providers: new Set(),
+            last_interaction: interaction.created_at
+          });
+        }
+
+        const stats = userStats.get(userId)!;
+        stats.total_interactions++;
+        if (interaction.success) stats.success_count++;
+        if (interactionDate === today) stats.daily_interactions++;
+        if (interaction.provider_name) stats.providers.add(interaction.provider_name);
+        if (interaction.created_at > stats.last_interaction) {
+          stats.last_interaction = interaction.created_at;
+        }
+      });
+
+      const formattedUsage: UserAIUsage[] = Array.from(userStats.values()).map(stats => ({
+        user_id: stats.user_id,
+        user_email: stats.user_email,
+        daily_interactions: stats.daily_interactions,
+        success_rate: stats.total_interactions > 0 ? (stats.success_count / stats.total_interactions) * 100 : 0,
+        total_interactions: stats.total_interactions,
+        providers_used: Array.from(stats.providers),
+        last_interaction: stats.last_interaction,
+        quota_usage: billingMap.get(stats.user_id)
+      }));
+
+      // Sort by daily interactions descending
+      formattedUsage.sort((a, b) => b.daily_interactions - a.daily_interactions);
+      setUserAIUsage(formattedUsage.slice(0, 50)); // Limit to top 50 users
+
+    } catch (error) {
+      console.error('Error fetching user AI usage:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (aiOpen) {
+      fetchUserAIUsage();
+    }
+  }, [aiOpen, selectedDateRange]);
+
+  return (
+    <Card>
+      <Collapsible open={aiOpen} onOpenChange={setAiOpen}>
+        <CollapsibleTrigger asChild>
+          <CardHeader className="cursor-pointer hover:bg-muted/50 transition-colors">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5" />
+                  AI Chat Interactions
+                </CardTitle>
+                <CardDescription>
+                  User-specific AI chat usage and daily interaction counts
+                </CardDescription>
+              </div>
+              {aiOpen ? (
+                <ChevronDown className="w-5 h-5" />
+              ) : (
+                <ChevronRight className="w-5 h-5" />
+              )}
+            </div>
+          </CardHeader>
+        </CollapsibleTrigger>
+        
+        <CollapsibleContent>
+          <CardContent>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              </div>
+            ) : userAIUsage.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No AI interactions found</p>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-medium">User AI Chat Usage</h4>
+                  <Button variant="outline" size="sm" onClick={fetchUserAIUsage}>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Refresh
+                  </Button>
+                </div>
+                
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>User Email</TableHead>
+                      <TableHead>Daily Chats</TableHead>
+                      <TableHead>Total Chats</TableHead>
+                      <TableHead>Success Rate</TableHead>
+                      <TableHead>Providers</TableHead>
+                      <TableHead>Quota Usage</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {userAIUsage.map((usage) => (
+                      <TableRow key={usage.user_id}>
+                        <TableCell className="font-medium">
+                          {usage.user_email}
+                        </TableCell>
+                        <TableCell className="font-bold text-primary">
+                          {usage.daily_interactions}
+                        </TableCell>
+                        <TableCell>{usage.total_interactions}</TableCell>
+                        <TableCell>
+                          <Badge variant={usage.success_rate > 80 ? "default" : "secondary"}>
+                            {usage.success_rate.toFixed(1)}%
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1 flex-wrap">
+                            {usage.providers_used.map(provider => (
+                              <Badge key={provider} variant="outline" className="text-xs">
+                                {provider}
+                              </Badge>
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {usage.quota_usage ? (
+                            <div className="text-sm">
+                              <div>{usage.quota_usage.current}/{usage.quota_usage.limit}</div>
+                              <div className="text-xs text-muted-foreground">{usage.quota_usage.plan}</div>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">No quota data</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
+    </Card>
   );
 };
 
@@ -665,26 +1049,7 @@ const AdminStats = () => {
               </Card>
             </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Engagement Trends</CardTitle>
-                <CardDescription>User activity over the selected time period</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {dailyStats.slice(-7).map((stat, index) => (
-                    <div key={stat.stat_date} className="flex items-center justify-between p-2 border rounded">
-                      <span className="text-sm">{new Date(stat.stat_date).toLocaleDateString()}</span>
-                      <div className="flex items-center gap-4 text-sm">
-                        <span>Users: {stat.active_users}</span>
-                        <span>Sessions: {stat.total_sessions}</span>
-                        <span>Duration: {Math.round(stat.avg_session_duration)}s</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <UserEngagementSection selectedDateRange={selectedDateRange} />
           </TabsContent>
 
           {/* AI Interaction Tab */}
@@ -722,6 +1087,8 @@ const AdminStats = () => {
                 </CardContent>
               </Card>
             </div>
+
+            <AIInteractionSection selectedDateRange={selectedDateRange} />
           </TabsContent>
 
           {/* AI Errors Tab */}
