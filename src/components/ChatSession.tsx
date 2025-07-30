@@ -571,9 +571,29 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       
       if (error.message !== 'Request was cancelled') {
         console.error('Error in chat:', error);
+        
+        // Check if it's a quota exceeded error
+        let errorTitle = "Error";
+        let errorDescription = "Failed to get AI response. Please try again.";
+        
+        try {
+          // Try to parse the error response to check for quota exceeded
+          const errorData = JSON.parse(error.message);
+          if (errorData.quota_exceeded) {
+            errorTitle = "AI Limit Reached";
+            errorDescription = `You've reached your AI interaction limit (${errorData.current_usage}/${errorData.quota_limit}). Purchase more credits in your billing preferences to continue using AI features.`;
+          }
+        } catch (parseError) {
+          // If error message isn't JSON, check if it contains quota information
+          if (error.message.includes('quota exceeded') || error.message.includes('usage quota exceeded')) {
+            errorTitle = "AI Limit Reached";
+            errorDescription = "You've reached your AI interaction limit. Purchase more credits in your billing preferences to continue using AI features.";
+          }
+        }
+        
         toast({
-          title: "Error",
-          description: "Failed to get AI response. Please try again.",
+          title: errorTitle,
+          description: errorDescription,
           variant: "destructive",
         });
       }
