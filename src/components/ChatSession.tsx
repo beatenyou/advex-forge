@@ -7,7 +7,7 @@ import { Loader2, Copy, MessageSquare, Plus, Square, Send, Check } from 'lucide-
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
-import { AIStatusIndicator } from '@/components/AIStatusIndicator';
+
 import TextareaAutosize from 'react-textarea-autosize';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
@@ -566,7 +566,6 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
             {currentSession?.title || 'New Conversation'}
           </h2>
           <div className="flex items-center gap-2">
-            <AIStatusIndicator />
             <Button
               variant="outline"
               size="sm"
