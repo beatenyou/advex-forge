@@ -32,8 +32,8 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
     setIsChatVisible(false);
   };
 
-  const handleOpenChat = () => {
-    setIsChatVisible(true);
+  const handleToggleChat = () => {
+    setIsChatVisible(prev => !prev);
   };
 
   // Dynamic sizing based on screen width
@@ -67,7 +67,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
             </div>
             <div className="flex-1 min-h-0">
               {React.cloneElement(children as React.ReactElement, { 
-                onOpenChat: handleOpenChat, 
+                onToggleChat: handleToggleChat, 
                 isChatVisible: isChatVisible,
                 isWideScreen: isWideScreen 
               })}

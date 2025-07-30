@@ -197,27 +197,6 @@ export default function ProfilePreferences() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Avatar</CardTitle>
-          <CardDescription>
-            Upload a profile picture (feature coming soon)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-              <span className="text-2xl font-semibold">
-                {form.watch('display_name')?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || '?'}
-              </span>
-            </div>
-            <Button variant="outline" disabled>
-              <Upload className="w-4 h-4 mr-2" />
-              Upload Avatar
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

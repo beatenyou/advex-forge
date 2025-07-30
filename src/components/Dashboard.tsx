@@ -24,12 +24,12 @@ const initialTechniques = parseMultipleMarkdownTechniques(sampleMarkdownTechniqu
 
 interface DashboardProps {
   onTechniqueSelect?: (technique: ParsedTechnique) => void;
-  onOpenChat?: () => void;
+  onToggleChat?: () => void;
   isChatVisible?: boolean;
   isWideScreen?: boolean;
 }
 
-export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true, isWideScreen = false }: DashboardProps) => {
+export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = true, isWideScreen = false }: DashboardProps) => {
   const {
     user,
     signOut
@@ -133,8 +133,8 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true,
             <div className="flex items-center gap-3">
               <div 
                 className="w-8 h-8 rounded-full bg-gradient-cyber flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
-                onClick={onOpenChat}
-                title="Open chat panel"
+                onClick={onToggleChat}
+                title={isChatVisible ? "Close chat panel" : "Open chat panel"}
               >
                 <Shield className="w-5 h-5 text-primary-foreground" />
               </div>
@@ -168,8 +168,8 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true,
               <Button 
                 variant="outline" 
                 size="sm" 
-                onClick={onOpenChat}
-                title="Open AI Chat"
+                onClick={onToggleChat}
+                title={isChatVisible ? "Close AI Chat" : "Open AI Chat"}
                 className="hover-scale text-red-700 hover:bg-red-700/10"
               >
                 <MessageSquare className="w-4 h-4" />
