@@ -110,6 +110,14 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true,
     ));
   };
 
+  const clearAllFavorites = () => {
+    setTechniques(prev => prev.map(technique => 
+      technique.starred 
+        ? { ...technique, starred: false }
+        : technique
+    ));
+  };
+
   const openTechniqueModal = (technique: any) => {
     setSelectedTechnique(technique);
     setIsModalOpen(true);
@@ -219,6 +227,7 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true,
           onTechniqueClick={openTechniqueModal}
           selectedPhase={selectedPhase}
           onPhaseSelect={setSelectedPhase}
+          onClearAllFavorites={clearAllFavorites}
         />
 
         {/* Main Content - Better container structure for responsive grid */}

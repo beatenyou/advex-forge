@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronRight, Star, Hash } from "lucide-react";
+import { ChevronRight, Star, Hash, X } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,6 +33,7 @@ interface SidebarProps {
   onTechniqueClick: (technique: Technique) => void;
   selectedPhase: string;
   onPhaseSelect: (phase: string) => void;
+  onClearAllFavorites: () => void;
 }
 
 const navigationItems = [
@@ -45,7 +46,7 @@ const navigationItems = [
   { label: "Lateral Movement", phase: "Lateral Movement" }
 ];
 
-export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSelect }: SidebarProps) => {
+export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSelect, onClearAllFavorites }: SidebarProps) => {
   console.log('Sidebar techniques array:', techniques);
   console.log('Techniques count:', techniques.length);
   console.log('First technique:', techniques[0]);
@@ -207,11 +208,24 @@ export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSe
       {/* Favorites */}
       <Card className="bg-muted/20 border-border/30">
         <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-lg text-foreground">Favorites</CardTitle>
-            <Badge variant="outline" className="bg-cyber-blue/20 text-cyber-blue border-cyber-blue/30">
-              {favoriteItems.length}
-            </Badge>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-lg text-foreground">Favorites</CardTitle>
+              <Badge variant="outline" className="bg-cyber-blue/20 text-cyber-blue border-cyber-blue/30">
+                {favoriteItems.length}
+              </Badge>
+            </div>
+            {favoriteItems.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClearAllFavorites}
+                className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                title="Clear all favorites"
+              >
+                <X className="w-3.5 h-3.5" />
+              </Button>
+            )}
           </div>
         </CardHeader>
         <CardContent className="space-y-2">
