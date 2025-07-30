@@ -54,10 +54,42 @@ export function useUserModelAccess() {
 
       if (error) throw error;
 
-      const models = data?.map(item => ({
+      let models = data?.map(item => ({
         ...item,
         provider: item.ai_providers as any
       })) || [];
+
+      // If user has no model access, provide default models from ai_chat_config
+      if (models.length === 0) {
+        console.log('No user model access found, fetching default models');
+        
+        const { data: configData } = await supabase
+          .from('ai_chat_config')
+          .select('default_user_primary_model_id, default_user_secondary_model_id')
+          .single();
+
+        const defaultModelIds = [
+          configData?.default_user_primary_model_id,
+          configData?.default_user_secondary_model_id
+        ].filter(Boolean);
+
+        if (defaultModelIds.length > 0) {
+          const { data: defaultModels } = await supabase
+            .from('ai_providers')
+            .select('*')
+            .in('id', defaultModelIds)
+            .eq('is_active', true);
+
+          models = defaultModels?.map(provider => ({
+            id: `default-${provider.id}`,
+            provider_id: provider.id,
+            is_enabled: true,
+            granted_at: new Date().toISOString(),
+            provider,
+            ai_providers: provider as any // Add this property to match the type
+          })) || [];
+        }
+      }
 
       setUserModels(models);
 

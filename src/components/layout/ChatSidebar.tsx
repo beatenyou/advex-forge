@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bot, ExternalLink, Download, Trash2, X } from "lucide-react";
+import { Bot, ExternalLink, Download, Trash2, X, ChevronUp, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChatSession } from "@/components/ChatSession";
@@ -30,6 +30,7 @@ export const ChatSidebar = ({
 }: ChatSidebarProps) => {
   const [linkTabs, setLinkTabs] = useState<LinkTab[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
+  const [showUsage, setShowUsage] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const { canUseAI, currentUsage, quotaLimit, planName } = useAIUsage();
@@ -291,13 +292,25 @@ export const ChatSidebar = ({
               </TabsList>
               
               <TabsContent value="chat" className="mt-0 flex-1 flex flex-col overflow-hidden min-h-0 space-y-3">
-                <EnhancedUsageDisplay 
-                  currentUsage={currentUsage}
-                  quotaLimit={quotaLimit}
-                  planName={planName}
-                  canUseAI={canUseAI}
-                  className="mb-3"
-                />
+                <div className="flex items-center justify-between mb-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowUsage(!showUsage)}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    AI Usage {showUsage ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
+                  </Button>
+                </div>
+                {showUsage && (
+                  <EnhancedUsageDisplay 
+                    currentUsage={currentUsage}
+                    quotaLimit={quotaLimit}
+                    planName={planName}
+                    canUseAI={canUseAI}
+                    className="mb-3"
+                  />
+                )}
                 <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} />
               </TabsContent>
               
@@ -336,13 +349,25 @@ export const ChatSidebar = ({
             </Tabs>
           ) : (
             <div className="h-full flex flex-col min-h-0 space-y-3">
-              <EnhancedUsageDisplay 
-                currentUsage={currentUsage}
-                quotaLimit={quotaLimit}
-                planName={planName}
-                canUseAI={canUseAI}
-                className="mb-3"
-              />
+              <div className="flex items-center justify-between mb-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowUsage(!showUsage)}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  AI Usage {showUsage ? <ChevronUp className="w-3 h-3 ml-1" /> : <ChevronDown className="w-3 h-3 ml-1" />}
+                </Button>
+              </div>
+              {showUsage && (
+                <EnhancedUsageDisplay 
+                  currentUsage={currentUsage}
+                  quotaLimit={quotaLimit}
+                  planName={planName}
+                  canUseAI={canUseAI}
+                  className="mb-3"
+                />
+              )}
               <SessionHistory 
                 currentSessionId={currentSessionId}
                 onSessionSelect={handleSessionSelect}
