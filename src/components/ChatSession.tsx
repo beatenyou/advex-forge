@@ -14,6 +14,7 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 import { useAIUsage } from '@/hooks/useAIUsage';
 import { useUserModelAccess } from '@/hooks/useUserModelAccess';
 import { UserModelSelector } from '@/components/UserModelSelector';
+import { EnhancedUsageDisplay } from '@/components/EnhancedUsageDisplay';
 
 interface ChatMessage {
   id: string;

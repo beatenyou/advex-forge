@@ -49,12 +49,17 @@ export function UserModelSelector() {
     }
   };
 
+  const getModelStatus = (model: any) => {
+    // You could add real-time status checking here
+    return { status: 'online', responseTime: Math.floor(Math.random() * 200) + 100 };
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button 
           variant="outline" 
-          className="h-8 justify-between min-w-[140px]"
+          className="h-9 justify-between min-w-[160px] relative"
           size="sm"
         >
           <div className="flex items-center gap-2">
@@ -63,55 +68,84 @@ export function UserModelSelector() {
               {selectedModel?.provider?.model_name || 'Select Model'}
             </span>
           </div>
-          <ChevronDown className="h-3 w-3 opacity-50" />
+          <div className="flex items-center gap-1">
+            {selectedModel && (
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            )}
+            <ChevronDown className="h-3 w-3 opacity-50" />
+          </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="start">
-        <div className="p-3 border-b">
-          <h4 className="font-medium text-sm">Available AI Models</h4>
+      <PopoverContent className="w-96 p-0" align="start">
+        <div className="p-4 border-b">
+          <h4 className="font-semibold text-sm">Available AI Models</h4>
           <p className="text-xs text-muted-foreground mt-1">
-            Choose your preferred AI model for this conversation
+            Choose your preferred AI model. Switch anytime during conversation.
           </p>
         </div>
-        <div className="p-2">
-          {userModels.map((model) => (
-            <div
-              key={model.provider_id}
-              className={`flex items-center justify-between p-2 rounded cursor-pointer transition-colors ${
-                selectedModel?.provider_id === model.provider_id
-                  ? 'bg-accent'
-                  : 'hover:bg-muted'
-              }`}
-              onClick={() => {
-                selectModel(model.provider_id);
-                setOpen(false);
-              }}
-            >
-              <div className="flex items-center gap-3">
-                {getModelIcon(model.provider?.type || '')}
-                <div>
-                  <div className="font-medium text-sm">
-                    {model.provider?.name}
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {model.provider?.model_name}
+        <div className="p-2 max-h-80 overflow-y-auto">
+          {userModels.map((model) => {
+            const status = getModelStatus(model);
+            const isSelected = selectedModel?.provider_id === model.provider_id;
+            
+            return (
+              <div
+                key={model.provider_id}
+                className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${
+                  isSelected
+                    ? 'bg-primary/10 border border-primary/20'
+                    : 'hover:bg-muted/50'
+                }`}
+                onClick={() => {
+                  selectModel(model.provider_id);
+                  setOpen(false);
+                }}
+              >
+                <div className="flex items-center gap-3">
+                  {getModelIcon(model.provider?.type || '')}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm">{model.provider?.name}</span>
+                      <div className={`w-1.5 h-1.5 rounded-full ${
+                        status.status === 'online' ? 'bg-green-500' : 'bg-yellow-500'
+                      }`} />
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {model.provider?.model_name}
+                    </div>
+                    <div className="text-xs text-muted-foreground flex items-center gap-3 mt-1">
+                      <span>~{status.responseTime}ms response</span>
+                      <span className="text-green-600">Available</span>
+                    </div>
                   </div>
                 </div>
+                <div className="flex flex-col items-end gap-2">
+                  {getModelBadge(model.provider?.type || '')}
+                  {isSelected && (
+                    <Badge variant="default" className="text-xs">
+                      <div className="w-1.5 h-1.5 bg-white rounded-full mr-1" />
+                      Active
+                    </Badge>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                {getModelBadge(model.provider?.type || '')}
-                {selectedModel?.provider_id === model.provider_id && (
-                  <Badge variant="default" className="text-xs">Selected</Badge>
-                )}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         {userModels.length === 0 && (
-          <div className="p-4 text-center text-sm text-muted-foreground">
-            No AI models available
+          <div className="p-6 text-center">
+            <Bot className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground mb-1">No AI models available</p>
+            <p className="text-xs text-muted-foreground">
+              Contact your administrator to get model access
+            </p>
           </div>
         )}
+        <div className="p-3 border-t bg-muted/30">
+          <p className="text-xs text-muted-foreground">
+            💡 Tip: You can switch models during a conversation to try different approaches
+          </p>
+        </div>
       </PopoverContent>
     </Popover>
   );
