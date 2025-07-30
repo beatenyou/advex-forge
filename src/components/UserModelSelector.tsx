@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useUserModelAccess } from '@/hooks/useUserModelAccess';
 import { useModelQuotas } from '@/hooks/useModelQuotas';
 
-export function UserModelSelector() {
+export function UserModelSelector({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
   const { userModels, selectedModel, selectModel, loading } = useUserModelAccess();
   const { getUsagePercentage, getRemainingQuota } = useModelQuotas();
@@ -14,8 +14,8 @@ export function UserModelSelector() {
   if (loading) {
     return (
       <div className="flex items-center gap-2">
-        <div className="h-8 w-8 rounded bg-muted animate-pulse" />
-        <div className="h-4 w-20 bg-muted animate-pulse rounded" />
+        <div className={`${compact ? 'h-6 w-6' : 'h-8 w-8'} rounded bg-muted animate-pulse`} />
+        <div className="h-4 w-16 bg-muted animate-pulse rounded" />
       </div>
     );
   }
@@ -23,8 +23,8 @@ export function UserModelSelector() {
   if (userModels.length === 0) {
     return (
       <div className="flex items-center gap-2 text-muted-foreground">
-        <Bot className="h-4 w-4" />
-        <span className="text-sm">No models available</span>
+        <Bot className={`${compact ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
+        <span className={`${compact ? 'text-xs' : 'text-sm'}`}>No models</span>
       </div>
     );
   }
@@ -61,24 +61,31 @@ export function UserModelSelector() {
       <PopoverTrigger asChild>
         <Button 
           variant="outline" 
-          className="h-9 justify-between min-w-[160px] relative"
-          size="sm"
+          className={`justify-between relative ${
+            compact 
+              ? 'h-7 min-w-[120px] px-2' 
+              : 'h-9 min-w-[160px]'
+          }`}
+          size={compact ? "sm" : "sm"}
         >
           <div className="flex items-center gap-2">
             {selectedModel && getModelIcon(selectedModel.provider?.type || '')}
-            <span className="text-sm font-medium">
-              {selectedModel?.provider?.model_name || 'Select Model'}
+            <span className={`font-medium ${compact ? 'text-xs' : 'text-sm'}`}>
+              {compact 
+                ? (selectedModel?.provider?.name || 'Select')
+                : (selectedModel?.provider?.model_name || 'Select Model')
+              }
             </span>
           </div>
           <div className="flex items-center gap-1">
             {selectedModel && (
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
             )}
-            <ChevronDown className="h-3 w-3 opacity-50" />
+            <ChevronDown className={`${compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} opacity-50`} />
           </div>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-96 p-0" align="start">
+      <PopoverContent className="w-96 p-0 z-50 bg-background border shadow-lg" align="start">
         <div className="p-4 border-b">
           <h4 className="font-semibold text-sm">Available AI Models</h4>
           <p className="text-xs text-muted-foreground mt-1">

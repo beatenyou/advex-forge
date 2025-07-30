@@ -14,7 +14,7 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 import { useAIUsage } from '@/hooks/useAIUsage';
 import { useUserModelAccess } from '@/hooks/useUserModelAccess';
 import { UserModelSelector } from '@/components/UserModelSelector';
-import { EnhancedUsageDisplay } from '@/components/EnhancedUsageDisplay';
+import { CompactUsageDisplay } from '@/components/CompactUsageDisplay';
 
 interface ChatMessage {
   id: string;
@@ -626,15 +626,24 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
   return (
     <div className="flex flex-col h-full max-h-full min-h-0 relative">
       <div className="flex-shrink-0 p-3 border-b border-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h2 className="flex items-center gap-2 text-lg font-semibold">
-              <MessageSquare className="h-5 w-5" />
-              {currentSession?.title || 'New Conversation'}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <h2 className="flex items-center gap-2 text-lg font-semibold truncate">
+              <MessageSquare className="h-5 w-5 flex-shrink-0" />
+              <span className="truncate">{currentSession?.title || 'New Conversation'}</span>
             </h2>
-            <UserModelSelector />
           </div>
-          <div className="flex items-center gap-2">
+          
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <UserModelSelector compact />
+            <div className="h-6 w-px bg-border" />
+            <CompactUsageDisplay 
+              currentUsage={currentUsage}
+              quotaLimit={quotaLimit}
+              planName={planName}
+              canUseAI={canUseAI}
+              className="hidden sm:flex"
+            />
             <Button
               variant="outline"
               size="sm"
@@ -642,7 +651,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
               className="flex items-center gap-2"
             >
               <Plus className="h-4 w-4" />
-              New Chat
+              <span className="hidden sm:inline">New Chat</span>
             </Button>
           </div>
         </div>
@@ -695,7 +704,17 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
                         <p className="text-sm">{message.content}</p>
                         <div className="flex items-center justify-between text-xs opacity-70">
                           <span>{new Date(message.created_at).toLocaleTimeString()}</span>
-                          <Check className="h-3 w-3 text-green-400" />
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyMessage(message.content)}
+                              className="h-5 w-5 p-0 opacity-60 hover:opacity-100"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </Button>
+                            <Check className="h-3 w-3 text-green-400" />
+                          </div>
                         </div>
                       </div>
                     )}
