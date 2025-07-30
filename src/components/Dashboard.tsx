@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { TechniqueCard } from "./TechniqueCard";
 import { TechniqueModal } from "./TechniqueModal";
 import { Sidebar } from "./Sidebar";
@@ -146,15 +147,24 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true,
             </div>
             <div className="ml-auto flex items-center gap-4">
               <AIStatusIndicator size="sm" />
-              <Button 
-                variant="outline" 
-                size="sm"
-                title="User Profile"
-                className="hover-scale"
-              >
-                <Users className="w-4 h-4 mr-2" />
-                {user?.email?.split('@')[0] || 'User'}
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => navigate('/preferences')}
+                      className="hover-scale"
+                    >
+                      <Users className="w-4 h-4 mr-2" />
+                      {user?.email?.split('@')[0] || 'User'}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>User Preferences</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -163,15 +173,6 @@ export const Dashboard = ({ onTechniqueSelect, onOpenChat, isChatVisible = true,
                 className="hover-scale text-red-700 hover:bg-red-700/10"
               >
                 <MessageSquare className="w-4 h-4" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => navigate('/preferences')}
-                title="User Preferences"
-                className="hover-scale"
-              >
-                <Settings className="w-4 h-4" />
               </Button>
               {isAdmin && (
                 <Button 
