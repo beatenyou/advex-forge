@@ -485,17 +485,28 @@ const AIInteractionSection = ({ selectedDateRange }: { selectedDateRange: string
       const days = selectedDateRange === '7days' ? 7 : selectedDateRange === '30days' ? 30 : 90;
       startDate.setDate(endDate.getDate() - days);
 
-      // Get AI interactions with user details
-      const { data, error } = await supabase
+      // Get AI interactions data
+      const { data: interactionsData, error: interactionsError } = await supabase
         .from('ai_interactions')
-        .select(`
-          user_id, success, provider_name, created_at,
-          profiles!inner(email)
-        `)
+        .select('user_id, success, provider_name, created_at')
         .gte('created_at', startDate.toISOString())
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (interactionsError) throw interactionsError;
+
+      // Get unique user IDs from interactions
+      const userIds = [...new Set(interactionsData?.map(i => i.user_id).filter(Boolean) || [])];
+
+      // Get user profiles for these users
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('user_id, email')
+        .in('user_id', userIds);
+
+      // Create profile lookup map
+      const profileMap = new Map(
+        profilesData?.map(p => [p.user_id, p.email]) || []
+      );
 
       // Get user billing info for quota data
       const { data: billingData } = await supabase
@@ -521,9 +532,11 @@ const AIInteractionSection = ({ selectedDateRange }: { selectedDateRange: string
         last_interaction: string;
       }>();
 
-      data?.forEach(interaction => {
+      interactionsData?.forEach(interaction => {
         const userId = interaction.user_id;
-        const userEmail = (interaction.profiles as any)?.email || 'Unknown User';
+        if (!userId) return; // Skip interactions without user_id
+        
+        const userEmail = profileMap.get(userId) || 'Unknown User';
         const today = new Date().toISOString().split('T')[0];
         const interactionDate = interaction.created_at.split('T')[0];
         
