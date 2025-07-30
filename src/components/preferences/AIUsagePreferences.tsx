@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Brain, Save, Plus, Trash2, Star, Download, BarChart } from 'lucide-react';
+import { Brain, Save, Plus, Trash2, Star, Download, BarChart, StarOff } from 'lucide-react';
 import { format } from 'date-fns';
 
 const promptSchema = z.object({
@@ -207,6 +207,32 @@ export default function AIUsagePreferences() {
     }
   };
 
+  const clearAllFavorites = async () => {
+    try {
+      const { error } = await supabase
+        .from('saved_prompts')
+        .update({ is_favorite: false })
+        .eq('user_id', user?.id)
+        .eq('is_favorite', true);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Favorites Cleared',
+        description: 'All favorite prompts have been removed from favorites.',
+      });
+
+      fetchData();
+    } catch (error) {
+      console.error('Error clearing favorites:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to clear favorites.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const exportData = () => {
     const data = {
       savedPrompts,
@@ -284,84 +310,97 @@ export default function AIUsagePreferences() {
               <Brain className="w-5 h-5" />
               Saved Prompts
             </div>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Prompt
+            <div className="flex items-center gap-2">
+              {savedPrompts.some(prompt => prompt.is_favorite) && (
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={clearAllFavorites}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <StarOff className="w-4 h-4 mr-2" />
+                  Clear Favorites
                 </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Save New Prompt</DialogTitle>
-                  <DialogDescription>
-                    Save a frequently used prompt for quick access
-                  </DialogDescription>
-                </DialogHeader>
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <FormField
-                      control={form.control}
-                      name="title"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Title</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter prompt title" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+              )}
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button size="sm">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Prompt
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Save New Prompt</DialogTitle>
+                    <DialogDescription>
+                      Save a frequently used prompt for quick access
+                    </DialogDescription>
+                  </DialogHeader>
+                  <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                      <FormField
+                        control={form.control}
+                        name="title"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Title</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter prompt title" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name="category"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Category</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g., Writing, Coding, Analysis" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      <FormField
+                        control={form.control}
+                        name="category"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Category</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g., Writing, Coding, Analysis" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name="prompt_text"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Prompt Text</FormLabel>
-                          <FormControl>
-                            <Textarea
-                              placeholder="Enter your prompt text..."
-                              className="min-h-[100px]"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                      <FormField
+                        control={form.control}
+                        name="prompt_text"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Prompt Text</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="Enter your prompt text..."
+                                className="min-h-[100px]"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={loading}>
-                        <Save className="w-4 h-4 mr-2" />
-                        {loading ? 'Saving...' : 'Save Prompt'}
-                      </Button>
-                    </div>
-                  </form>
-                </Form>
-              </DialogContent>
-            </Dialog>
+                      <div className="flex justify-end gap-2">
+                        <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                          Cancel
+                        </Button>
+                        <Button type="submit" disabled={loading}>
+                          <Save className="w-4 h-4 mr-2" />
+                          {loading ? 'Saving...' : 'Save Prompt'}
+                        </Button>
+                      </div>
+                    </form>
+                  </Form>
+                </DialogContent>
+              </Dialog>
+            </div>
           </CardTitle>
           <CardDescription>
-            Manage your saved prompts for quick reuse
+            Manage your saved prompts for quick reuse. {savedPrompts.filter(p => p.is_favorite).length > 0 && `${savedPrompts.filter(p => p.is_favorite).length} favorite(s) saved.`}
           </CardDescription>
         </CardHeader>
         <CardContent>
