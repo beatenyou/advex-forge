@@ -628,10 +628,11 @@ export function UserManager() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="100">100 interactions</SelectItem>
-                  <SelectItem value="200">200 interactions</SelectItem>
-                  <SelectItem value="300">300 interactions</SelectItem>
+                  <SelectItem value="250">250 interactions</SelectItem>
                   <SelectItem value="500">500 interactions</SelectItem>
                   <SelectItem value="1000">1000 interactions</SelectItem>
+                  <SelectItem value="2500">2500 interactions</SelectItem>
+                  <SelectItem value="5000">5000 interactions</SelectItem>
                 </SelectContent>
               </Select>
             </div>

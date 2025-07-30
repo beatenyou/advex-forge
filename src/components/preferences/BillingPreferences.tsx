@@ -223,67 +223,145 @@ export default function BillingPreferences() {
         </CardContent>
       </Card>
 
-      {/* Available Plans */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {plans.map((plan) => (
-          <Card key={plan.id} className={`relative ${currentPlan?.id === plan.id ? 'ring-2 ring-primary' : ''}`}>
-            {currentPlan?.id === plan.id && (
-              <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-primary text-primary-foreground">
-                  <CheckCircle className="w-3 h-3 mr-1" />
-                  Current Plan
-                </Badge>
-              </div>
-            )}
-            
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                {getPlanIcon(plan.name)}
-                {plan.name}
-              </CardTitle>
-              <CardDescription>{plan.description}</CardDescription>
-              <div className="text-2xl font-bold">
-                ${plan.price_monthly}
-                <span className="text-sm font-normal text-muted-foreground">/month</span>
-              </div>
-              {plan.price_yearly > 0 && (
-                <div className="text-sm text-muted-foreground">
-                  ${plan.price_yearly}/year (save ${((plan.price_monthly * 12) - plan.price_yearly).toFixed(2)})
-                </div>
-              )}
-            </CardHeader>
-            
-            <CardContent>
-              <div className="space-y-3">
-                <div className="text-sm">
-                  <strong>{plan.ai_quota_monthly.toLocaleString()}</strong> AI interactions/month
-                </div>
-                
-                <div className="space-y-2">
-                  {(Array.isArray(plan.features) ? plan.features : []).map((feature, index) => (
-                    <div key={index} className="flex items-center gap-2 text-sm">
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      {feature}
-                    </div>
-                  ))}
-                </div>
-
-                {currentPlan?.id !== plan.id && (
-                  <Button
-                    className="w-full mt-4"
-                    onClick={() => upgradePlan(plan.id)}
-                    disabled={loading}
-                    variant={plan.name === 'Pro' ? 'default' : 'outline'}
-                  >
-                    <ArrowUpCircle className="w-4 h-4 mr-2" />
-                    {plan.price_monthly === 0 ? 'Downgrade to Free' : 'Upgrade Plan'}
-                  </Button>
+      {/* Purchase AI Credits */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="w-5 h-5" />
+            Purchase AI Credits
+          </CardTitle>
+          <CardDescription>
+            Buy additional AI interactions to boost your quota
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[
+              { interactions: 100, price: 5, pricePerInteraction: 0.050 },
+              { interactions: 250, price: 12, pricePerInteraction: 0.048, popular: true },
+              { interactions: 500, price: 25, pricePerInteraction: 0.050 },
+              { interactions: 1000, price: 48, pricePerInteraction: 0.048 },
+              { interactions: 2500, price: 115, pricePerInteraction: 0.046, bestValue: true },
+              { interactions: 5000, price: 225, pricePerInteraction: 0.045, bestValue: true }
+            ].map((bundle) => (
+              <Card key={bundle.interactions} className={`relative ${bundle.popular ? 'ring-2 ring-primary' : ''}`}>
+                {bundle.popular && (
+                  <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                    <Badge className="bg-primary text-primary-foreground">
+                      Popular
+                    </Badge>
+                  </div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+                {bundle.bestValue && (
+                  <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                    <Badge className="bg-green-600 text-white">
+                      Best Value
+                    </Badge>
+                  </div>
+                )}
+                
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg">{bundle.interactions.toLocaleString()} Credits</CardTitle>
+                  <div className="text-2xl font-bold text-primary">
+                    ${bundle.price}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    ${bundle.pricePerInteraction.toFixed(3)} per interaction
+                  </div>
+                </CardHeader>
+                
+                <CardContent className="pt-0">
+                  <Button 
+                    className="w-full" 
+                    variant="outline"
+                    onClick={() => {
+                      toast({
+                        title: 'Coming Soon',
+                        description: 'AI credit purchasing will be available soon! Contact support for immediate credit additions.',
+                      });
+                    }}
+                  >
+                    <CreditCard className="w-4 h-4 mr-2" />
+                    Purchase Credits
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Available Plans */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Subscription Plans</CardTitle>
+          <CardDescription>
+            Monthly subscriptions with recurring AI interactions
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {plans.map((plan) => (
+              <Card key={plan.id} className={`relative ${currentPlan?.id === plan.id ? 'ring-2 ring-primary' : ''}`}>
+                {currentPlan?.id === plan.id && (
+                  <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                    <Badge className="bg-primary text-primary-foreground">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Current Plan
+                    </Badge>
+                  </div>
+                )}
+                
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    {getPlanIcon(plan.name)}
+                    {plan.name}
+                  </CardTitle>
+                  <CardDescription>{plan.description}</CardDescription>
+                  <div className="text-2xl font-bold">
+                    ${plan.price_monthly}
+                    <span className="text-sm font-normal text-muted-foreground">/month</span>
+                  </div>
+                  {plan.price_yearly > 0 && (
+                    <div className="text-sm text-muted-foreground">
+                      ${plan.price_yearly}/year (save ${((plan.price_monthly * 12) - plan.price_yearly).toFixed(2)})
+                    </div>
+                  )}
+                </CardHeader>
+                
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="text-sm">
+                      <strong>{plan.ai_quota_monthly.toLocaleString()}</strong> AI interactions/month
+                    </div>
+                    
+                    <div className="space-y-2">
+                      {(Array.isArray(plan.features) ? plan.features : []).map((feature, index) => (
+                        <div key={index} className="flex items-center gap-2 text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          {feature}
+                        </div>
+                      ))}
+                    </div>
+
+                    {currentPlan?.id !== plan.id && (
+                      <Button
+                        className="w-full mt-4"
+                        onClick={() => upgradePlan(plan.id)}
+                        disabled={loading}
+                        variant={plan.name === 'Pro' ? 'default' : 'outline'}
+                      >
+                        <ArrowUpCircle className="w-4 h-4 mr-2" />
+                        {plan.price_monthly === 0 ? 'Downgrade to Free' : 'Upgrade Plan'}
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Billing History */}
       <Card>
