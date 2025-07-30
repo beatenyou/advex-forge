@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Trash2, UserPlus, Shield, User, Gift, Zap, Edit2, Lock, Unlock, Calendar } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth';
 
 interface Profile {
@@ -524,82 +525,120 @@ export function UserManager() {
                     )}
                   </TableCell>
                   <TableCell>{formatDate(profile.created_at)}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      {/* Edit AI Usage Button */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(profile.user_id, profile.email)}
-                        className="text-blue-600 hover:text-blue-700"
-                      >
-                        <Edit2 className="h-4 w-4" />
-                      </Button>
-                      
-                      {/* Grant AI Interactions Button */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openGrantDialog(profile.user_id, profile.email)}
-                        className="text-green-600 hover:text-green-700"
-                      >
-                        <Gift className="h-4 w-4" />
-                      </Button>
+                   <TableCell>
+                     <TooltipProvider>
+                       <div className="flex gap-2">
+                         {/* Edit AI Usage Button */}
+                         <Tooltip>
+                           <TooltipTrigger asChild>
+                             <Button
+                               variant="outline"
+                               size="sm"
+                               onClick={() => openEditDialog(profile.user_id, profile.email)}
+                               className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 hover:border-blue-200 hover:scale-105 transition-all duration-200"
+                             >
+                               <Edit2 className="h-4 w-4" />
+                             </Button>
+                           </TooltipTrigger>
+                           <TooltipContent>
+                             <p>Edit AI usage quotas and limits</p>
+                           </TooltipContent>
+                         </Tooltip>
+                         
+                         {/* Grant AI Interactions Button */}
+                         <Tooltip>
+                           <TooltipTrigger asChild>
+                             <Button
+                               variant="outline"
+                               size="sm"
+                               onClick={() => openGrantDialog(profile.user_id, profile.email)}
+                               className="text-green-600 hover:text-green-700 hover:bg-green-50 hover:border-green-200 hover:scale-105 transition-all duration-200"
+                             >
+                               <Gift className="h-4 w-4" />
+                             </Button>
+                           </TooltipTrigger>
+                           <TooltipContent>
+                             <p>Grant additional AI interactions</p>
+                           </TooltipContent>
+                         </Tooltip>
 
-                      {/* Lock/Unlock Account Button */}
-                      {userBilling[profile.user_id]?.account_locked ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleUnlockAccount(profile.user_id, profile.email)}
-                          className="text-green-600 hover:text-green-700"
-                          disabled={profile.user_id === user?.id}
-                        >
-                          <Unlock className="h-4 w-4" />
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openLockDialog(profile.user_id, profile.email)}
-                          className="text-orange-600 hover:text-orange-700"
-                          disabled={profile.user_id === user?.id}
-                        >
-                          <Lock className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {/* Delete Button */}
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={profile.user_id === user?.id}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete User</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete {profile.email}? This action cannot be undone.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteUser(profile.user_id, profile.email)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
+                         {/* Lock/Unlock Account Button */}
+                         {userBilling[profile.user_id]?.account_locked ? (
+                           <Tooltip>
+                             <TooltipTrigger asChild>
+                               <Button
+                                 variant="outline"
+                                 size="sm"
+                                 onClick={() => handleUnlockAccount(profile.user_id, profile.email)}
+                                 className="text-green-600 hover:text-green-700 hover:bg-green-50 hover:border-green-200 hover:scale-105 transition-all duration-200"
+                                 disabled={profile.user_id === user?.id}
+                               >
+                                 <Unlock className="h-4 w-4" />
+                               </Button>
+                             </TooltipTrigger>
+                             <TooltipContent>
+                               <p>Unlock user account</p>
+                             </TooltipContent>
+                           </Tooltip>
+                         ) : (
+                           <Tooltip>
+                             <TooltipTrigger asChild>
+                               <Button
+                                 variant="outline"
+                                 size="sm"
+                                 onClick={() => openLockDialog(profile.user_id, profile.email)}
+                                 className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 hover:border-orange-200 hover:scale-105 transition-all duration-200"
+                                 disabled={profile.user_id === user?.id}
+                               >
+                                 <Lock className="h-4 w-4" />
+                               </Button>
+                             </TooltipTrigger>
+                             <TooltipContent>
+                               <p>Lock user account</p>
+                             </TooltipContent>
+                           </Tooltip>
+                         )}
+                         
+                         {/* Delete Button */}
+                         <AlertDialog>
+                           <Tooltip>
+                             <TooltipTrigger asChild>
+                               <AlertDialogTrigger asChild>
+                                 <Button
+                                   variant="outline"
+                                   size="sm"
+                                   disabled={profile.user_id === user?.id}
+                                   className="text-destructive hover:text-destructive hover:bg-red-50 hover:border-red-200 hover:scale-105 transition-all duration-200"
+                                 >
+                                   <Trash2 className="h-4 w-4" />
+                                 </Button>
+                               </AlertDialogTrigger>
+                             </TooltipTrigger>
+                             <TooltipContent>
+                               <p>Delete user permanently</p>
+                             </TooltipContent>
+                           </Tooltip>
+                           <AlertDialogContent>
+                             <AlertDialogHeader>
+                               <AlertDialogTitle>Delete User</AlertDialogTitle>
+                               <AlertDialogDescription>
+                                 Are you sure you want to delete {profile.email}? This action cannot be undone.
+                               </AlertDialogDescription>
+                             </AlertDialogHeader>
+                             <AlertDialogFooter>
+                               <AlertDialogCancel>Cancel</AlertDialogCancel>
+                               <AlertDialogAction
+                                 onClick={() => handleDeleteUser(profile.user_id, profile.email)}
+                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                               >
+                                 Delete
+                               </AlertDialogAction>
+                             </AlertDialogFooter>
+                           </AlertDialogContent>
+                         </AlertDialog>
+                       </div>
+                     </TooltipProvider>
+                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
