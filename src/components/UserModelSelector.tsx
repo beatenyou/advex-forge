@@ -4,10 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { useUserModelAccess } from '@/hooks/useUserModelAccess';
+import { useModelQuotas } from '@/hooks/useModelQuotas';
 
 export function UserModelSelector() {
   const [open, setOpen] = useState(false);
   const { userModels, selectedModel, selectModel, loading } = useUserModelAccess();
+  const { getUsagePercentage, getRemainingQuota } = useModelQuotas();
 
   if (loading) {
     return (
@@ -87,6 +89,8 @@ export function UserModelSelector() {
           {userModels.map((model) => {
             const status = getModelStatus(model);
             const isSelected = selectedModel?.provider_id === model.provider_id;
+            const usagePercentage = getUsagePercentage(model.provider_id);
+            const remainingQuota = getRemainingQuota(model.provider_id);
             
             return (
               <div
@@ -115,8 +119,25 @@ export function UserModelSelector() {
                     </div>
                     <div className="text-xs text-muted-foreground flex items-center gap-3 mt-1">
                       <span>~{status.responseTime}ms response</span>
-                      <span className="text-green-600">Available</span>
+                      {remainingQuota === Infinity ? (
+                        <span className="text-green-600">Unlimited</span>
+                      ) : remainingQuota > 0 ? (
+                        <span className="text-green-600">{remainingQuota} remaining</span>
+                      ) : (
+                        <span className="text-red-600">Quota exceeded</span>
+                      )}
                     </div>
+                    {remainingQuota !== Infinity && (
+                      <div className="w-full bg-muted h-1 rounded-full mt-1">
+                        <div 
+                          className={`h-1 rounded-full transition-all ${
+                            usagePercentage >= 90 ? 'bg-red-500' : 
+                            usagePercentage >= 70 ? 'bg-yellow-500' : 'bg-green-500'
+                          }`}
+                          style={{ width: `${Math.min(usagePercentage, 100)}%` }}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="flex flex-col items-end gap-2">

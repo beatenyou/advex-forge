@@ -499,6 +499,78 @@ export type Database = {
         }
         Relationships: []
       }
+      model_access_templates: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          default_usage_limit: number | null
+          description: string | null
+          id: string
+          model_ids: string[]
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          default_usage_limit?: number | null
+          description?: string | null
+          id?: string
+          model_ids?: string[]
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          default_usage_limit?: number | null
+          description?: string | null
+          id?: string
+          model_ids?: string[]
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      model_usage_analytics: {
+        Row: {
+          cost_estimate: number | null
+          created_at: string | null
+          error_type: string | null
+          id: string
+          provider_id: string
+          response_time_ms: number | null
+          session_id: string | null
+          success: boolean | null
+          tokens_used: number | null
+          user_id: string
+        }
+        Insert: {
+          cost_estimate?: number | null
+          created_at?: string | null
+          error_type?: string | null
+          id?: string
+          provider_id: string
+          response_time_ms?: number | null
+          session_id?: string | null
+          success?: boolean | null
+          tokens_used?: number | null
+          user_id: string
+        }
+        Update: {
+          cost_estimate?: number | null
+          created_at?: string | null
+          error_type?: string | null
+          id?: string
+          provider_id?: string
+          response_time_ms?: number | null
+          session_id?: string | null
+          success?: boolean | null
+          tokens_used?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       performance_metrics: {
         Row: {
           id: string
@@ -890,27 +962,39 @@ export type Database = {
       }
       user_model_access: {
         Row: {
+          expires_at: string | null
           granted_at: string
           granted_by: string | null
           id: string
           is_enabled: boolean
+          notes: string | null
           provider_id: string
+          usage_current: number | null
+          usage_limit: number | null
           user_id: string
         }
         Insert: {
+          expires_at?: string | null
           granted_at?: string
           granted_by?: string | null
           id?: string
           is_enabled?: boolean
+          notes?: string | null
           provider_id: string
+          usage_current?: number | null
+          usage_limit?: number | null
           user_id: string
         }
         Update: {
+          expires_at?: string | null
           granted_at?: string
           granted_by?: string | null
           id?: string
           is_enabled?: boolean
+          notes?: string | null
           provider_id?: string
+          usage_current?: number | null
+          usage_limit?: number | null
           user_id?: string
         }
         Relationships: []
@@ -1033,6 +1117,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      admin_grant_model_access: {
+        Args: {
+          target_user_id: string
+          provider_id_param: string
+          admin_user_id: string
+          usage_limit_param?: number
+          expires_at_param?: string
+          notes_param?: string
+        }
+        Returns: boolean
+      }
       calculate_daily_stats: {
         Args: { target_date?: string }
         Returns: undefined
@@ -1046,8 +1141,27 @@ export type Database = {
           plan_name: string
         }[]
       }
+      check_model_quota: {
+        Args: { user_id_param: string; provider_id_param: string }
+        Returns: {
+          can_use_model: boolean
+          current_usage: number
+          usage_limit: number
+          provider_name: string
+        }[]
+      }
       increment_ai_usage: {
         Args: { user_id_param: string }
+        Returns: boolean
+      }
+      increment_model_usage: {
+        Args: {
+          user_id_param: string
+          provider_id_param: string
+          tokens_used_param?: number
+          response_time_param?: number
+          session_id_param?: string
+        }
         Returns: boolean
       }
       log_session_activity: {
