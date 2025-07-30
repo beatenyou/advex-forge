@@ -33,6 +33,8 @@ export function useUserModelAccess() {
     }
 
     try {
+      console.log('🤖 Fetching AI models for user:', user.id);
+      
       const { data, error } = await supabase
         .from('user_model_access')
         .select(`
@@ -52,33 +54,53 @@ export function useUserModelAccess() {
         .eq('is_enabled', true)
         .eq('ai_providers.is_active', true);
 
-      if (error) throw error;
+      if (error) {
+        console.log('📝 Query error or no user_model_access:', error);
+      }
 
       let models = data?.map(item => ({
         ...item,
         provider: item.ai_providers as any
       })) || [];
 
+      console.log('📊 Found user model access records:', models.length);
+
       // If user has no model access, provide default models from ai_chat_config
       if (models.length === 0) {
-        console.log('No user model access found, fetching default models');
+        console.log('🔄 No user model access found, fetching default models');
         
-        const { data: configData } = await supabase
+        const { data: configData, error: configError } = await supabase
           .from('ai_chat_config')
           .select('default_user_primary_model_id, default_user_secondary_model_id')
           .single();
+
+        if (configError) {
+          console.error('❌ Config fetch error:', configError);
+          throw new Error('Failed to load AI configuration');
+        }
+
+        console.log('⚙️ Config data:', configData);
 
         const defaultModelIds = [
           configData?.default_user_primary_model_id,
           configData?.default_user_secondary_model_id
         ].filter(Boolean);
 
+        console.log('🎯 Default model IDs:', defaultModelIds);
+
         if (defaultModelIds.length > 0) {
-          const { data: defaultModels } = await supabase
+          const { data: defaultModels, error: modelsError } = await supabase
             .from('ai_providers')
             .select('*')
             .in('id', defaultModelIds)
             .eq('is_active', true);
+
+          if (modelsError) {
+            console.error('❌ Default models fetch error:', modelsError);
+            throw new Error('Failed to load default AI models');
+          }
+
+          console.log('✅ Found default models:', defaultModels?.length);
 
           models = defaultModels?.map(provider => ({
             id: `default-${provider.id}`,
@@ -86,20 +108,25 @@ export function useUserModelAccess() {
             is_enabled: true,
             granted_at: new Date().toISOString(),
             provider,
-            ai_providers: provider as any // Add this property to match the type
+            ai_providers: provider as any
           })) || [];
+        } else {
+          console.warn('⚠️ No default model IDs configured');
         }
       }
 
+      console.log('🎉 Final models array:', models.length);
       setUserModels(models);
 
       // Set first available model as selected if none selected
       if (!selectedModelId && models.length > 0) {
+        console.log('🎯 Setting default model:', models[0].provider_id);
         setSelectedModelId(models[0].provider_id);
       }
 
     } catch (error) {
-      console.error('Error fetching user models:', error);
+      console.error('❌ Critical error fetching user models:', error);
+      setUserModels([]);
       toast({
         title: "Error",
         description: "Failed to load available AI models",

@@ -4,12 +4,13 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { User, Shield, Bell, CreditCard, Brain, Lock, HelpCircle, ArrowLeft } from 'lucide-react';
+import { User, Shield, Bell, CreditCard, Brain, Lock, HelpCircle, ArrowLeft, Bot } from 'lucide-react';
 import ProfilePreferences from '@/components/preferences/ProfilePreferences';
 import SecurityPreferences from '@/components/preferences/SecurityPreferences';
 import NotificationPreferences from '@/components/preferences/NotificationPreferences';
 import BillingPreferences from '@/components/preferences/BillingPreferences';
 import AIUsagePreferences from '@/components/preferences/AIUsagePreferences';
+import { AIModelPreferences } from '@/components/preferences/AIModelPreferences';
 import PrivacyPreferences from '@/components/preferences/PrivacyPreferences';
 import SupportPreferences from '@/components/preferences/SupportPreferences';
 
@@ -36,6 +37,7 @@ export default function UserPreferences() {
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'billing', label: 'Billing', icon: CreditCard },
     { id: 'ai-usage', label: 'AI Usage', icon: Brain },
+    { id: 'ai-models', label: 'AI Models', icon: Bot },
     { id: 'privacy', label: 'Privacy', icon: Lock },
     { id: 'support', label: 'Support', icon: HelpCircle },
   ];
@@ -57,7 +59,7 @@ export default function UserPreferences() {
 
           <Card className="p-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-7 mb-8">
+              <TabsList className="grid w-full grid-cols-8 mb-8">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
                   return (
@@ -92,6 +94,10 @@ export default function UserPreferences() {
 
                 <TabsContent value="ai-usage" className="mt-0">
                   <AIUsagePreferences />
+                </TabsContent>
+
+                <TabsContent value="ai-models" className="mt-0">
+                  <AIModelPreferences />
                 </TabsContent>
 
                 <TabsContent value="privacy" className="mt-0">
