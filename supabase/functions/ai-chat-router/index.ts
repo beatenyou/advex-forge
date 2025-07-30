@@ -58,7 +58,7 @@ serve(async (req) => {
       });
     }
 
-    const { message, messages, providerId, sessionId, conversationId } = await req.json();
+    const { message, messages, providerId, sessionId, conversationId, selectedModelId } = await req.json();
 
     // Support both single message (legacy) and conversation context (new)
     if (!message && !messages) {
@@ -78,24 +78,93 @@ serve(async (req) => {
       throw new Error('AI chat is not configured or disabled');
     }
 
-    // Determine which provider to use - prioritize primary, fallback to secondary
-    let targetProviderId = providerId || config.primary_provider_id || config.default_provider_id;
+    // Check user model access and determine provider
+    let targetProviderId = null;
     let isUsingFallback = false;
     
+    // Check if user is admin
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('user_id', userId)
+      .single();
+
+    const isAdmin = profileData?.role === 'admin';
+
+    if (selectedModelId) {
+      // User has selected a specific model - verify access
+      if (isAdmin) {
+        // Admin can use any active model
+        const { data: selectedProvider } = await supabase
+          .from('ai_providers')
+          .select('*')
+          .eq('id', selectedModelId)
+          .eq('is_active', true)
+          .single();
+
+        if (selectedProvider) {
+          targetProviderId = selectedModelId;
+        }
+      } else {
+        // Regular user - check model access
+        const { data: userAccess } = await supabase
+          .from('user_model_access')
+          .select('provider_id')
+          .eq('user_id', userId)
+          .eq('provider_id', selectedModelId)
+          .eq('is_enabled', true)
+          .single();
+
+        if (userAccess) {
+          // Verify the provider is still active
+          const { data: provider } = await supabase
+            .from('ai_providers')
+            .select('*')
+            .eq('id', selectedModelId)
+            .eq('is_active', true)
+            .single();
+
+          if (provider) {
+            targetProviderId = selectedModelId;
+          }
+        }
+      }
+    }
+
+    // Fallback to user's available models or admin defaults
     if (!targetProviderId) {
-      // Get the first active provider if no default is set
-      const { data: firstProvider } = await supabase
-        .from('ai_providers')
-        .select('id')
-        .eq('is_active', true)
-        .limit(1)
-        .single();
-      
-      targetProviderId = firstProvider?.id;
+      if (isAdmin) {
+        // Admin fallback to primary provider
+        targetProviderId = providerId || config.primary_provider_id || config.default_provider_id;
+        
+        if (!targetProviderId) {
+          const { data: firstProvider } = await supabase
+            .from('ai_providers')
+            .select('id')
+            .eq('is_active', true)
+            .limit(1)
+            .single();
+          targetProviderId = firstProvider?.id;
+        }
+      } else {
+        // Regular user - get first available model
+        const { data: userModels } = await supabase
+          .from('user_model_access')
+          .select('provider_id, ai_providers!inner(id, is_active)')
+          .eq('user_id', userId)
+          .eq('is_enabled', true)
+          .eq('ai_providers.is_active', true)
+          .limit(1)
+          .single();
+
+        if (userModels) {
+          targetProviderId = userModels.provider_id;
+        }
+      }
     }
 
     if (!targetProviderId) {
-      throw new Error('No AI provider available');
+      throw new Error('No AI provider available for this user');
     }
 
     // Get provider details

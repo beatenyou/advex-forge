@@ -18,6 +18,8 @@ export type Database = {
         Row: {
           created_at: string
           default_provider_id: string | null
+          default_user_primary_model_id: string | null
+          default_user_secondary_model_id: string | null
           failover_enabled: boolean
           id: string
           is_enabled: boolean
@@ -32,6 +34,8 @@ export type Database = {
         Insert: {
           created_at?: string
           default_provider_id?: string | null
+          default_user_primary_model_id?: string | null
+          default_user_secondary_model_id?: string | null
           failover_enabled?: boolean
           id?: string
           is_enabled?: boolean
@@ -46,6 +50,8 @@ export type Database = {
         Update: {
           created_at?: string
           default_provider_id?: string | null
+          default_user_primary_model_id?: string | null
+          default_user_secondary_model_id?: string | null
           failover_enabled?: boolean
           id?: string
           is_enabled?: boolean
@@ -878,6 +884,33 @@ export type Database = {
           stripe_subscription_id?: string | null
           subscription_status?: string | null
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_model_access: {
+        Row: {
+          granted_at: string
+          granted_by: string | null
+          id: string
+          is_enabled: boolean
+          provider_id: string
+          user_id: string
+        }
+        Insert: {
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          is_enabled?: boolean
+          provider_id: string
+          user_id: string
+        }
+        Update: {
+          granted_at?: string
+          granted_by?: string | null
+          id?: string
+          is_enabled?: boolean
+          provider_id?: string
           user_id?: string
         }
         Relationships: []

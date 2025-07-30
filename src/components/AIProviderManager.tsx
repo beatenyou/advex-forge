@@ -31,6 +31,8 @@ interface AIConfig {
   default_provider_id: string | null;
   primary_provider_id: string | null;
   secondary_provider_id: string | null;
+  default_user_primary_model_id?: string | null;
+  default_user_secondary_model_id?: string | null;
   system_prompt: string;
   max_tokens: number;
   temperature: number;
@@ -340,6 +342,8 @@ const AIProviderManager = () => {
           is_enabled: config.is_enabled,
           primary_provider_id: config.primary_provider_id,
           secondary_provider_id: config.secondary_provider_id,
+          default_user_primary_model_id: config.default_user_primary_model_id,
+          default_user_secondary_model_id: config.default_user_secondary_model_id,
           failover_enabled: config.failover_enabled,
           request_timeout_seconds: config.request_timeout_seconds
         })
@@ -538,44 +542,96 @@ const AIProviderManager = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="primary-provider">Primary Provider</Label>
-                <Select 
-                  value={config.primary_provider_id || config.default_provider_id || 'none'} 
-                  onValueChange={(value) => setConfig({ ...config, primary_provider_id: value === 'none' ? null : value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select primary provider" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No primary provider</SelectItem>
-                    {providers.filter(p => p.is_active).map((provider) => (
-                      <SelectItem key={provider.id} value={provider.id}>
-                        {provider.name} ({provider.type})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <div className="space-y-4">
+              <div>
+                <h4 className="text-sm font-medium mb-3">Admin Providers</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="primary-provider">Primary Provider</Label>
+                    <Select 
+                      value={config.primary_provider_id || config.default_provider_id || 'none'} 
+                      onValueChange={(value) => setConfig({ ...config, primary_provider_id: value === 'none' ? null : value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select primary provider" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No primary provider</SelectItem>
+                        {providers.filter(p => p.is_active).map((provider) => (
+                          <SelectItem key={provider.id} value={provider.id}>
+                            {provider.name} ({provider.type})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="secondary-provider">Secondary Provider (Fallback)</Label>
+                    <Select 
+                      value={config.secondary_provider_id || 'none'} 
+                      onValueChange={(value) => setConfig({ ...config, secondary_provider_id: value === 'none' ? null : value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select secondary provider" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No secondary provider</SelectItem>
+                        {providers.filter(p => p.is_active && p.id !== (config.primary_provider_id || config.default_provider_id)).map((provider) => (
+                          <SelectItem key={provider.id} value={provider.id}>
+                            {provider.name} ({provider.type})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="secondary-provider">Secondary Provider (Fallback)</Label>
-                <Select 
-                  value={config.secondary_provider_id || 'none'} 
-                  onValueChange={(value) => setConfig({ ...config, secondary_provider_id: value === 'none' ? null : value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select secondary provider" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">No secondary provider</SelectItem>
-                    {providers.filter(p => p.is_active && p.id !== (config.primary_provider_id || config.default_provider_id)).map((provider) => (
-                      <SelectItem key={provider.id} value={provider.id}>
-                        {provider.name} ({provider.type})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+
+              <div>
+                <h4 className="text-sm font-medium mb-3">Default User Models</h4>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Select the 2 models that new users will automatically get access to
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="user-primary-model">User Primary Model</Label>
+                    <Select 
+                      value={config.default_user_primary_model_id || 'none'} 
+                      onValueChange={(value) => setConfig({ ...config, default_user_primary_model_id: value === 'none' ? null : value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select user primary model" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No primary model</SelectItem>
+                        {providers.filter(p => p.is_active).map((provider) => (
+                          <SelectItem key={provider.id} value={provider.id}>
+                            {provider.name} - {provider.model_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="user-secondary-model">User Secondary Model</Label>
+                    <Select 
+                      value={config.default_user_secondary_model_id || 'none'} 
+                      onValueChange={(value) => setConfig({ ...config, default_user_secondary_model_id: value === 'none' ? null : value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select user secondary model" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No secondary model</SelectItem>
+                        {providers.filter(p => p.is_active && p.id !== config.default_user_primary_model_id).map((provider) => (
+                          <SelectItem key={provider.id} value={provider.id}>
+                            {provider.name} - {provider.model_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             </div>
 

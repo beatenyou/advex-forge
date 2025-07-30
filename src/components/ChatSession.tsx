@@ -12,6 +12,8 @@ import TextareaAutosize from 'react-textarea-autosize';
 import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useAIUsage } from '@/hooks/useAIUsage';
+import { useUserModelAccess } from '@/hooks/useUserModelAccess';
+import { UserModelSelector } from '@/components/UserModelSelector';
 
 interface ChatMessage {
   id: string;
@@ -46,6 +48,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
   const { user } = useAuth();
   const { trackActivity, trackPerformance } = useAnalytics();
   const { canUseAI, currentUsage, quotaLimit, planName, refreshQuota } = useAIUsage();
+  const { selectedModel } = useUserModelAccess();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [question, setQuestion] = useState('');
@@ -414,7 +417,8 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
         body: {
           message: userQuestion,
           messages: conversationContext,
-          sessionId: currentSession.id
+          sessionId: currentSession.id,
+          selectedModelId: selectedModel?.provider_id
         }
       });
       console.log('🤖 AI chat router response received:', { data, error });
@@ -622,10 +626,13 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
     <div className="flex flex-col h-full max-h-full min-h-0 relative">
       <div className="flex-shrink-0 p-3 border-b border-border">
         <div className="flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <MessageSquare className="h-5 w-5" />
-            {currentSession?.title || 'New Conversation'}
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 className="flex items-center gap-2 text-lg font-semibold">
+              <MessageSquare className="h-5 w-5" />
+              {currentSession?.title || 'New Conversation'}
+            </h2>
+            <UserModelSelector />
+          </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
