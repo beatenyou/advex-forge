@@ -3,6 +3,7 @@ import { Bot, ExternalLink, Download, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChatSession } from "@/components/ChatSession";
+import { SessionHistory } from "@/components/SessionHistory";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,12 +27,9 @@ export const ChatSidebar = ({
   onClose
 }: ChatSidebarProps) => {
   const [linkTabs, setLinkTabs] = useState<LinkTab[]>([]);
-  const {
-    user
-  } = useAuth();
-  const {
-    toast
-  } = useToast();
+  const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
   // Function to clear chat that can be passed to ChatSession
   const clearChatAndResetSession = async () => {
@@ -55,19 +53,37 @@ export const ChatSidebar = ({
       console.error('Error fetching link tabs:', error);
     }
   };
+  const handleSessionSelect = (sessionId: string) => {
+    setCurrentSessionId(sessionId);
+    // You could also trigger session loading here if needed
+  };
+
+  const handleNewSession = async () => {
+    setCurrentSessionId(undefined);
+    // Trigger creation of new session
+    if ((window as any).__clearChatFunction) {
+      await (window as any).__clearChatFunction();
+    }
+  };
+
   const handleClearChats = async () => {
     if (!user) return;
     try {
       // Delete all chat sessions for the current user
-      const {
-        error
-      } = await supabase.from('chat_sessions').delete().eq('user_id', user.id);
+      const { error } = await supabase
+        .from('chat_sessions')
+        .delete()
+        .eq('user_id', user.id);
+      
       if (error) throw error;
 
       // Clear the current chat interface immediately
       if ((window as any).__clearChatFunction) {
         await (window as any).__clearChatFunction();
       }
+      
+      setCurrentSessionId(undefined);
+      
       toast({
         title: "Chats cleared",
         description: "All chat history has been cleared successfully."
@@ -262,15 +278,25 @@ export const ChatSidebar = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 p-4 bg-background overflow-hidden min-h-0">{/* Added min-h-0 */}
-          {hasLinkTabs ? <Tabs defaultValue="chat" className="w-full h-full flex flex-col min-h-0">{/* Added min-h-0 */}
-              <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted/50">
+        <div className="flex-1 p-4 bg-background overflow-hidden min-h-0">
+          {hasLinkTabs ? (
+            <Tabs defaultValue="chat" className="w-full h-full flex flex-col min-h-0">
+              <TabsList className="grid w-full grid-cols-3 mb-4 bg-muted/50">
                 <TabsTrigger value="chat" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">Chat</TabsTrigger>
+                <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">History</TabsTrigger>
                 <TabsTrigger value="links" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">Links</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="chat" className="mt-0 flex-1 flex flex-col overflow-hidden min-h-0">{/* Added min-h-0 */}
-                <ChatSession onClear={clearChatAndResetSession} />
+              <TabsContent value="chat" className="mt-0 flex-1 flex flex-col overflow-hidden min-h-0">
+                <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} />
+              </TabsContent>
+              
+              <TabsContent value="history" className="mt-0 flex-1 overflow-hidden">
+                <SessionHistory 
+                  currentSessionId={currentSessionId}
+                  onSessionSelect={handleSessionSelect}
+                  onNewSession={handleNewSession}
+                />
               </TabsContent>
               <TabsContent value="links" className="mt-0 flex-1 overflow-y-auto">
                 <div className="space-y-3">
@@ -297,9 +323,19 @@ export const ChatSidebar = ({
                     </div>)}
                 </div>
               </TabsContent>
-            </Tabs> : <div className="h-full flex flex-col min-h-0">{/* Added min-h-0 */}
-              <ChatSession onClear={clearChatAndResetSession} />
-            </div>}
+            </Tabs>
+          ) : (
+            <div className="h-full flex flex-col min-h-0">
+              <SessionHistory 
+                currentSessionId={currentSessionId}
+                onSessionSelect={handleSessionSelect}
+                onNewSession={handleNewSession}
+              />
+              <div className="flex-1 mt-4 border-t border-border pt-4">
+                <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </TooltipProvider>;

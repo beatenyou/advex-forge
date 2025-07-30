@@ -74,10 +74,14 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
   };
 
   useEffect(() => {
-    loadOrCreateSession();
+    if (sessionId) {
+      loadSpecificSession(sessionId);
+    } else {
+      loadOrCreateSession();
+    }
     fetchSavedPrompts();
     checkAdminStatus();
-  }, []);
+  }, [sessionId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -183,12 +187,37 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
     }
   };
 
+  const loadSpecificSession = async (sessionId: string) => {
+    try {
+      // Load specific session
+      const { data: session, error: sessionError } = await supabase
+        .from('chat_sessions')
+        .select('*')
+        .eq('id', sessionId)
+        .eq('user_id', user?.id) // Ensure user can only load their own sessions
+        .single();
+
+      if (sessionError) throw sessionError;
+
+      setCurrentSession(session);
+      await loadMessages(session.id);
+    } catch (error) {
+      console.error('Error loading specific session:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load chat session",
+        variant: "destructive",
+      });
+    }
+  };
+
   const loadOrCreateSession = async () => {
     try {
-      // Get the most recent active session
+      // Get the most recent active session for the user
       const { data: sessions, error: sessionError } = await supabase
         .from('chat_sessions')
         .select('*')
+        .eq('user_id', user?.id)
         .eq('is_active', true)
         .order('updated_at', { ascending: false })
         .limit(1);
@@ -202,7 +231,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
         const { data: newSession, error: createError } = await supabase
           .from('chat_sessions')
           .insert({
-            user_id: (await supabase.auth.getUser()).data.user?.id,
+            user_id: user?.id,
             title: 'New Conversation'
           })
           .select()
@@ -244,7 +273,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       const { data: newSession, error } = await supabase
         .from('chat_sessions')
         .insert({
-          user_id: (await supabase.auth.getUser()).data.user?.id,
+          user_id: user?.id,
           title: 'New Conversation'
         })
         .select()
@@ -255,6 +284,18 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       setCurrentSession(newSession);
       setMessages([]);
       setQuestion('');
+      
+      // Log session creation
+      if (user) {
+        await supabase.rpc('log_session_activity', {
+          p_user_id: user.id,
+          p_session_id: newSession.id,
+          p_action: 'session_created',
+          p_details: { title: newSession.title },
+          p_user_agent: navigator.userAgent
+        });
+      }
+      
       // Scroll to top after creating new session
       setTimeout(scrollToTop, 100);
     } catch (error) {
