@@ -83,7 +83,9 @@ export type Database = {
       }
       ai_interactions: {
         Row: {
+          browser_info: string | null
           created_at: string
+          error_details: Json | null
           error_type: string | null
           id: string
           provider_name: string | null
@@ -93,11 +95,14 @@ export type Database = {
           session_id: string | null
           success: boolean | null
           tokens_used: number | null
+          user_context: Json | null
           user_id: string | null
           user_satisfaction: number | null
         }
         Insert: {
+          browser_info?: string | null
           created_at?: string
+          error_details?: Json | null
           error_type?: string | null
           id?: string
           provider_name?: string | null
@@ -107,11 +112,14 @@ export type Database = {
           session_id?: string | null
           success?: boolean | null
           tokens_used?: number | null
+          user_context?: Json | null
           user_id?: string | null
           user_satisfaction?: number | null
         }
         Update: {
+          browser_info?: string | null
           created_at?: string
+          error_details?: Json | null
           error_type?: string | null
           id?: string
           provider_name?: string | null
@@ -121,6 +129,7 @@ export type Database = {
           session_id?: string | null
           success?: boolean | null
           tokens_used?: number | null
+          user_context?: Json | null
           user_id?: string | null
           user_satisfaction?: number | null
         }

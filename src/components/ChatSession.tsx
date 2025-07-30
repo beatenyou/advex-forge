@@ -425,7 +425,51 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
         throw new Error(`AI usage quota exceeded. You've used ${currentUsage}/${quotaLimit} AI interactions this month.`);
       }
 
-      if (error) throw error;
+      if (error) {
+        // Enhanced error logging with detailed context
+        const errorContext = {
+          user_id: user?.id,
+          session_id: currentSession?.id,
+          error_message: error.message,
+          error_stack: error.stack,
+          request_timestamp: new Date().toISOString(),
+          browser_info: navigator.userAgent,
+          user_agent: navigator.userAgent,
+          message_preview: userQuestion.substring(0, 100), // First 100 chars for context
+          conversation_length: conversationContext.length,
+          current_usage: currentUsage,
+          quota_limit: quotaLimit,
+          plan_name: planName
+        };
+
+        // Log detailed error to ai_interactions table
+        try {
+          await supabase
+            .from('ai_interactions')
+            .insert({
+              user_id: user?.id,
+              session_id: currentSession?.id,
+              success: false,
+              error_type: error.message?.includes('quota') ? 'quota_exceeded' : 
+                         error.message?.includes('timeout') ? 'timeout' :
+                         error.message?.includes('network') ? 'network_error' : 'unknown_error',
+              provider_name: currentProvider || 'unknown',
+              request_type: 'chat',
+              error_details: {
+                message: error.message,
+                stack: error.stack,
+                timestamp: new Date().toISOString()
+              },
+              user_context: errorContext,
+              browser_info: navigator.userAgent,
+              created_at: new Date().toISOString()
+            });
+        } catch (logError) {
+          console.error('Failed to log AI interaction error:', logError);
+        }
+
+        throw error;
+      }
 
       // Track AI interaction metrics
       const endTime = performance.now();

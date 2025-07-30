@@ -20,7 +20,10 @@ import {
   Globe,
   Cpu,
   ArrowLeft,
-  RefreshCw
+  RefreshCw,
+  Filter,
+  Download,
+  Eye
 } from 'lucide-react';
 
 interface DailyStats {
@@ -45,6 +48,194 @@ interface RealtimeMetrics {
   errorRate: number;
   uptime: number;
 }
+
+interface AIError {
+  id: string;
+  user_id: string;
+  session_id?: string;
+  error_type: string;
+  provider_name?: string;
+  error_details?: any;
+  user_context?: any;
+  browser_info?: string;
+  created_at: string;
+}
+
+// AI Errors Section Component
+const AIErrorsSection = () => {
+  const [errors, setErrors] = useState<AIError[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedErrorType, setSelectedErrorType] = useState('all');
+  const [selectedError, setSelectedError] = useState<AIError | null>(null);
+
+  useEffect(() => {
+    fetchErrors();
+  }, [selectedErrorType]);
+
+  const fetchErrors = async () => {
+    try {
+      setLoading(true);
+      let query = supabase
+        .from('ai_interactions')
+        .select(`
+          id, user_id, session_id, error_type, provider_name, 
+          error_details, user_context, browser_info, created_at
+        `)
+        .eq('success', false)
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (selectedErrorType !== 'all') {
+        query = query.eq('error_type', selectedErrorType);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      setErrors(data || []);
+    } catch (error) {
+      console.error('Error fetching AI errors:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getErrorTypeColor = (type: string) => {
+    switch (type) {
+      case 'quota_exceeded': return 'bg-yellow-100 text-yellow-800';
+      case 'timeout': return 'bg-red-100 text-red-800';
+      case 'provider_error': return 'bg-purple-100 text-purple-800';
+      case 'auth_error': return 'bg-orange-100 text-orange-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const errorTypeCounts = errors.reduce((acc, error) => {
+    acc[error.error_type] = (acc[error.error_type] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  return (
+    <div className="space-y-6">
+      {/* Error Type Filter */}
+      <div className="flex items-center gap-4">
+        <Select value={selectedErrorType} onValueChange={setSelectedErrorType}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Filter by error type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Errors</SelectItem>
+            <SelectItem value="quota_exceeded">Quota Exceeded</SelectItem>
+            <SelectItem value="timeout">Timeout</SelectItem>
+            <SelectItem value="provider_error">Provider Error</SelectItem>
+            <SelectItem value="auth_error">Auth Error</SelectItem>
+            <SelectItem value="system_error">System Error</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant="outline" size="sm" onClick={fetchErrors}>
+          <RefreshCw className="w-4 h-4 mr-2" />
+          Refresh
+        </Button>
+      </div>
+
+      {/* Error Type Summary */}
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        {Object.entries(errorTypeCounts).map(([type, count]) => (
+          <Card key={type}>
+            <CardContent className="p-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold">{count}</div>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {type.replace('_', ' ')}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Recent Errors */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5" />
+            Recent AI Errors
+          </CardTitle>
+          <CardDescription>
+            Detailed error logs for troubleshooting AI interactions
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            </div>
+          ) : errors.length === 0 ? (
+            <p className="text-center text-muted-foreground py-8">No errors found</p>
+          ) : (
+            <div className="space-y-4">
+              {errors.map((error) => (
+                <div key={error.id} className="border rounded-lg p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Badge className={getErrorTypeColor(error.error_type)}>
+                        {error.error_type}
+                      </Badge>
+                      {error.provider_name && (
+                        <Badge variant="outline">{error.provider_name}</Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(error.created_at).toLocaleString()}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedError(selectedError?.id === error.id ? null : error)}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="text-sm">
+                    <p><strong>User ID:</strong> {error.user_id}</p>
+                    {error.session_id && <p><strong>Session ID:</strong> {error.session_id}</p>}
+                    {error.browser_info && (
+                      <p><strong>Browser:</strong> {error.browser_info.substring(0, 80)}...</p>
+                    )}
+                  </div>
+
+                  {selectedError?.id === error.id && (
+                    <div className="mt-4 p-4 bg-muted rounded-lg">
+                      <h4 className="font-medium mb-2">Detailed Error Information</h4>
+                      {error.error_details && (
+                        <div className="mb-3">
+                          <strong>Error Details:</strong>
+                          <pre className="text-xs bg-background p-2 rounded mt-1 overflow-auto">
+                            {JSON.stringify(error.error_details, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                      {error.user_context && (
+                        <div>
+                          <strong>User Context:</strong>
+                          <pre className="text-xs bg-background p-2 rounded mt-1 overflow-auto">
+                            {JSON.stringify(error.user_context, null, 2)}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
 
 const AdminStats = () => {
   const { user } = useAuth();
@@ -302,10 +493,11 @@ const AdminStats = () => {
         </div>
       ) : (
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="engagement">User Engagement</TabsTrigger>
             <TabsTrigger value="ai">AI Interaction</TabsTrigger>
+            <TabsTrigger value="ai-errors">AI Errors</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
             <TabsTrigger value="demographics">Demographics</TabsTrigger>
           </TabsList>
@@ -486,6 +678,11 @@ const AdminStats = () => {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          {/* AI Errors Tab */}
+          <TabsContent value="ai-errors" className="space-y-6">
+            <AIErrorsSection />
           </TabsContent>
 
           {/* Performance Tab */}

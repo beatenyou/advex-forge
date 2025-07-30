@@ -10,7 +10,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
-import { Save, Shield, Eye, EyeOff } from 'lucide-react';
+import { Save, Shield, Eye, EyeOff, Activity, ChevronDown, ChevronUp } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { format } from 'date-fns';
 
 const passwordSchema = z.object({
@@ -31,6 +32,7 @@ export default function SecurityPreferences() {
   const [showPasswords, setShowPasswords] = useState(false);
   const [activityLog, setActivityLog] = useState<any[]>([]);
   const [sessions, setSessions] = useState<any[]>([]);
+  const [isActivityExpanded, setIsActivityExpanded] = useState(false);
 
   const form = useForm<PasswordFormData>({
     resolver: zodResolver(passwordSchema),
@@ -263,31 +265,47 @@ export default function SecurityPreferences() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Security Activity</CardTitle>
-          <CardDescription>
-            Recent security-related activities on your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {activityLog.length > 0 ? (
-              activityLog.map((activity) => (
-                <div key={activity.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div>
-                    <p className="font-medium">{activity.activity_type.replace('_', ' ').toUpperCase()}</p>
-                    <p className="text-sm text-muted-foreground">{activity.description}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(activity.created_at), 'MMM dd, yyyy at HH:mm')}
-                    </p>
-                  </div>
+        <Collapsible open={isActivityExpanded} onOpenChange={setIsActivityExpanded}>
+          <CardHeader>
+            <CollapsibleTrigger className="w-full">
+              <CardTitle className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <Activity className="w-5 h-5" />
+                  Security Activity
                 </div>
-              ))
-            ) : (
-              <p className="text-muted-foreground">No security activities recorded.</p>
-            )}
-          </div>
-        </CardContent>
+                {isActivityExpanded ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </CardTitle>
+            </CollapsibleTrigger>
+            <CardDescription>
+              Recent security-related activities on your account
+            </CardDescription>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent>
+              <div className="space-y-4">
+                {activityLog.length > 0 ? (
+                  activityLog.map((activity) => (
+                    <div key={activity.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div>
+                        <p className="font-medium">{activity.activity_type.replace('_', ' ').toUpperCase()}</p>
+                        <p className="text-sm text-muted-foreground">{activity.description}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(new Date(activity.created_at), 'MMM dd, yyyy at HH:mm')}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-muted-foreground">No security activities recorded.</p>
+                )}
+              </div>
+            </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
       </Card>
     </div>
   );

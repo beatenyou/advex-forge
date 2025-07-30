@@ -245,8 +245,58 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in ai-chat-router function:', error);
+    
+    // Enhanced error logging with detailed context
+    try {
+      const errorDetails = {
+        error_message: error.message,
+        error_stack: error.stack,
+        timestamp: new Date().toISOString(),
+        config_id: config?.id,
+        provider_id: targetProviderId,
+        provider_name: provider?.name,
+        provider_type: provider?.type,
+        model_name: provider?.model_name,
+        failover_enabled: config?.failover_enabled,
+        used_fallback: isUsingFallback,
+        request_timeout: config?.request_timeout_seconds
+      };
+
+      const userContext = {
+        user_id: userId,
+        session_id: sessionId,
+        conversation_id: conversationId,
+        message_length: message?.length || 0,
+        messages_count: messages?.length || 0,
+        request_headers: Object.fromEntries(req.headers.entries())
+      };
+
+      // Log error to ai_interactions table
+      await supabase
+        .from('ai_interactions')
+        .insert({
+          user_id: userId,
+          session_id: sessionId,
+          success: false,
+          error_type: error.message?.includes('quota') ? 'quota_exceeded' : 
+                     error.message?.includes('timeout') ? 'timeout' :
+                     error.message?.includes('provider') ? 'provider_error' :
+                     error.message?.includes('authentication') ? 'auth_error' : 'system_error',
+          provider_name: provider?.name || 'unknown',
+          request_type: 'chat_router',
+          error_details: errorDetails,
+          user_context: userContext,
+          browser_info: req.headers.get('User-Agent') || 'unknown',
+          created_at: new Date().toISOString()
+        });
+    } catch (logError) {
+      console.error('Failed to log error details:', logError);
+    }
+
     return new Response(JSON.stringify({ 
-      error: error.message
+      error: error.message,
+      error_id: `ai_router_${Date.now()}`, // For easier tracking
+      timestamp: new Date().toISOString()
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
