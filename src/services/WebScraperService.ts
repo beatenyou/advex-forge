@@ -323,7 +323,7 @@ Return a JSON array of technique objects. Each technique object must have this e
 }
 \`\`\`
 
-**COMMAND TEMPLATE GUIDELINES:**
+
 - Use <parameter> syntax for placeholders (e.g., <target>, <username>, <password>)
 - Include full command syntax with all necessary flags
 - Each command should be ready-to-use after parameter substitution
