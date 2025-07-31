@@ -37,8 +37,6 @@ export function ChatHeader({
           </div>
           
           <div className="flex items-center gap-2 flex-shrink-0">
-            {/* AI Status - Always visible */}
-            <AIStatusIndicator />
             
             {/* Usage Display - Always visible on desktop */}
             <div className="hidden md:flex">
