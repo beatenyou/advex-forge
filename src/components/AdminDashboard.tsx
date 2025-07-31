@@ -423,10 +423,10 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
             <TabsContent value="guidance" className="space-y-6 mt-6">
               <div className="grid gap-6">
                 {/* Welcome Section */}
-                <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+                <Card className="bg-gradient-cyber border-cyber-blue/20 shadow-lg">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-3 text-xl">
-                      <Rocket className="w-6 h-6 text-primary" />
+                      <Rocket className="w-6 h-6 text-cyber-blue" />
                       Welcome to Admin Dashboard
                     </CardTitle>
                     <CardDescription className="text-base">
@@ -435,23 +435,23 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Card className="bg-background/50 border-muted">
+                      <Card className="bg-card/80 border-border/50 hover:border-cyber-blue/30 transition-colors">
                         <CardContent className="p-4 text-center">
-                          <Database className="w-8 h-8 mx-auto mb-2 text-primary" />
+                          <Database className="w-8 h-8 mx-auto mb-2 text-cyber-blue" />
                           <h4 className="font-semibold text-sm">Real-time Database</h4>
                           <p className="text-xs text-muted-foreground">All changes sync instantly</p>
                         </CardContent>
                       </Card>
-                      <Card className="bg-background/50 border-muted">
+                      <Card className="bg-card/80 border-border/50 hover:border-cyber-green/30 transition-colors">
                         <CardContent className="p-4 text-center">
-                          <Zap className="w-8 h-8 mx-auto mb-2 text-secondary" />
+                          <Zap className="w-8 h-8 mx-auto mb-2 text-cyber-green" />
                           <h4 className="font-semibold text-sm">Automated Import</h4>
                           <p className="text-xs text-muted-foreground">Bulk process websites</p>
                         </CardContent>
                       </Card>
-                      <Card className="bg-background/50 border-muted">
+                      <Card className="bg-card/80 border-border/50 hover:border-cyber-purple/30 transition-colors">
                         <CardContent className="p-4 text-center">
-                          <Users className="w-8 h-8 mx-auto mb-2 text-accent" />
+                          <Users className="w-8 h-8 mx-auto mb-2 text-cyber-purple" />
                           <h4 className="font-semibold text-sm">Multi-Admin</h4>
                           <p className="text-xs text-muted-foreground">Collaborate in real-time</p>
                         </CardContent>
@@ -464,10 +464,10 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                 <Accordion type="multiple" defaultValue={["getting-started", "automated-workflows"]} className="space-y-4">
                   
                   {/* Getting Started Workflow */}
-                  <AccordionItem value="getting-started" className="border rounded-lg">
-                    <AccordionTrigger className="px-6 py-4 hover:no-underline bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-t-lg">
+                  <AccordionItem value="getting-started" className="border border-cyber-green/20 rounded-lg bg-gradient-glow">
+                    <AccordionTrigger className="px-6 py-4 hover:no-underline bg-gradient-to-r from-cyber-green/10 to-cyber-green/5 hover:from-cyber-green/15 hover:to-cyber-green/10 rounded-t-lg transition-all">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full bg-cyber-green flex items-center justify-center shadow-lg">
                           <Rocket className="w-4 h-4 text-white" />
                         </div>
                         <div className="text-left">
@@ -535,19 +535,19 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                           ))}
                         </div>
                         
-                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                          <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">💡 Success Indicators</h4>
-                          <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                        <div className="bg-cyber-green/10 border border-cyber-green/20 p-4 rounded-lg">
+                          <h4 className="font-semibold text-cyber-green mb-2">💡 Success Indicators</h4>
+                          <ul className="text-sm text-muted-foreground space-y-1">
                             <li className="flex items-center gap-2">
-                              <CheckCircle className="w-4 h-4 text-green-500" />
+                              <CheckCircle className="w-4 h-4 text-cyber-green" />
                               You can navigate between all admin tabs
                             </li>
                             <li className="flex items-center gap-2">
-                              <CheckCircle className="w-4 h-4 text-green-500" />
+                              <CheckCircle className="w-4 h-4 text-cyber-green" />
                               You successfully added at least one technique
                             </li>
                             <li className="flex items-center gap-2">
-                              <CheckCircle className="w-4 h-4 text-green-500" />
+                              <CheckCircle className="w-4 h-4 text-cyber-green" />
                               You understand the markdown format requirements
                             </li>
                           </ul>
@@ -557,10 +557,10 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                   </AccordionItem>
 
                   {/* Automated Workflows */}
-                  <AccordionItem value="automated-workflows" className="border rounded-lg">
-                    <AccordionTrigger className="px-6 py-4 hover:no-underline bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-t-lg">
+                  <AccordionItem value="automated-workflows" className="border border-cyber-blue/20 rounded-lg bg-gradient-glow">
+                    <AccordionTrigger className="px-6 py-4 hover:no-underline bg-gradient-to-r from-cyber-blue/10 to-cyber-blue/5 hover:from-cyber-blue/15 hover:to-cyber-blue/10 rounded-t-lg transition-all">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full bg-cyber-blue flex items-center justify-center shadow-lg">
                           <Zap className="w-4 h-4 text-white" />
                         </div>
                         <div className="text-left">
@@ -573,8 +573,8 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                       <div className="space-y-6">
                         
                         {/* Bulk Import Workflow */}
-                        <div className="border rounded-lg p-4 bg-gradient-to-r from-blue-50/50 to-blue-100/50 dark:from-blue-900/10 dark:to-blue-800/10">
-                          <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-4 flex items-center gap-2">
+                        <div className="border border-cyber-blue/20 rounded-lg p-4 bg-gradient-to-r from-cyber-blue/5 to-cyber-blue/10">
+                          <h4 className="font-semibold text-cyber-blue mb-4 flex items-center gap-2">
                             <Database className="w-5 h-5" />
                             Bulk Import Workflow (30-60 mins)
                           </h4>
@@ -617,8 +617,8 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                                 prereq: "Quality review completed"
                               }
                             ].map((item) => (
-                              <div key={item.step} className="flex items-start gap-3 p-3 bg-background/60 rounded border border-blue-200 dark:border-blue-800">
-                                <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-semibold mt-1">
+                              <div key={item.step} className="flex items-start gap-3 p-3 bg-card/40 rounded border border-cyber-blue/20 hover:border-cyber-blue/40 transition-colors">
+                                <div className="w-6 h-6 rounded-full bg-cyber-blue text-black flex items-center justify-center text-sm font-semibold mt-1">
                                   {item.step}
                                 </div>
                                 <div className="flex-1 min-w-0">
@@ -626,7 +626,7 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                                   <p className="text-xs text-muted-foreground mb-2">{item.description}</p>
                                   <div className="flex flex-wrap gap-2">
                                     <Badge variant="secondary" className="text-xs">{item.action}</Badge>
-                                    <Badge variant="outline" className="text-xs text-orange-600">
+                                    <Badge variant="outline" className="text-xs text-warning">
                                       Prereq: {item.prereq}
                                     </Badge>
                                   </div>
@@ -637,8 +637,8 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                         </div>
 
                         {/* LLM Webscraper Workflow */}
-                        <div className="border rounded-lg p-4 bg-gradient-to-r from-purple-50/50 to-purple-100/50 dark:from-purple-900/10 dark:to-purple-800/10">
-                          <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-4 flex items-center gap-2">
+                        <div className="border border-cyber-purple/20 rounded-lg p-4 bg-gradient-to-r from-cyber-purple/5 to-cyber-purple/10">
+                          <h4 className="font-semibold text-cyber-purple mb-4 flex items-center gap-2">
                             <Globe className="w-5 h-5" />
                             LLM Webscraper Workflow (15-30 mins)
                           </h4>
@@ -670,8 +670,8 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                                 action: "Upload Cards tab → Paste markdown → Add"
                               }
                             ].map((item) => (
-                              <div key={item.step} className="flex items-start gap-3 p-3 bg-background/60 rounded border border-purple-200 dark:border-purple-800">
-                                <div className="w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center text-sm font-semibold mt-1">
+                              <div key={item.step} className="flex items-start gap-3 p-3 bg-card/40 rounded border border-cyber-purple/20 hover:border-cyber-purple/40 transition-colors">
+                                <div className="w-6 h-6 rounded-full bg-cyber-purple text-black flex items-center justify-center text-sm font-semibold mt-1">
                                   {item.step}
                                 </div>
                                 <div className="flex-1">
@@ -684,9 +684,9 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                           </div>
                         </div>
 
-                        <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
-                          <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-2">⚠️ Best Practices</h4>
-                          <ul className="text-sm text-amber-800 dark:text-amber-200 space-y-1">
+                        <div className="bg-warning/10 border border-warning/20 p-4 rounded-lg">
+                          <h4 className="font-semibold text-warning mb-2">⚠️ Best Practices</h4>
+                          <ul className="text-sm text-muted-foreground space-y-1">
                             <li>• Start with small batches (5-10 URLs) to test extraction quality</li>
                             <li>• Always review quality scores before importing to database</li>
                             <li>• Monitor API usage limits to avoid service interruptions</li>
@@ -698,10 +698,10 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                   </AccordionItem>
 
                   {/* Advanced Management */}
-                  <AccordionItem value="advanced-management" className="border rounded-lg">
-                    <AccordionTrigger className="px-6 py-4 hover:no-underline bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-t-lg">
+                  <AccordionItem value="advanced-management" className="border border-cyber-orange/20 rounded-lg bg-gradient-glow">
+                    <AccordionTrigger className="px-6 py-4 hover:no-underline bg-gradient-to-r from-cyber-orange/10 to-cyber-orange/5 hover:from-cyber-orange/15 hover:to-cyber-orange/10 rounded-t-lg transition-all">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full bg-cyber-orange flex items-center justify-center shadow-lg">
                           <Wrench className="w-4 h-4 text-white" />
                         </div>
                         <div className="text-left">
@@ -720,7 +720,7 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                               description: "Monitor and improve technique data quality",
                               actions: ["Run quality audits", "Fix validation errors", "Update incomplete data"],
                               tab: "Techniques",
-                              color: "blue"
+                              color: "cyber-blue"
                             },
                             {
                               icon: Users,
@@ -728,7 +728,7 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                               description: "Manage user accounts and permissions",
                               actions: ["Add/remove users", "Manage admin access", "Monitor user activity"],
                               tab: "Users",
-                              color: "green"
+                              color: "cyber-green"
                             },
                             {
                               icon: Shield,
@@ -736,7 +736,7 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                               description: "Configure security settings and API access",
                               actions: ["Manage API keys", "Set user permissions", "Monitor access logs"],
                               tab: "Model Access",
-                              color: "red"
+                              color: "cyber-red"
                             },
                             {
                               icon: Database,
@@ -744,13 +744,15 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                               description: "Track system performance and usage",
                               actions: ["Review analytics", "Monitor API usage", "Check system health"],
                               tab: "Analytics",
-                              color: "purple"
+                              color: "cyber-purple"
                             }
                           ].map((item) => (
-                            <Card key={item.title} className={`p-4 border-l-4 border-l-${item.color}-500 hover:shadow-md transition-shadow`}>
+                            <Card key={item.title} className="p-4 border-l-4 border-l-current hover:shadow-md transition-shadow bg-card/50 hover:bg-card/80"
+                              style={{ borderLeftColor: `hsl(var(--${item.color}))` }}>
                               <div className="flex items-start gap-3">
-                                <div className={`w-8 h-8 rounded bg-${item.color}-100 dark:bg-${item.color}-900/30 flex items-center justify-center`}>
-                                  <item.icon className={`w-4 h-4 text-${item.color}-600 dark:text-${item.color}-400`} />
+                                <div className="w-8 h-8 rounded bg-muted/50 flex items-center justify-center"
+                                  style={{ backgroundColor: `hsl(var(--${item.color}) / 0.1)` }}>
+                                  <item.icon className="w-4 h-4" style={{ color: `hsl(var(--${item.color}))` }} />
                                 </div>
                                 <div className="flex-1">
                                   <h4 className="font-semibold text-sm mb-1">{item.title}</h4>
@@ -772,27 +774,27 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                           ))}
                         </div>
 
-                        <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
-                          <h4 className="font-semibold text-orange-900 dark:text-orange-100 mb-2">🎯 Maintenance Schedule</h4>
+                        <div className="bg-cyber-orange/10 border border-cyber-orange/20 p-4 rounded-lg">
+                          <h4 className="font-semibold text-cyber-orange mb-2">🎯 Maintenance Schedule</h4>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                             <div>
-                              <h5 className="font-medium text-orange-800 dark:text-orange-200">Daily (5 mins)</h5>
-                              <ul className="text-orange-700 dark:text-orange-300 text-xs space-y-1">
+                              <h5 className="font-medium text-cyber-orange">Daily (5 mins)</h5>
+                              <ul className="text-muted-foreground text-xs space-y-1">
                                 <li>• Check for new import requests</li>
                                 <li>• Review quality alerts</li>
                               </ul>
                             </div>
                             <div>
-                              <h5 className="font-medium text-orange-800 dark:text-orange-200">Weekly (30 mins)</h5>
-                              <ul className="text-orange-700 dark:text-orange-300 text-xs space-y-1">
+                              <h5 className="font-medium text-cyber-orange">Weekly (30 mins)</h5>
+                              <ul className="text-muted-foreground text-xs space-y-1">
                                 <li>• Run full quality audit</li>
                                 <li>• Update incomplete techniques</li>
                                 <li>• Check broken links</li>
                               </ul>
                             </div>
                             <div>
-                              <h5 className="font-medium text-orange-800 dark:text-orange-200">Monthly (60 mins)</h5>
-                              <ul className="text-orange-700 dark:text-orange-300 text-xs space-y-1">
+                              <h5 className="font-medium text-cyber-orange">Monthly (60 mins)</h5>
+                              <ul className="text-muted-foreground text-xs space-y-1">
                                 <li>• Review user activity</li>
                                 <li>• Update MITRE mappings</li>
                                 <li>• Performance optimization</li>
@@ -806,10 +808,10 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                 </Accordion>
 
                 {/* Quick Actions */}
-                <Card className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900/50 dark:to-gray-800/50">
+                <Card className="bg-gradient-card border-border/50">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Zap className="w-5 h-5" />
+                      <Zap className="w-5 h-5 text-cyber-blue" />
                       Quick Actions
                     </CardTitle>
                     <CardDescription>
