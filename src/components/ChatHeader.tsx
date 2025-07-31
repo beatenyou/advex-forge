@@ -1,43 +1,43 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Plus, ChevronDown, ChevronUp } from 'lucide-react';
+import { MessageSquare, Plus, ChevronDown, ChevronUp, History } from 'lucide-react';
 import { UserModelSelector } from '@/components/UserModelSelector';
-import { AIStatusIndicator } from '@/components/AIStatusIndicator';
 import { CompactUsageDisplay } from '@/components/CompactUsageDisplay';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { SessionHistory } from '@/components/SessionHistory';
 
 interface ChatHeaderProps {
-  sessionTitle: string;
   currentUsage: number;
   quotaLimit: number;
   planName: string;
   canUseAI: boolean;
   onNewChat: () => void;
+  currentSessionId?: string;
+  onSessionSelect: (sessionId: string) => void;
 }
 
 export function ChatHeader({
-  sessionTitle,
   currentUsage,
   quotaLimit,
   planName,
   canUseAI,
-  onNewChat
+  onNewChat,
+  currentSessionId,
+  onSessionSelect
 }: ChatHeaderProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   return (
     <div className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur-sm">
-      {/* Top Row - Always visible */}
+      {/* Top Row - Model Selector and Usage */}
       <div className="p-3 pb-2">
         <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <h2 className="flex items-center gap-2 text-lg font-semibold truncate">
-              <MessageSquare className="h-5 w-5 flex-shrink-0 text-primary" />
-              <span className="truncate">{sessionTitle || 'New Conversation'}</span>
-            </h2>
+          {/* Model Selector - Primary element */}
+          <div className="flex-1 max-w-xs">
+            <UserModelSelector compact />
           </div>
           
           <div className="flex items-center gap-2 flex-shrink-0">
-            
             {/* Usage Display - Always visible on desktop */}
             <div className="hidden md:flex">
               <CompactUsageDisplay 
@@ -61,29 +61,49 @@ export function ChatHeader({
                 <ChevronUp className="h-4 w-4" />
               )}
             </Button>
-            
-            {/* Model Selector - Primary element */}
-            <div className="flex-1 max-w-xs">
-              <UserModelSelector compact />
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom Row - Collapsible on mobile */}
+      {/* Bottom Row - New Chat and History */}
       <div className={`transition-all duration-200 ease-out ${isCollapsed ? 'max-h-0 overflow-hidden' : 'max-h-16'} md:max-h-16`}>
         <div className="px-3 pb-3 pt-1">
           <div className="flex items-center justify-between gap-3">
-            {/* New Chat Button */}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onNewChat}
-              className="flex items-center gap-2 px-3"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">New Chat</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              {/* New Chat Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onNewChat}
+                className="flex items-center gap-2 px-3"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">New Chat</span>
+              </Button>
+              
+              {/* Chat History Dropdown */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex items-center gap-2 px-3"
+                  >
+                    <History className="h-4 w-4" />
+                    <span className="hidden sm:inline">History</span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-0" align="start">
+                  <div className="max-h-96">
+                    <SessionHistory
+                      currentSessionId={currentSessionId}
+                      onSessionSelect={onSessionSelect}
+                      onNewSession={onNewChat}
+                    />
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
             
             {/* Usage on mobile when expanded - smaller and right-aligned */}
             <div className="md:hidden flex-shrink-0">

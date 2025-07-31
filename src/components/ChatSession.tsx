@@ -289,6 +289,10 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
     }
   };
 
+  const handleSessionSelect = async (sessionId: string) => {
+    await loadSpecificSession(sessionId);
+  };
+
   const createNewSession = async () => {
     try {
       const { data: newSession, error } = await supabase
@@ -671,12 +675,13 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
   return (
     <div className="flex flex-col h-full max-h-full min-h-0 relative">
       <ChatHeader
-        sessionTitle={currentSession?.title || 'New Conversation'}
         currentUsage={currentUsage}
         quotaLimit={quotaLimit}
         planName={planName}
         canUseAI={canUseAI}
         onNewChat={createNewSession}
+        currentSessionId={currentSession?.id}
+        onSessionSelect={handleSessionSelect}
       />
 
       <div className="flex-1 overflow-hidden min-h-0">
