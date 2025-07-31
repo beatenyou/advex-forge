@@ -15,6 +15,7 @@ export const useAIStatus = () => {
     message: 'Checking AI system status...',
   });
   const [loading, setLoading] = useState(true);
+  const [currentModelId, setCurrentModelId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAIStatus();
@@ -28,11 +29,14 @@ export const useAIStatus = () => {
       .subscribe();
 
     // Listen for model changes to update status display
-    const handleModelChange = () => {
+    const handleModelChange = (event: CustomEvent) => {
+      if (event.detail?.providerId) {
+        setCurrentModelId(event.detail.providerId);
+      }
       checkAIStatus();
     };
 
-    window.addEventListener('modelChanged', handleModelChange);
+    window.addEventListener('modelChanged', handleModelChange as EventListener);
 
     return () => {
       supabase.removeChannel(channel);
@@ -72,12 +76,11 @@ export const useAIStatus = () => {
 
       const activeProviders = providersResult.data;
       
-      // Get currently selected model from localStorage
-      const selectedModelId = localStorage.getItem('selectedModelId');
+      // Get currently selected model
       let currentProvider = null;
       
-      if (selectedModelId) {
-        currentProvider = activeProviders.find(p => p.id === selectedModelId);
+      if (currentModelId) {
+        currentProvider = activeProviders.find(p => p.id === currentModelId);
       }
       
       // Fall back to default provider if no valid selection

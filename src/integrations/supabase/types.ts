@@ -1021,6 +1021,7 @@ export type Database = {
           language: string | null
           marketing_emails: boolean | null
           phone: string | null
+          selected_model_id: string | null
           timezone: string | null
           updated_at: string
           user_id: string
@@ -1038,6 +1039,7 @@ export type Database = {
           language?: string | null
           marketing_emails?: boolean | null
           phone?: string | null
+          selected_model_id?: string | null
           timezone?: string | null
           updated_at?: string
           user_id: string
@@ -1055,11 +1057,20 @@ export type Database = {
           language?: string | null
           marketing_emails?: boolean | null
           phone?: string | null
+          selected_model_id?: string | null
           timezone?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_selected_model_id_fkey"
+            columns: ["selected_model_id"]
+            isOneToOne: false
+            referencedRelation: "ai_providers"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_sessions: {
         Row: {

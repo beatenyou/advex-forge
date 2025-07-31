@@ -214,16 +214,34 @@ export function useUserModelAccess() {
     setLoading(false);
   };
 
-  // Select a model with immediate state synchronization
-  const selectModel = useCallback((providerId: string) => {
+  // Select a model with database persistence
+  const selectModel = useCallback(async (providerId: string) => {
     const model = userModels.find(m => m.provider_id === providerId);
-    if (model) {
-      console.log('🎯 Selecting model:', providerId, model.provider?.name);
+    if (!model || !user) {
+      console.warn('Cannot save model preference: model not found or user not authenticated');
+      return;
+    }
+
+    console.log('🎯 Selecting model:', providerId, model.provider?.name);
+    
+    try {
+      // Save to database
+      const { error } = await supabase
+        .from('user_preferences')
+        .upsert({
+          user_id: user.id,
+          selected_model_id: providerId,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        });
       
-      // Update localStorage first as the source of truth
-      localStorage.setItem('selectedModelId', providerId);
+      if (error) {
+        console.error('Error saving model preference:', error);
+        return;
+      }
       
-      // Force immediate state update
+      // Update state immediately
       setSelectedModelId(providerId);
       
       // Dispatch event immediately for real-time UI updates
@@ -231,15 +249,15 @@ export function useUserModelAccess() {
         detail: { providerId, model, timestamp: Date.now() } 
       }));
       
-      console.log('✅ Model selection complete:', { providerId, modelName: model.provider?.name });
+      console.log('✅ Model selection saved to database:', { providerId, modelName: model.provider?.name });
+    } catch (error) {
+      console.error('Error updating model preference:', error);
     }
-  }, [userModels]);
+  }, [userModels, user]);
 
-  // Get currently selected model - use localStorage as source of truth for immediate consistency
+  // Get currently selected model
   const getSelectedModel = () => {
-    const savedModelId = localStorage.getItem('selectedModelId');
-    const modelId = savedModelId || selectedModelId;
-    return userModels.find(m => m.provider_id === modelId);
+    return userModels.find(m => m.provider_id === selectedModelId);
   };
 
   useEffect(() => {
@@ -248,22 +266,49 @@ export function useUserModelAccess() {
     }
   }, [user]);
 
-  // Restore selected model from localStorage after models are loaded
-  useEffect(() => {
-    if (userModels.length > 0 && !selectedModelId) {
-      const savedModelId = localStorage.getItem('selectedModelId');
-      if (savedModelId && userModels.find(m => m.provider_id === savedModelId)) {
-        console.log('🔄 Restoring saved model:', savedModelId);
-        setSelectedModelId(savedModelId);
-      } else if (userModels.length > 0) {
-        // Set first available model as default
-        const defaultModel = userModels[0];
-        console.log('🎯 Setting default model:', defaultModel.provider_id);
-        setSelectedModelId(defaultModel.provider_id);
-        localStorage.setItem('selectedModelId', defaultModel.provider_id);
+  // Load user's saved model preference from database
+  const loadUserModelPreference = async () => {
+    if (!user) return null;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('selected_model_id')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (error) {
+        console.log('No user preferences found, will use default');
+        return null;
       }
+      
+      return data?.selected_model_id;
+    } catch (error) {
+      console.error('Error loading user model preference:', error);
+      return null;
     }
-  }, [userModels, selectedModelId]);
+  };
+
+  // Load and set user's saved model preference after models are loaded
+  useEffect(() => {
+    const loadSavedPreference = async () => {
+      if (userModels.length > 0 && !selectedModelId && user) {
+        const savedModelId = await loadUserModelPreference();
+        
+        if (savedModelId && userModels.find(m => m.provider_id === savedModelId)) {
+          console.log('🔄 Restoring saved model from database:', savedModelId);
+          setSelectedModelId(savedModelId);
+        } else if (userModels.length > 0) {
+          // Set first available model as default
+          const defaultModel = userModels[0];
+          console.log('🎯 Setting default model:', defaultModel.provider_id);
+          setSelectedModelId(defaultModel.provider_id);
+        }
+      }
+    };
+    
+    loadSavedPreference();
+  }, [userModels, selectedModelId, user]);
 
   return {
     userModels,
