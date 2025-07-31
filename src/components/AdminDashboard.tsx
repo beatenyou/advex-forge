@@ -424,10 +424,10 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
             <TabsContent value="guidance" className="space-y-6 mt-6">
               <div className="grid gap-6">
                 {/* Welcome Section */}
-                <Card className="bg-gradient-cyber border-cyber-blue/20 shadow-lg">
+                <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20 shadow-lg">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-3 text-xl">
-                      <Rocket className="w-6 h-6 text-cyber-blue" />
+                      <Rocket className="w-6 h-6 text-primary" />
                       Welcome to Admin Dashboard
                     </CardTitle>
                     <CardDescription className="text-base">
