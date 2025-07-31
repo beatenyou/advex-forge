@@ -17,7 +17,7 @@ import { QuickReference } from "./QuickReference";
 import { AdminDashboard } from "./AdminDashboard";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
 import { ChatModeToggle } from "./ChatModeToggle";
-import { HistoryQuickAccess } from "./HistoryQuickAccess";
+
 import { useResponsiveGrid } from "@/hooks/useResponsiveGrid";
 import { sampleMarkdownTechniques, parseMultipleMarkdownTechniques, ParsedTechnique } from "@/lib/markdownParser";
 
@@ -286,13 +286,9 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
               </Card>}
           </div>
 
-          {/* Quick Reference and History Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+          {/* Quick Reference Section */}
+          <div className="mt-8">
             <QuickReference />
-            <HistoryQuickAccess 
-              onSessionSelect={handleSessionSelect}
-              onNewSession={handleNewSession}
-            />
           </div>
           </div>
         </main>

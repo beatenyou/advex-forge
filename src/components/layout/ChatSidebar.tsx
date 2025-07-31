@@ -3,7 +3,7 @@ import { Bot, ExternalLink, Download, Trash2, X, ChevronUp, ChevronDown } from "
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChatSession } from "@/components/ChatSession";
-import { HistoryManager } from "@/components/HistoryManager";
+import { EnhancedHistoryTab } from "@/components/EnhancedHistoryTab";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -299,11 +299,10 @@ export const ChatSidebar = ({
               </TabsContent>
               
               <TabsContent value="history" className="mt-0 flex-1 overflow-hidden">
-                <HistoryManager 
+                <EnhancedHistoryTab 
                   currentSessionId={currentSessionId}
                   onSessionSelect={handleSessionSelect}
                   onNewSession={handleNewSession}
-                  mode="embedded"
                 />
               </TabsContent>
               <TabsContent value="links" className="mt-0 flex-1 overflow-y-auto">
