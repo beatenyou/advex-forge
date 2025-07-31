@@ -132,7 +132,39 @@ export const useAIStatus = () => {
       )
       .subscribe();
 
-    // Listen for broadcast events from the database trigger
+    // Listen for postgres notifications from the database trigger
+    const setupNotificationChannel = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+      
+      return supabase
+        .channel('model-selection-notifications')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'user_preferences',
+          filter: `user_id=eq.${user.id}`
+        }, async (payload) => {
+          console.log('🔄 AI Status: Received postgres notification', payload);
+          const { new: newRecord } = payload;
+          
+          if (newRecord && 'selected_model_id' in newRecord && newRecord.selected_model_id) {
+            console.log('📡 AI Status: Model selection changed via trigger, updating status');
+            setCurrentModelId(newRecord.selected_model_id as string);
+            await checkAIStatus(newRecord.selected_model_id as string);
+            
+            // Force UI refresh
+            window.dispatchEvent(new CustomEvent('forceStatusRefresh', { 
+              detail: { modelId: newRecord.selected_model_id, timestamp: Date.now() } 
+            }));
+          }
+        })
+        .subscribe();
+    };
+    
+    const notificationChannelPromise = setupNotificationChannel();
+
+    // Listen for broadcast events from the database trigger (fallback)
     const broadcastChannel = supabase
       .channel('ai-model-broadcast')
       .on('broadcast', { event: 'model_changed' }, async (payload) => {
@@ -154,6 +186,9 @@ export const useAIStatus = () => {
       window.removeEventListener('globalStatusRefresh', handleGlobalRefresh);
       window.removeEventListener('forceStatusRefresh', handleForceRefresh);
       supabase.removeChannel(preferencesChannel);
+      notificationChannelPromise.then(channel => {
+        if (channel) supabase.removeChannel(channel);
+      });
       supabase.removeChannel(broadcastChannel);
     };
   }, []);

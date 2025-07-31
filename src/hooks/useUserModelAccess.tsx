@@ -256,6 +256,9 @@ export function useUserModelAccess() {
       
       console.log('✅ Database save successful:', data);
       
+      // Wait a small moment for the database trigger to fire
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
       // Dispatch enhanced event with complete model data for immediate UI sync
       const modelChangeEvent = new CustomEvent('modelChanged', { 
         detail: { 
@@ -284,6 +287,12 @@ export function useUserModelAccess() {
         detail: { modelId: providerId, timestamp: Date.now() }
       });
       window.dispatchEvent(globalRefreshEvent);
+      
+      // Force immediate refresh of all connected components
+      const forceRefreshEvent = new CustomEvent('forceStatusRefresh', {
+        detail: { modelId: providerId, timestamp: Date.now() }
+      });
+      window.dispatchEvent(forceRefreshEvent);
       
       console.log('🎉 Model selection complete:', { 
         savedProviderId: providerId, 

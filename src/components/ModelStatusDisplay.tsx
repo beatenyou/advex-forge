@@ -17,6 +17,20 @@ export function ModelStatusDisplay({ compact = false, showQuota = false }: Model
     // Update display when component mounts or hook changes
     setCurrentModel(getSelectedModel());
 
+    // Listen for DOM events for immediate UI updates
+    const handleModelChange = (event: any) => {
+      console.log('🔄 ModelStatusDisplay: Received modelChanged event', event.detail);
+      setCurrentModel(getSelectedModel());
+    };
+    
+    const handleForceRefresh = (event: any) => {
+      console.log('🔄 ModelStatusDisplay: Force refresh triggered', event.detail);
+      setCurrentModel(getSelectedModel());
+    };
+    
+    window.addEventListener('modelChanged', handleModelChange);
+    window.addEventListener('forceStatusRefresh', handleForceRefresh);
+
     // Listen for real-time user preferences changes (user-specific)
     const preferencesChannel = supabase
       .channel('model-status-display-preferences')
@@ -58,6 +72,8 @@ export function ModelStatusDisplay({ compact = false, showQuota = false }: Model
       .subscribe();
 
     return () => {
+      window.removeEventListener('modelChanged', handleModelChange);
+      window.removeEventListener('forceStatusRefresh', handleForceRefresh);
       supabase.removeChannel(preferencesChannel);
       supabase.removeChannel(broadcastChannel);
     };
