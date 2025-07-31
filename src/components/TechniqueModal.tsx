@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { X, Copy, Star, Zap, Shield, AlertTriangle, Eye, Settings, Bolt, ExternalLink } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, Copy, Star, Zap, Shield, AlertTriangle, Eye, Settings, Bolt, ExternalLink, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -101,8 +101,17 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite }:
   const [generatedCommand, setGeneratedCommand] = useState("");
   const [commandParams, setCommandParams] = useState<Record<string, string>>({});
   const [isCommandGenOpen, setIsCommandGenOpen] = useState(false);
+  const [isStarred, setIsStarred] = useState(technique.starred);
+  const [isToggling, setIsToggling] = useState(false);
   
   const detailedTechnique = getDetailedTechnique(technique);
+
+  // Reset starred state when modal opens or technique changes
+  useEffect(() => {
+    if (isOpen) {
+      setIsStarred(technique.starred);
+    }
+  }, [isOpen, technique.starred]);
 
   const generateCommand = () => {
     const command = detailedTechnique.commands[selectedCommand];
@@ -126,9 +135,21 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite }:
 
   const toggleStar = async () => {
     try {
+      setIsToggling(true);
+      // Update local state immediately for instant visual feedback
+      setIsStarred(!isStarred);
       await onToggleFavorite(technique.id);
     } catch (error) {
       console.error('Error toggling favorite:', error);
+      // Revert local state on error
+      setIsStarred(isStarred);
+      toast({
+        title: "Error",
+        description: "Failed to update favorite. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsToggling(false);
     }
   };
 
@@ -155,9 +176,14 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite }:
               variant="ghost" 
               size="sm"
               onClick={toggleStar}
+              disabled={isToggling}
               className="h-6 w-6 p-0 hover:bg-muted"
             >
-              <Star className={`h-4 w-4 ${technique.starred ? 'fill-yellow-500 text-yellow-500' : 'text-muted-foreground hover:text-yellow-500'}`} />
+              {isToggling ? (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              ) : (
+                <Star className={`h-4 w-4 ${isStarred ? 'fill-yellow-500 text-yellow-500' : 'text-muted-foreground hover:text-yellow-500'}`} />
+              )}
             </Button>
             <Button
               variant="ghost" 
