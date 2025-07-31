@@ -94,28 +94,51 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
       const toolMatch = trimmedLine.match(/^\d+\.\s*\*\*([^:]+):\*\*\s*`([^`]+)`\s*\|\s*(.+)$/);
       if (toolMatch) {
         const [, toolName, command, description] = toolMatch;
-        tools.push(toolName.trim());
+        const cleanToolName = toolName.trim();
+        const cleanCommand = command.trim();
+        const cleanDescription = description.trim();
+        
+        if (!tools.includes(cleanToolName)) {
+          tools.push(cleanToolName);
+        }
         commands.push({
-          tool: toolName.trim(),
-          command: command.trim(),
-          description: description.trim()
+          tool: cleanToolName,
+          command: cleanCommand,
+          description: cleanDescription
         });
       }
     }
     
     if (isCommandsSection && trimmedLine && !trimmedLine.startsWith('### Commands') && !trimmedLine.startsWith('### Command Templates')) {
-      // Parse command template entries
+      // Parse command template entries - prioritize these over tools section
       const commandMatch = trimmedLine.match(/^\d+\.\s*\*\*([^:]+):\*\*\s*`([^`]+)`\s*\|\s*(.+)$/);
       if (commandMatch) {
         const [, toolName, command, description] = commandMatch;
-        if (!tools.includes(toolName.trim())) {
-          tools.push(toolName.trim());
+        const cleanToolName = toolName.trim();
+        const cleanCommand = command.trim();
+        const cleanDescription = description.trim();
+        
+        if (!tools.includes(cleanToolName)) {
+          tools.push(cleanToolName);
         }
-        commands.push({
-          tool: toolName.trim(),
-          command: command.trim(),
-          description: description.trim()
-        });
+        
+        // Remove any duplicate commands from tools section
+        const existingIndex = commands.findIndex(cmd => 
+          cmd.tool === cleanToolName && cmd.command === cleanCommand
+        );
+        if (existingIndex >= 0) {
+          commands[existingIndex] = {
+            tool: cleanToolName,
+            command: cleanCommand,
+            description: cleanDescription
+          };
+        } else {
+          commands.push({
+            tool: cleanToolName,
+            command: cleanCommand,
+            description: cleanDescription
+          });
+        }
       }
     }
   }

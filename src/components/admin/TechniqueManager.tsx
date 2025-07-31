@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Plus, Edit, Trash2, Upload, Download, RefreshCw, Search, Calendar, User, Clock } from "lucide-react";
+import { CommandTemplateEditor } from "./CommandTemplateEditor";
+import { BulkTechniqueImporter } from "./BulkTechniqueImporter";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { migrateTechniquesToDatabase, fetchTechniquesFromDatabase, DatabaseTechnique } from "@/lib/techniqueDataMigration";
@@ -33,6 +35,7 @@ const TechniqueManager = () => {
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTechnique, setEditingTechnique] = useState<any>(null);
+  const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('all');
   const [sortBy, setSortBy] = useState('created_desc');
@@ -321,8 +324,15 @@ const TechniqueManager = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={handleMigration} variant="outline">
+          <Button 
+            onClick={() => setIsBulkImportOpen(true)}
+            variant="outline"
+          >
             <Upload className="h-4 w-4 mr-2" />
+            Bulk Import
+          </Button>
+          <Button onClick={handleMigration} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
             Migrate Sample Data
           </Button>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -411,17 +421,11 @@ const TechniqueManager = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="commands">Command Templates (JSON format)</Label>
-                  <Textarea
-                    id="commands"
-                    value={formData.commands}
-                    onChange={(e) => setFormData({...formData, commands: e.target.value})}
-                    placeholder='[{"tool": "SQLMap", "command": "sqlmap -u <url> --dbs", "description": "Enumerate databases"}]'
-                    rows={4}
+                  <Label htmlFor="commands">Command Templates</Label>
+                  <CommandTemplateEditor
+                    commands={formData.commands ? JSON.parse(formData.commands) : []}
+                    onChange={(commands) => setFormData({...formData, commands: JSON.stringify(commands, null, 2)})}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Use {"<parameter>"} syntax for command parameters. Examples: {"<url>"}, {"<target>"}, {"<username>"}
-                  </p>
                 </div>
                 
                 <div className="flex justify-end gap-2">
@@ -591,6 +595,15 @@ const TechniqueManager = () => {
           </CardContent>
         </Card>
       )}
+
+      <BulkTechniqueImporter
+        isOpen={isBulkImportOpen}
+        onClose={() => setIsBulkImportOpen(false)}
+        onImportComplete={() => {
+          setIsBulkImportOpen(false);
+          loadTechniques();
+        }}
+      />
     </div>
   );
 };
