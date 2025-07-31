@@ -315,35 +315,6 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                     </Card>
                   </div>
 
-                  <div className="mt-8">
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                      <Wrench className="w-5 h-5" />
-                      Quick Start Guide
-                    </h3>
-                    <div className="space-y-4">
-                      <div className="flex items-start gap-3 p-4 border border-border rounded-lg bg-muted/50">
-                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm flex items-center justify-center font-semibold">1</div>
-                        <div>
-                          <h4 className="font-medium">Manage Techniques</h4>
-                          <p className="text-sm text-muted-foreground">Use the "Technique Management" tab for all technique operations - import from markdown, bulk import, web scraping, and direct database management.</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3 p-4 border border-border rounded-lg bg-muted/50">
-                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm flex items-center justify-center font-semibold">2</div>
-                        <div>
-                          <h4 className="font-medium">Organize Content</h4>
-                          <p className="text-sm text-muted-foreground">Use "Cheat Sheets" for quick commands and "Scenarios" for complex attack workflows. Link related techniques together.</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3 p-4 border border-border rounded-lg bg-muted/50">
-                        <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground text-sm flex items-center justify-center font-semibold">3</div>
-                        <div>
-                          <h4 className="font-medium">Configure Access</h4>
-                          <p className="text-sm text-muted-foreground">Set up user permissions, AI models, and external links to create a comprehensive security knowledge base.</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
