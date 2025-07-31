@@ -159,19 +159,22 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <Card className="bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-950/50 dark:to-cyan-900/50 border-cyan-200 dark:border-cyan-800 hover:shadow-lg transition-all duration-200 cursor-pointer group" onClick={() => setActiveTab("techniques")}>
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center gap-2">
-                          <Database className="w-5 h-5 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform duration-200" />
-                          <CardTitle className="text-base">Technique Management</CardTitle>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <Card className="bg-card border border-border hover:border-cyan-500/50 transition-all duration-200 cursor-pointer group hover:shadow-lg" onClick={() => setActiveTab("techniques")}>
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-cyan-500/10 flex items-center justify-center group-hover:bg-cyan-500/20 transition-colors duration-200">
+                            <Database className="w-5 h-5 text-cyan-400" />
+                          </div>
+                          <CardTitle className="text-lg">Technique Management</CardTitle>
                         </div>
                       </CardHeader>
-                      <CardContent className="pt-0 space-y-2">
-                        <p className="text-sm text-muted-foreground">Manage all techniques with import, edit, search, and tracking capabilities</p>
+                      <CardContent className="pt-0 space-y-4">
+                        <p className="text-sm text-muted-foreground leading-relaxed">Manage all techniques with import, edit, search, and tracking capabilities</p>
                         <Button 
+                          variant="outline"
                           size="sm" 
-                          className="bg-cyan-600 hover:bg-cyan-700 text-white w-full"
+                          className="w-full border-cyan-500/30 text-cyan-400 hover:bg-cyan-500/10 hover:border-cyan-500/50"
                           onClick={(e) => { e.stopPropagation(); setActiveTab("techniques"); }}
                         >
                           Central Hub →
@@ -179,18 +182,21 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/50 border-purple-200 dark:border-purple-800 hover:shadow-lg transition-all duration-200 cursor-pointer group" onClick={() => setActiveTab("cheatsheets")}>
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform duration-200" />
-                          <CardTitle className="text-base">Cheat Sheets</CardTitle>
+                    <Card className="bg-card border border-border hover:border-purple-500/50 transition-all duration-200 cursor-pointer group hover:shadow-lg" onClick={() => setActiveTab("cheatsheets")}>
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center group-hover:bg-purple-500/20 transition-colors duration-200">
+                            <FileText className="w-5 h-5 text-purple-400" />
+                          </div>
+                          <CardTitle className="text-lg">Cheat Sheets</CardTitle>
                         </div>
                       </CardHeader>
-                      <CardContent className="pt-0 space-y-2">
-                        <p className="text-sm text-muted-foreground">Access quick reference commands and tools for efficient operations</p>
+                      <CardContent className="pt-0 space-y-4">
+                        <p className="text-sm text-muted-foreground leading-relaxed">Access quick reference commands and tools for efficient operations</p>
                         <Button 
+                          variant="outline"
                           size="sm" 
-                          className="bg-purple-600 hover:bg-purple-700 text-white w-full"
+                          className="w-full border-purple-500/30 text-purple-400 hover:bg-purple-500/10 hover:border-purple-500/50"
                           onClick={(e) => { e.stopPropagation(); setActiveTab("cheatsheets"); }}
                         >
                           Quick Reference →
@@ -198,18 +204,21 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/50 border-orange-200 dark:border-orange-800 hover:shadow-lg transition-all duration-200 cursor-pointer group" onClick={() => setActiveTab("linktabs")}>
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center gap-2">
-                          <Globe className="w-5 h-5 text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform duration-200" />
-                          <CardTitle className="text-base">Link Tabs</CardTitle>
+                    <Card className="bg-card border border-border hover:border-orange-500/50 transition-all duration-200 cursor-pointer group hover:shadow-lg" onClick={() => setActiveTab("linktabs")}>
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-orange-500/10 flex items-center justify-center group-hover:bg-orange-500/20 transition-colors duration-200">
+                            <Globe className="w-5 h-5 text-orange-400" />
+                          </div>
+                          <CardTitle className="text-lg">Link Tabs</CardTitle>
                         </div>
                       </CardHeader>
-                      <CardContent className="pt-0 space-y-2">
-                        <p className="text-sm text-muted-foreground">Discover external resources and documentation links for further learning</p>
+                      <CardContent className="pt-0 space-y-4">
+                        <p className="text-sm text-muted-foreground leading-relaxed">Discover external resources and documentation links for further learning</p>
                         <Button 
+                          variant="outline"
                           size="sm" 
-                          className="bg-orange-600 hover:bg-orange-700 text-white w-full"
+                          className="w-full border-orange-500/30 text-orange-400 hover:bg-orange-500/10 hover:border-orange-500/50"
                           onClick={(e) => { e.stopPropagation(); setActiveTab("linktabs"); }}
                         >
                           External Resources →
@@ -217,18 +226,21 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/50 dark:to-red-900/50 border-red-200 dark:border-red-800 hover:shadow-lg transition-all duration-200 cursor-pointer group" onClick={() => setActiveTab("scenarios")}>
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center gap-2">
-                          <Target className="w-5 h-5 text-red-600 dark:text-red-400 group-hover:scale-110 transition-transform duration-200" />
-                          <CardTitle className="text-base">Scenarios</CardTitle>
+                    <Card className="bg-card border border-border hover:border-red-500/50 transition-all duration-200 cursor-pointer group hover:shadow-lg" onClick={() => setActiveTab("scenarios")}>
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center group-hover:bg-red-500/20 transition-colors duration-200">
+                            <Target className="w-5 h-5 text-red-400" />
+                          </div>
+                          <CardTitle className="text-lg">Scenarios</CardTitle>
                         </div>
                       </CardHeader>
-                      <CardContent className="pt-0 space-y-2">
-                        <p className="text-sm text-muted-foreground">Explore complete attack chains and workflows for comprehensive understanding</p>
+                      <CardContent className="pt-0 space-y-4">
+                        <p className="text-sm text-muted-foreground leading-relaxed">Explore complete attack chains and workflows for comprehensive understanding</p>
                         <Button 
+                          variant="outline"
                           size="sm" 
-                          className="bg-red-600 hover:bg-red-700 text-white w-full"
+                          className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50"
                           onClick={(e) => { e.stopPropagation(); setActiveTab("scenarios"); }}
                         >
                           Attack Scenarios →
@@ -236,18 +248,21 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950/50 dark:to-gray-900/50 border-gray-200 dark:border-gray-800 hover:shadow-lg transition-all duration-200 cursor-pointer group" onClick={() => setActiveTab("users")}>
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center gap-2">
-                          <Users className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:scale-110 transition-transform duration-200" />
-                          <CardTitle className="text-base">User Management</CardTitle>
+                    <Card className="bg-card border border-border hover:border-blue-500/50 transition-all duration-200 cursor-pointer group hover:shadow-lg" onClick={() => setActiveTab("users")}>
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center group-hover:bg-blue-500/20 transition-colors duration-200">
+                            <Users className="w-5 h-5 text-blue-400" />
+                          </div>
+                          <CardTitle className="text-lg">User Management</CardTitle>
                         </div>
                       </CardHeader>
-                      <CardContent className="pt-0 space-y-2">
-                        <p className="text-sm text-muted-foreground">Manage user accounts and permissions efficiently</p>
+                      <CardContent className="pt-0 space-y-4">
+                        <p className="text-sm text-muted-foreground leading-relaxed">Manage user accounts and permissions efficiently</p>
                         <Button 
+                          variant="outline"
                           size="sm" 
-                          className="bg-gray-600 hover:bg-gray-700 text-white w-full"
+                          className="w-full border-blue-500/30 text-blue-400 hover:bg-blue-500/10 hover:border-blue-500/50"
                           onClick={(e) => { e.stopPropagation(); setActiveTab("users"); }}
                         >
                           User Admin →
@@ -255,18 +270,21 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/50 dark:to-indigo-900/50 border-indigo-200 dark:border-indigo-800 hover:shadow-lg transition-all duration-200 cursor-pointer group" onClick={() => setActiveTab("ai-providers")}>
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center gap-2">
-                          <Rocket className="w-5 h-5 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform duration-200" />
-                          <CardTitle className="text-base">AI & Models</CardTitle>
+                    <Card className="bg-card border border-border hover:border-indigo-500/50 transition-all duration-200 cursor-pointer group hover:shadow-lg" onClick={() => setActiveTab("ai-providers")}>
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center group-hover:bg-indigo-500/20 transition-colors duration-200">
+                            <Rocket className="w-5 h-5 text-indigo-400" />
+                          </div>
+                          <CardTitle className="text-lg">AI & Models</CardTitle>
                         </div>
                       </CardHeader>
-                      <CardContent className="pt-0 space-y-2">
-                        <p className="text-sm text-muted-foreground">Configure AI providers and model access for advanced capabilities</p>
+                      <CardContent className="pt-0 space-y-4">
+                        <p className="text-sm text-muted-foreground leading-relaxed">Configure AI providers and model access for advanced capabilities</p>
                         <Button 
+                          variant="outline"
                           size="sm" 
-                          className="bg-indigo-600 hover:bg-indigo-700 text-white w-full"
+                          className="w-full border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10 hover:border-indigo-500/50"
                           onClick={(e) => { e.stopPropagation(); setActiveTab("ai-providers"); }}
                         >
                           AI Configuration →
@@ -274,18 +292,21 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-950/50 dark:to-pink-900/50 border-pink-200 dark:border-pink-800 hover:shadow-lg transition-all duration-200 cursor-pointer group" onClick={() => setActiveTab("announcements")}>
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center gap-2">
-                          <Shield className="w-5 h-5 text-pink-600 dark:text-pink-400 group-hover:scale-110 transition-transform duration-200" />
-                          <CardTitle className="text-base">Support System</CardTitle>
+                    <Card className="bg-card border border-border hover:border-pink-500/50 transition-all duration-200 cursor-pointer group hover:shadow-lg" onClick={() => setActiveTab("announcements")}>
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-pink-500/10 flex items-center justify-center group-hover:bg-pink-500/20 transition-colors duration-200">
+                            <Shield className="w-5 h-5 text-pink-400" />
+                          </div>
+                          <CardTitle className="text-lg">Support System</CardTitle>
                         </div>
                       </CardHeader>
-                      <CardContent className="pt-0 space-y-2">
-                        <p className="text-sm text-muted-foreground">Handle announcements, FAQ, and ticket management</p>
+                      <CardContent className="pt-0 space-y-4">
+                        <p className="text-sm text-muted-foreground leading-relaxed">Handle announcements, FAQ, and ticket management</p>
                         <Button 
+                          variant="outline"
                           size="sm" 
-                          className="bg-pink-600 hover:bg-pink-700 text-white w-full"
+                          className="w-full border-pink-500/30 text-pink-400 hover:bg-pink-500/10 hover:border-pink-500/50"
                           onClick={(e) => { e.stopPropagation(); setActiveTab("announcements"); }}
                         >
                           Support Tools →
