@@ -48,6 +48,21 @@ export const useAIStatus = () => {
 
     initializeStatus();
 
+    // Listen for DOM events from model selection (critical for side panel)
+    const handleModelChange = (event: any) => {
+      console.log('🎯 AI Status: Received modelChanged event in useAIStatus', event.detail);
+      const { modelId, modelName } = event.detail;
+      
+      if (modelId) {
+        console.log('🔄 AI Status: Updating status immediately for model change:', modelName, modelId);
+        setCurrentModelId(modelId);
+        checkAIStatus(modelId);
+      }
+    };
+
+    // Listen to the DOM event dispatched by model selection
+    window.addEventListener('modelChanged', handleModelChange);
+
     // Listen for realtime changes to user_preferences table (user-specific)
     const preferencesChannel = supabase
       .channel('user-preferences-realtime')
@@ -70,6 +85,7 @@ export const useAIStatus = () => {
             console.log('📡 AI Status: New model ID:', newRecord.selected_model_id);
             
             // Update status immediately with the new model ID
+            setCurrentModelId(newRecord.selected_model_id);
             checkAIStatus(newRecord.selected_model_id);
           } else {
             console.log('📡 AI Status: Ignoring realtime update - not for current user or no model ID');
@@ -89,12 +105,14 @@ export const useAIStatus = () => {
         if (user && payload.payload?.user_id === user.id) {
           console.log('📡 AI Status: Broadcast for current user, refreshing');
           const userModelId = await fetchUserSelectedModel();
+          setCurrentModelId(userModelId);
           checkAIStatus(userModelId);
         }
       })
       .subscribe();
 
     return () => {
+      window.removeEventListener('modelChanged', handleModelChange);
       supabase.removeChannel(preferencesChannel);
       supabase.removeChannel(broadcastChannel);
     };
