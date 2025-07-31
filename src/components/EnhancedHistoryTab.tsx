@@ -199,33 +199,41 @@ export const EnhancedHistoryTab = ({
         ) : (
           <div className="space-y-2">
             {recentSessions.map((session) => (
-              <Card 
+              <HistoryManager 
                 key={session.id}
-                className={`bg-card/60 border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group ${
-                  currentSessionId === session.id ? 'border-primary bg-primary/10' : ''
-                }`}
-                onClick={() => onSessionSelect(session.id)}
-              >
-                <CardContent className="p-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <h5 className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                        {session.title}
-                      </h5>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="w-3 h-3" />
-                          {formatRelativeTime(session.updated_at)}
+                currentSessionId={currentSessionId}
+                onSessionSelect={onSessionSelect}
+                onNewSession={onNewSession}
+                mode="dialog"
+                trigger={
+                  <Card 
+                    className={`bg-card/60 border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all cursor-pointer group ${
+                      currentSessionId === session.id ? 'border-primary bg-primary/10' : ''
+                    }`}
+                    onClick={() => onSessionSelect(session.id)}
+                  >
+                    <CardContent className="p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <h5 className="text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                            {session.title}
+                          </h5>
+                          <div className="flex items-center gap-2 mt-1">
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Clock className="w-3 h-3" />
+                              {formatRelativeTime(session.updated_at)}
+                            </div>
+                            <Badge variant="secondary" className="text-xs bg-muted/50">
+                              <MessageSquare className="w-2.5 h-2.5 mr-1" />
+                              {session.message_count}
+                            </Badge>
+                          </div>
                         </div>
-                        <Badge variant="secondary" className="text-xs bg-muted/50">
-                          <MessageSquare className="w-2.5 h-2.5 mr-1" />
-                          {session.message_count}
-                        </Badge>
                       </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </Card>
+                }
+              />
             ))}
           </div>
         )}
