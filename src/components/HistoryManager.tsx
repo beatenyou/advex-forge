@@ -21,7 +21,11 @@ import {
   Square,
   MoreHorizontal,
   Loader2,
-  AlertTriangle
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  User,
+  Bot
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -38,6 +42,12 @@ interface ChatSession {
   message_count?: number;
   last_message_preview?: string;
   provider_name?: string;
+  chat_messages?: Array<{
+    content: string;
+    created_at: string;
+    provider_name: string | null;
+    role?: string;
+  }>;
 }
 
 interface HistoryManagerProps {
@@ -60,6 +70,7 @@ export const HistoryManager = ({
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSessions, setSelectedSessions] = useState<Set<string>>(new Set());
+  const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [stats, setStats] = useState({ totalSessions: 0, totalMessages: 0 });
@@ -81,7 +92,8 @@ export const HistoryManager = ({
           chat_messages(
             content,
             created_at,
-            provider_name
+            provider_name,
+            role
           )
         `)
         .eq('user_id', user.id)
@@ -106,7 +118,11 @@ export const HistoryManager = ({
               lastMessage.content.substring(0, 100) + '...' : 
               lastMessage.content) : 
             'No messages',
-          provider_name: lastMessage?.provider_name
+          provider_name: lastMessage?.provider_name,
+          chat_messages: messages.map(msg => ({
+            ...msg,
+            role: msg.role || (msg.provider_name ? 'assistant' : 'user')
+          }))
         };
       });
 
@@ -333,55 +349,133 @@ export const HistoryManager = ({
     }
   };
 
+  const toggleSessionExpansion = (sessionId: string) => {
+    const newExpanded = new Set(expandedSessions);
+    if (newExpanded.has(sessionId)) {
+      newExpanded.delete(sessionId);
+    } else {
+      newExpanded.add(sessionId);
+    }
+    setExpandedSessions(newExpanded);
+  };
+
   const renderSessionItem = (session: ChatSession) => {
     const isSelected = selectedSessions.has(session.id);
     const isCurrent = session.id === currentSessionId;
+    const isExpanded = expandedSessions.has(session.id);
     
     return (
-      <div
-        key={session.id}
-        className={`group flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all hover:bg-muted/50 ${
-          isCurrent ? 'bg-primary/10 border border-primary/30' : ''
-        } ${isSelected ? 'bg-muted/30' : ''}`}
-      >
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={() => handleSessionSelect(session.id)}
-          className="mt-1"
-        />
-        
-        <div 
-          className="flex-1 min-w-0"
-          onClick={() => {
-            onSessionSelect(session.id);
-            if (mode === 'dialog') setIsDialogOpen(false);
-          }}
+      <div key={session.id} className="space-y-2">
+        <div
+          className={`group flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-all hover:bg-muted/50 ${
+            isCurrent ? 'bg-primary/10 border border-primary/30' : ''
+          } ${isSelected ? 'bg-muted/30' : ''}`}
         >
-          <div className="flex items-start justify-between gap-2">
-            <h4 className="font-medium text-sm text-foreground truncate">
-              {session.title}
-            </h4>
-            <div className="flex items-center gap-1 flex-shrink-0">
-              {session.provider_name && (
-                <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
-                  {session.provider_name}
-                </Badge>
-              )}
-              <Badge variant="outline" className="text-xs px-1.5 py-0.5">
-                {session.message_count || 0}
-              </Badge>
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={() => handleSessionSelect(session.id)}
+            className="mt-1"
+          />
+          
+          <div className="flex-1 min-w-0">
+            <div 
+              className="cursor-pointer"
+              onClick={() => {
+                onSessionSelect(session.id);
+                if (mode === 'dialog') setIsDialogOpen(false);
+              }}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <h4 className="font-medium text-sm text-foreground truncate">
+                  {session.title}
+                </h4>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {session.provider_name && (
+                    <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                      {session.provider_name}
+                    </Badge>
+                  )}
+                  <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+                    {session.message_count || 0}
+                  </Badge>
+                </div>
+              </div>
+              
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                {session.last_message_preview}
+              </p>
+              
+              <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                <Clock className="w-3 h-3" />
+                <span>{format(new Date(session.updated_at), 'MMM d, h:mm a')}</span>
+              </div>
             </div>
-          </div>
-          
-          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-            {session.last_message_preview}
-          </p>
-          
-          <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-            <Clock className="w-3 h-3" />
-            <span>{format(new Date(session.updated_at), 'MMM d, h:mm a')}</span>
+            
+            {/* Expand/Collapse button for messages */}
+            {session.chat_messages && session.chat_messages.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleSessionExpansion(session.id);
+                }}
+                className="mt-2 h-6 text-xs text-muted-foreground hover:text-foreground"
+              >
+                {isExpanded ? (
+                  <>
+                    <ChevronDown className="w-3 h-3 mr-1" />
+                    Hide messages
+                  </>
+                ) : (
+                  <>
+                    <ChevronRight className="w-3 h-3 mr-1" />
+                    Show {session.message_count} messages
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </div>
+
+        {/* Expanded messages view */}
+        {isExpanded && session.chat_messages && (
+          <div className="ml-6 space-y-2 border-l border-border pl-4">
+            {session.chat_messages.map((message, index) => (
+              <div
+                key={index}
+                className={`flex gap-3 p-3 rounded-lg text-sm ${
+                  message.role === 'user' 
+                    ? 'bg-primary/5 border-l-2 border-primary/20' 
+                    : 'bg-muted/30 border-l-2 border-muted-foreground/20'
+                }`}
+              >
+                <div className="flex-shrink-0 mt-0.5">
+                  {message.role === 'user' ? (
+                    <User className="w-4 h-4 text-primary" />
+                  ) : (
+                    <Bot className="w-4 h-4 text-muted-foreground" />
+                  )}
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-medium text-foreground">
+                      {message.role === 'user' ? 'You' : (message.provider_name || 'AI')}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(message.created_at), 'h:mm a')}
+                    </span>
+                  </div>
+                  
+                  <p className="text-foreground whitespace-pre-wrap break-words">
+                    {message.content}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
