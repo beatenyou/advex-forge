@@ -104,7 +104,9 @@ export const HistoryManager = ({
 
       // Transform the data to include message counts and previews
       const formattedSessions = (sessionsData || []).map(session => {
-        const messages = session.chat_messages || [];
+        const messages = (session.chat_messages || []).sort((a, b) => 
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
         const lastMessage = messages.length > 0 ? messages[messages.length - 1] : null;
         
         return {
