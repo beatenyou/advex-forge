@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
-import { Settings, Upload, FileText, Globe, Plus, Edit, Trash2, Save, Zap } from "lucide-react";
+import { Settings, Upload, FileText, Globe, Plus, Edit, Trash2, Save, Zap, CheckCircle, Clock, ArrowRight, Users, Database, Shield, Target, Rocket, Wrench } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,6 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useToast } from "@/hooks/use-toast";
 import { parseMarkdownTechnique, ParsedTechnique } from "@/lib/markdownParser";
 import { CheatSheetManager } from "@/components/CheatSheetManager";
@@ -419,100 +421,418 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
         </TabsList>
 
             <TabsContent value="guidance" className="space-y-6 mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="w-5 h-5" />
-                    Enhanced Administrator Guidance
-                  </CardTitle>
-                  <CardDescription>
-                    Comprehensive guide for managing database-backed techniques with automation
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold mb-2">Database-First Workflow</h4>
-                    <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>All techniques are now stored in Supabase database with real-time updates</li>
-                      <li>Use "Techniques" tab for CRUD operations with instant collaboration</li>
-                      <li>Leverage "Bulk Import" tab for automated website extraction</li>
-                      <li>Monitor data quality with built-in validation scores</li>
-                      <li>Reference links are now fully integrated into the database schema</li>
-                      <li>Real-time collaboration: multiple admins can work simultaneously</li>
-                    </ol>
-                  </div>
+              <div className="grid gap-6">
+                {/* Welcome Section */}
+                <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-3 text-xl">
+                      <Rocket className="w-6 h-6 text-primary" />
+                      Welcome to Admin Dashboard
+                    </CardTitle>
+                    <CardDescription className="text-base">
+                      Complete guide for new administrators to manage cybersecurity techniques efficiently
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Card className="bg-background/50 border-muted">
+                        <CardContent className="p-4 text-center">
+                          <Database className="w-8 h-8 mx-auto mb-2 text-primary" />
+                          <h4 className="font-semibold text-sm">Real-time Database</h4>
+                          <p className="text-xs text-muted-foreground">All changes sync instantly</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-background/50 border-muted">
+                        <CardContent className="p-4 text-center">
+                          <Zap className="w-8 h-8 mx-auto mb-2 text-secondary" />
+                          <h4 className="font-semibold text-sm">Automated Import</h4>
+                          <p className="text-xs text-muted-foreground">Bulk process websites</p>
+                        </CardContent>
+                      </Card>
+                      <Card className="bg-background/50 border-muted">
+                        <CardContent className="p-4 text-center">
+                          <Users className="w-8 h-8 mx-auto mb-2 text-accent" />
+                          <h4 className="font-semibold text-sm">Multi-Admin</h4>
+                          <p className="text-xs text-muted-foreground">Collaborate in real-time</p>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Main Workflows */}
+                <Accordion type="multiple" defaultValue={["getting-started", "automated-workflows"]} className="space-y-4">
                   
-                  <Separator />
-                  
-                  <div>
-                    <h4 className="font-semibold mb-2">Automated Bulk Import Process</h4>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>Configure Firecrawl API key for automated website scraping</li>
-                      <li>Optional: Add Perplexity API key for enhanced content validation</li>
-                      <li>Input multiple URLs (one per line) for batch processing</li>
-                      <li>Monitor extraction progress with real-time status updates</li>
-                      <li>Review quality scores before importing to database</li>
-                      <li>Bulk import directly to database with duplicate detection</li>
-                    </ul>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div>
-                    <h4 className="font-semibold mb-2">Enhanced Command Generator Integration</h4>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>Command templates now stored as structured JSON in database</li>
-                      <li>Standardized parameter syntax: &lt;target&gt;, &lt;username&gt;, &lt;password&gt;, &lt;domain&gt;</li>
-                      <li>Tool-specific parameter validation and suggestions</li>
-                      <li>Command templates are editable directly in admin interface</li>
-                      <li>Copy individual or bulk commands with parameter substitution</li>
-                      <li>Cross-technique parameter consistency validation</li>
-                    </ul>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div>
-                    <h4 className="font-semibold mb-2">Reference Links Management</h4>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>Reference links stored as structured JSON with title and URL</li>
-                      <li>Automatic link validation during import process</li>
-                      <li>Link accessibility testing and broken link detection</li>
-                      <li>Categorized links: documentation, tools, research, MITRE ATT&CK</li>
-                      <li>Bulk link extraction from source websites during automation</li>
-                      <li>Link preview and metadata extraction for better organization</li>
-                    </ul>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div>
-                    <h4 className="font-semibold mb-2">Quality Assurance & Validation</h4>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>Automated quality scoring: required fields, command templates, references</li>
-                      <li>MITRE ATT&CK ID format validation (T####.### pattern)</li>
-                      <li>Command template syntax validation and parameter detection</li>
-                      <li>Duplicate technique detection across import batches</li>
-                      <li>Phase consistency enforcement with standardized phase names</li>
-                      <li>Reference link accessibility and relevance validation</li>
-                    </ul>
-                  </div>
-                  
-                  <Separator />
-                  
-                  <div>
-                    <h4 className="font-semibold mb-2">Scaling & Performance</h4>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>Database optimization for hundreds of techniques</li>
-                      <li>Real-time updates with minimal latency using Supabase</li>
-                      <li>Efficient search and filtering with database indexing</li>
-                      <li>Batch operations for bulk modifications</li>
-                      <li>API rate limiting and retry logic for external services</li>
-                      <li>Progressive loading and pagination for large datasets</li>
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
+                  {/* Getting Started Workflow */}
+                  <AccordionItem value="getting-started" className="border rounded-lg">
+                    <AccordionTrigger className="px-6 py-4 hover:no-underline bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-t-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center">
+                          <Rocket className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="text-left">
+                          <h3 className="font-semibold text-lg">🚀 Getting Started (New Administrators)</h3>
+                          <p className="text-sm text-muted-foreground">Essential first steps to understand the system</p>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-6 pb-6">
+                      <div className="space-y-6">
+                        <div className="grid gap-4">
+                          {[
+                            {
+                              step: 1,
+                              title: "Explore the Database",
+                              time: "5 mins",
+                              description: "Understand how techniques are stored and organized",
+                              action: "Go to Techniques tab",
+                              status: "start"
+                            },
+                            {
+                              step: 2,
+                              title: "Review Existing Data",
+                              time: "10 mins", 
+                              description: "Browse current techniques, understand data structure",
+                              action: "Browse current cards",
+                              status: "ready"
+                            },
+                            {
+                              step: 3,
+                              title: "Test Manual Upload",
+                              time: "15 mins",
+                              description: "Try adding a single technique using markdown format",
+                              action: "Go to Upload Cards tab",
+                              status: "ready"
+                            },
+                            {
+                              step: 4,
+                              title: "Learn Quality Standards",
+                              time: "10 mins",
+                              description: "Understand validation rules and quality scoring",
+                              action: "Review validation criteria",
+                              status: "ready"
+                            }
+                          ].map((item) => (
+                            <Card key={item.step} className="p-4 border-l-4 border-l-green-500">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-6 h-6 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center text-green-700 dark:text-green-300 text-sm font-semibold">
+                                    {item.step}
+                                  </div>
+                                  <h4 className="font-semibold">{item.title}</h4>
+                                  <Badge variant="outline" className="text-xs">
+                                    <Clock className="w-3 h-3 mr-1" />
+                                    {item.time}
+                                  </Badge>
+                                </div>
+                                <ArrowRight className="w-4 h-4 text-muted-foreground" />
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-3">{item.description}</p>
+                              <Button size="sm" variant="outline" className="text-xs">
+                                {item.action}
+                              </Button>
+                            </Card>
+                          ))}
+                        </div>
+                        
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                          <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">💡 Success Indicators</h4>
+                          <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                              You can navigate between all admin tabs
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                              You successfully added at least one technique
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                              You understand the markdown format requirements
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Automated Workflows */}
+                  <AccordionItem value="automated-workflows" className="border rounded-lg">
+                    <AccordionTrigger className="px-6 py-4 hover:no-underline bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-t-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center">
+                          <Zap className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="text-left">
+                          <h3 className="font-semibold text-lg">⚡ Automated Workflows (Bulk Operations)</h3>
+                          <p className="text-sm text-muted-foreground">Scale your content management with automation</p>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-6 pb-6">
+                      <div className="space-y-6">
+                        
+                        {/* Bulk Import Workflow */}
+                        <div className="border rounded-lg p-4 bg-gradient-to-r from-blue-50/50 to-blue-100/50 dark:from-blue-900/10 dark:to-blue-800/10">
+                          <h4 className="font-semibold text-blue-900 dark:text-blue-100 mb-4 flex items-center gap-2">
+                            <Database className="w-5 h-5" />
+                            Bulk Import Workflow (30-60 mins)
+                          </h4>
+                          
+                          <div className="grid gap-3">
+                            {[
+                              {
+                                step: 1,
+                                title: "Setup API Keys",
+                                description: "Configure Firecrawl API for web scraping",
+                                action: "Go to Bulk Import tab → Configure APIs",
+                                prereq: "Firecrawl account required"
+                              },
+                              {
+                                step: 2,
+                                title: "Prepare URLs",
+                                description: "Collect cybersecurity websites with technique content",
+                                action: "Create list of target URLs",
+                                prereq: "Research relevant sources"
+                              },
+                              {
+                                step: 3,
+                                title: "Start Extraction",
+                                description: "Input URLs and monitor extraction progress",
+                                action: "Bulk Import tab → Add URLs → Extract",
+                                prereq: "Valid API keys"
+                              },
+                              {
+                                step: 4,
+                                title: "Review Quality",
+                                description: "Check quality scores and validation results",
+                                action: "Review extracted techniques",
+                                prereq: "Extraction completed"
+                              },
+                              {
+                                step: 5,
+                                title: "Import to Database",
+                                description: "Import validated techniques with duplicate detection",
+                                action: "Bulk Import → Import Selected",
+                                prereq: "Quality review completed"
+                              }
+                            ].map((item) => (
+                              <div key={item.step} className="flex items-start gap-3 p-3 bg-background/60 rounded border border-blue-200 dark:border-blue-800">
+                                <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-sm font-semibold mt-1">
+                                  {item.step}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <h5 className="font-medium text-sm">{item.title}</h5>
+                                  <p className="text-xs text-muted-foreground mb-2">{item.description}</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    <Badge variant="secondary" className="text-xs">{item.action}</Badge>
+                                    <Badge variant="outline" className="text-xs text-orange-600">
+                                      Prereq: {item.prereq}
+                                    </Badge>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* LLM Webscraper Workflow */}
+                        <div className="border rounded-lg p-4 bg-gradient-to-r from-purple-50/50 to-purple-100/50 dark:from-purple-900/10 dark:to-purple-800/10">
+                          <h4 className="font-semibold text-purple-900 dark:text-purple-100 mb-4 flex items-center gap-2">
+                            <Globe className="w-5 h-5" />
+                            LLM Webscraper Workflow (15-30 mins)
+                          </h4>
+                          
+                          <div className="grid gap-3">
+                            {[
+                              {
+                                step: 1,
+                                title: "Generate Prompt",
+                                description: "Create specialized prompt for technique extraction",
+                                action: "LLM Webscraper tab → Enter URL → Generate"
+                              },
+                              {
+                                step: 2, 
+                                title: "Use with ChatGPT/Claude",
+                                description: "Copy prompt and use with your preferred LLM",
+                                action: "Copy prompt → Paste in LLM → Add web content"
+                              },
+                              {
+                                step: 3,
+                                title: "Extract Techniques",
+                                description: "LLM will analyze and format technique data",
+                                action: "Wait for LLM processing"
+                              },
+                              {
+                                step: 4,
+                                title: "Import Results",
+                                description: "Copy markdown output back to upload tab",
+                                action: "Upload Cards tab → Paste markdown → Add"
+                              }
+                            ].map((item) => (
+                              <div key={item.step} className="flex items-start gap-3 p-3 bg-background/60 rounded border border-purple-200 dark:border-purple-800">
+                                <div className="w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center text-sm font-semibold mt-1">
+                                  {item.step}
+                                </div>
+                                <div className="flex-1">
+                                  <h5 className="font-medium text-sm">{item.title}</h5>
+                                  <p className="text-xs text-muted-foreground mb-2">{item.description}</p>
+                                  <Badge variant="secondary" className="text-xs">{item.action}</Badge>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
+                          <h4 className="font-semibold text-amber-900 dark:text-amber-100 mb-2">⚠️ Best Practices</h4>
+                          <ul className="text-sm text-amber-800 dark:text-amber-200 space-y-1">
+                            <li>• Start with small batches (5-10 URLs) to test extraction quality</li>
+                            <li>• Always review quality scores before importing to database</li>
+                            <li>• Monitor API usage limits to avoid service interruptions</li>
+                            <li>• Keep extracted content as backup before importing</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Advanced Management */}
+                  <AccordionItem value="advanced-management" className="border rounded-lg">
+                    <AccordionTrigger className="px-6 py-4 hover:no-underline bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-t-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
+                          <Wrench className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="text-left">
+                          <h3 className="font-semibold text-lg">🛠️ Advanced Management (Database Operations)</h3>
+                          <p className="text-sm text-muted-foreground">Maintain data quality and system performance</p>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-6 pb-6">
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {[
+                            {
+                              icon: Target,
+                              title: "Data Quality Management",
+                              description: "Monitor and improve technique data quality",
+                              actions: ["Run quality audits", "Fix validation errors", "Update incomplete data"],
+                              tab: "Techniques",
+                              color: "blue"
+                            },
+                            {
+                              icon: Users,
+                              title: "User Management", 
+                              description: "Manage user accounts and permissions",
+                              actions: ["Add/remove users", "Manage admin access", "Monitor user activity"],
+                              tab: "Users",
+                              color: "green"
+                            },
+                            {
+                              icon: Shield,
+                              title: "Security & Access",
+                              description: "Configure security settings and API access",
+                              actions: ["Manage API keys", "Set user permissions", "Monitor access logs"],
+                              tab: "Model Access",
+                              color: "red"
+                            },
+                            {
+                              icon: Database,
+                              title: "Performance Monitoring",
+                              description: "Track system performance and usage",
+                              actions: ["Review analytics", "Monitor API usage", "Check system health"],
+                              tab: "Analytics",
+                              color: "purple"
+                            }
+                          ].map((item) => (
+                            <Card key={item.title} className={`p-4 border-l-4 border-l-${item.color}-500 hover:shadow-md transition-shadow`}>
+                              <div className="flex items-start gap-3">
+                                <div className={`w-8 h-8 rounded bg-${item.color}-100 dark:bg-${item.color}-900/30 flex items-center justify-center`}>
+                                  <item.icon className={`w-4 h-4 text-${item.color}-600 dark:text-${item.color}-400`} />
+                                </div>
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-sm mb-1">{item.title}</h4>
+                                  <p className="text-xs text-muted-foreground mb-3">{item.description}</p>
+                                  <div className="space-y-1">
+                                    {item.actions.map((action) => (
+                                      <div key={action} className="text-xs text-muted-foreground flex items-center gap-1">
+                                        <div className="w-1 h-1 rounded-full bg-muted-foreground" />
+                                        {action}
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <Button size="sm" variant="outline" className="text-xs mt-3">
+                                    Go to {item.tab}
+                                  </Button>
+                                </div>
+                              </div>
+                            </Card>
+                          ))}
+                        </div>
+
+                        <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg border border-orange-200 dark:border-orange-800">
+                          <h4 className="font-semibold text-orange-900 dark:text-orange-100 mb-2">🎯 Maintenance Schedule</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                            <div>
+                              <h5 className="font-medium text-orange-800 dark:text-orange-200">Daily (5 mins)</h5>
+                              <ul className="text-orange-700 dark:text-orange-300 text-xs space-y-1">
+                                <li>• Check for new import requests</li>
+                                <li>• Review quality alerts</li>
+                              </ul>
+                            </div>
+                            <div>
+                              <h5 className="font-medium text-orange-800 dark:text-orange-200">Weekly (30 mins)</h5>
+                              <ul className="text-orange-700 dark:text-orange-300 text-xs space-y-1">
+                                <li>• Run full quality audit</li>
+                                <li>• Update incomplete techniques</li>
+                                <li>• Check broken links</li>
+                              </ul>
+                            </div>
+                            <div>
+                              <h5 className="font-medium text-orange-800 dark:text-orange-200">Monthly (60 mins)</h5>
+                              <ul className="text-orange-700 dark:text-orange-300 text-xs space-y-1">
+                                <li>• Review user activity</li>
+                                <li>• Update MITRE mappings</li>
+                                <li>• Performance optimization</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+
+                {/* Quick Actions */}
+                <Card className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900/50 dark:to-gray-800/50">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Zap className="w-5 h-5" />
+                      Quick Actions
+                    </CardTitle>
+                    <CardDescription>
+                      Common tasks for efficient administration
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {[
+                        { label: "Add Single Technique", tab: "upload", icon: Plus },
+                        { label: "Bulk Import", tab: "bulk-import", icon: Upload },
+                        { label: "Manage Users", tab: "users", icon: Users },
+                        { label: "View Analytics", tab: "analytics", icon: Target }
+                      ].map((item) => (
+                        <Button key={item.label} variant="outline" size="sm" className="h-auto p-3 flex flex-col gap-2">
+                          <item.icon className="w-4 h-4" />
+                          <span className="text-xs">{item.label}</span>
+                        </Button>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             <TabsContent value="upload" className="space-y-6 mt-6">
@@ -681,6 +1001,10 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                   </Button>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="bulk-import" className="space-y-6 mt-6">
+              <BulkImportManager />
             </TabsContent>
 
             <TabsContent value="webscraper" className="space-y-6 mt-6">
