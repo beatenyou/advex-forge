@@ -385,9 +385,21 @@ export const HistoryManager = ({
           <div className="flex-1 min-w-0">
             <div 
               className="cursor-pointer"
-              onClick={() => {
-                onSessionSelect(session.id);
-                if (mode === 'dialog') setIsDialogOpen(false);
+              onClick={(e) => {
+                // Check if click was on checkbox or selection area - if so, handle session selection
+                const target = e.target as HTMLElement;
+                if (target.closest('input[type="checkbox"]')) {
+                  return; // Let checkbox handle its own event
+                }
+                
+                // If session has messages, toggle expansion; otherwise select session
+                if (session.chat_messages && session.chat_messages.length > 0) {
+                  e.stopPropagation();
+                  toggleSessionExpansion(session.id);
+                } else {
+                  onSessionSelect(session.id);
+                  if (mode === 'dialog') setIsDialogOpen(false);
+                }
               }}
             >
               <div className="flex items-start justify-between gap-2">
@@ -403,6 +415,16 @@ export const HistoryManager = ({
                   <Badge variant="outline" className="text-xs px-1.5 py-0.5">
                     {session.message_count || 0}
                   </Badge>
+                  {/* Show expand/collapse indicator */}
+                  {session.chat_messages && session.chat_messages.length > 0 && (
+                    <div className="ml-1">
+                      {isExpanded ? (
+                        <ChevronDown className="w-3 h-3 text-muted-foreground" />
+                      ) : (
+                        <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
               
@@ -413,10 +435,16 @@ export const HistoryManager = ({
               <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                 <Clock className="w-3 h-3" />
                 <span>{format(new Date(session.updated_at), 'MMM d, h:mm a')}</span>
+                {/* Show message count indicator for expansion */}
+                {session.chat_messages && session.chat_messages.length > 0 && (
+                  <span className="text-xs opacity-70">
+                    • Click to {isExpanded ? 'hide' : 'show'} messages
+                  </span>
+                )}
               </div>
             </div>
             
-            {/* Expand/Collapse button for messages */}
+            {/* Optional: Keep the separate button for explicit toggle */}
             {session.chat_messages && session.chat_messages.length > 0 && (
               <Button
                 variant="ghost"
