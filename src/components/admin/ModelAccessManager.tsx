@@ -541,94 +541,131 @@ export default function ModelAccessManager() {
                                     
                                     const getProviderIcon = (type: string) => {
                                       switch (type?.toLowerCase()) {
-                                        case 'openai': return '🤖';
-                                        case 'mistral': return '🧠';
-                                        default: return '⚡';
+                                        case 'openai': return Bot;
+                                        case 'mistral': return Zap;
+                                        default: return Activity;
                                       }
                                     };
                                     
-                                    const getProviderColor = (type: string) => {
+                                    const getProviderVariant = (type: string, hasAccess: boolean) => {
+                                      if (!hasAccess) return 'outline';
                                       switch (type?.toLowerCase()) {
-                                        case 'openai': return 'border-blue-200 bg-blue-50/50';
-                                        case 'mistral': return 'border-orange-200 bg-orange-50/50';
-                                        default: return 'border-gray-200 bg-gray-50/50';
+                                        case 'openai': return 'default';
+                                        case 'mistral': return 'secondary';
+                                        default: return 'outline';
                                       }
                                     };
+                                    
+                                    const ProviderIcon = getProviderIcon(provider.type);
                                     
                                     return (
-                                      <Card key={provider.id} className={`relative ${getProviderColor(provider.type)}`}>
-                                        <CardHeader className="pb-3">
-                                          <div className="flex items-start justify-between">
-                                            <div className="flex items-center gap-2">
-                                              <span className="text-lg">{getProviderIcon(provider.type)}</span>
+                                      <Card 
+                                        key={provider.id} 
+                                        className={`relative transition-all duration-200 hover:shadow-md ${
+                                          hasAccess 
+                                            ? 'border-primary/20 bg-gradient-to-br from-background to-muted/30' 
+                                            : 'border-border hover:border-primary/30'
+                                        }`}
+                                      >
+                                        <CardHeader className="pb-4">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                              <div className={`p-2 rounded-lg ${
+                                                hasAccess 
+                                                  ? 'bg-primary/10 text-primary' 
+                                                  : 'bg-muted text-muted-foreground'
+                                              }`}>
+                                                <ProviderIcon className="h-4 w-4" />
+                                              </div>
                                               <div>
-                                                <CardTitle className="text-base">{provider.name}</CardTitle>
-                                                <p className="text-sm text-muted-foreground">{provider.model_name}</p>
+                                                <CardTitle className="text-base font-semibold">
+                                                  {provider.name}
+                                                </CardTitle>
+                                                <p className="text-sm text-muted-foreground">
+                                                  {provider.model_name}
+                                                </p>
                                               </div>
                                             </div>
                                             <Badge 
-                                              variant={hasAccess ? "default" : "secondary"}
-                                              className="text-xs"
+                                              variant={getProviderVariant(provider.type, hasAccess)}
+                                              className="text-xs font-medium"
                                             >
-                                              {hasAccess ? "Granted" : "Not Granted"}
+                                              {hasAccess ? "Active" : "Inactive"}
                                             </Badge>
                                           </div>
                                         </CardHeader>
-                                        <CardContent className="pt-0">
+                                        
+                                        <CardContent className="pt-0 space-y-4">
                                           {hasAccess && accessRecord ? (
-                                            <div className="space-y-3">
-                                              <div className="grid grid-cols-2 gap-2 text-sm">
-                                                <div>
-                                                  <span className="text-muted-foreground">Current Usage:</span>
-                                                  <div className="font-medium">{(accessRecord as any).usage_current || 0}</div>
+                                            <>
+                                              <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-1">
+                                                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                    Current Usage
+                                                  </p>
+                                                  <p className="text-lg font-bold text-foreground">
+                                                    {(accessRecord as any).usage_current || 0}
+                                                  </p>
                                                 </div>
-                                                <div>
-                                                  <span className="text-muted-foreground">Usage Limit:</span>
-                                                  <div className="font-medium">
-                                                    {(accessRecord as any).usage_limit || 'Unlimited'}
-                                                  </div>
+                                                <div className="space-y-1">
+                                                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                                                    Usage Limit
+                                                  </p>
+                                                  <p className="text-lg font-bold text-foreground">
+                                                    {(accessRecord as any).usage_limit || '∞'}
+                                                  </p>
                                                 </div>
                                               </div>
                                               
                                               {(accessRecord as any).expires_at && (
-                                                <div className="text-sm">
-                                                  <span className="text-muted-foreground">Expires:</span>
-                                                  <div className="font-medium text-yellow-600">
-                                                    {formatDate((accessRecord as any).expires_at)}
+                                                <div className="p-3 bg-warning/10 border border-warning/20 rounded-lg">
+                                                  <div className="flex items-center gap-2">
+                                                    <Calendar className="h-4 w-4 text-warning" />
+                                                    <div>
+                                                      <p className="text-xs font-medium text-warning">Expires</p>
+                                                      <p className="text-sm font-semibold text-warning">
+                                                        {formatDate((accessRecord as any).expires_at)}
+                                                      </p>
+                                                    </div>
                                                   </div>
                                                 </div>
                                               )}
                                               
-                                              <div className="text-sm">
-                                                <span className="text-muted-foreground">Granted:</span>
-                                                <div className="font-medium">{formatDate(accessRecord.granted_at)}</div>
+                                              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                <Clock className="h-3 w-3" />
+                                                <span>Granted {formatDate(accessRecord.granted_at)}</span>
                                               </div>
                                               
                                               <Button
                                                 variant="outline"
                                                 size="sm"
-                                                className="w-full"
+                                                className="w-full hover:bg-destructive hover:text-destructive-foreground border-destructive/20 text-destructive"
                                                 onClick={() => revokeModelAccess(accessRecord.id)}
                                               >
-                                                <Trash2 className="h-3 w-3 mr-1" />
+                                                <Trash2 className="h-3 w-3 mr-2" />
                                                 Revoke Access
                                               </Button>
-                                            </div>
+                                            </>
                                           ) : (
-                                            <div className="space-y-3">
-                                              <div className="text-sm text-muted-foreground">
-                                                User does not have access to this model
+                                            <>
+                                              <div className="text-center py-4">
+                                                <div className="w-12 h-12 mx-auto bg-muted rounded-full flex items-center justify-center mb-3">
+                                                  <ProviderIcon className="h-5 w-5 text-muted-foreground" />
+                                                </div>
+                                                <p className="text-sm text-muted-foreground mb-4">
+                                                  No access granted
+                                                </p>
                                               </div>
+                                              
                                               <Button
-                                                variant="outline"
                                                 size="sm"
                                                 className="w-full"
                                                 onClick={() => grantModelAccess(profile.user_id, provider.id)}
                                               >
-                                                <Plus className="h-3 w-3 mr-1" />
+                                                <Plus className="h-3 w-3 mr-2" />
                                                 Grant Access
                                               </Button>
-                                            </div>
+                                            </>
                                           )}
                                         </CardContent>
                                       </Card>
