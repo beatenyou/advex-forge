@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { Star, Zap, Eye, Copy, ExternalLink, Bolt } from "lucide-react";
+import { Star, Zap, Eye, Copy, ExternalLink, Bolt, Loader2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TechniqueModal } from "./TechniqueModal";
 import { CommandGenerator } from "./CommandGenerator";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface Technique {
   id: string;
@@ -20,16 +22,38 @@ interface Technique {
 
 interface TechniqueCardProps {
   technique: Technique;
-  onToggleFavorite: (techniqueId: string) => void;
+  onToggleFavorite: (techniqueId: string) => Promise<void>;
 }
 
 export const TechniqueCard = ({ technique, onToggleFavorite }: TechniqueCardProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCommandGenOpen, setIsCommandGenOpen] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  const toggleStar = (e: React.MouseEvent) => {
+  const toggleStar = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    onToggleFavorite(technique.id);
+    
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to save favorites",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (isToggling) return;
+    
+    setIsToggling(true);
+    try {
+      await onToggleFavorite(technique.id);
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    } finally {
+      setIsToggling(false);
+    }
   };
 
   const getPhaseColor = (phase: string) => {
@@ -58,14 +82,20 @@ export const TechniqueCard = ({ technique, onToggleFavorite }: TechniqueCardProp
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 w-6 p-0 hover:bg-transparent"
+                  className={`h-6 w-6 p-0 hover:bg-transparent ${!user ? 'opacity-50' : ''}`}
                   onClick={toggleStar}
+                  disabled={isToggling}
+                  title={!user ? "Sign in to save favorites" : technique.starred ? "Remove from favorites" : "Add to favorites"}
                 >
-                  <Star 
-                    className={`w-4 h-4 transition-colors ${
-                      technique.starred ? "fill-cyber-orange text-cyber-orange" : "text-muted-foreground hover:text-cyber-orange"
-                    }`} 
-                  />
+                  {isToggling ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  ) : (
+                    <Star 
+                      className={`w-4 h-4 transition-colors ${
+                        technique.starred ? "fill-cyber-orange text-cyber-orange" : "text-muted-foreground hover:text-cyber-orange"
+                      }`} 
+                    />
+                  )}
                 </Button>
               </div>
               <Badge variant="outline" className={`text-xs ${getPhaseColor(technique.phase)}`}>

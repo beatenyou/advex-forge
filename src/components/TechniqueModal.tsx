@@ -36,7 +36,7 @@ interface TechniqueModalProps {
   technique: Technique;
   isOpen: boolean;
   onClose: () => void;
-  onToggleFavorite: (techniqueId: string) => void;
+  onToggleFavorite: (techniqueId: string) => Promise<void>;
 }
 
 // Enhanced function to get detailed technique data
@@ -124,12 +124,12 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite }:
     });
   };
 
-  const toggleStar = () => {
-    onToggleFavorite(technique.id);
-    toast({
-      title: technique.starred ? "Removed from favorites" : "Added to favorites",
-      description: `${technique.title} ${technique.starred ? "removed from" : "added to"} your favorites.`
-    });
+  const toggleStar = async () => {
+    try {
+      await onToggleFavorite(technique.id);
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    }
   };
 
   return (

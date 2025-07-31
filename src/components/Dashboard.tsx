@@ -65,7 +65,7 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
 
   // Set up realtime subscriptions
   useEffect(() => {
-    const channel = supabase
+    const techniquesChannel = supabase
       .channel('techniques-changes')
       .on(
         'postgres_changes',
@@ -80,10 +80,32 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
       )
       .subscribe();
 
+    // Set up favorites realtime subscription
+    const favoritesChannel = user ? supabase
+      .channel('favorites-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_favorites'
+        },
+        (payload) => {
+          // Only update if it's for the current user
+          if ((payload.new as any)?.user_id === user.id || (payload.old as any)?.user_id === user.id) {
+            loadUserFavorites();
+          }
+        }
+      )
+      .subscribe() : null;
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(techniquesChannel);
+      if (favoritesChannel) {
+        supabase.removeChannel(favoritesChannel);
+      }
     };
-  }, []);
+  }, [user]);
 
   const loadTechniques = async () => {
     try {
@@ -196,18 +218,48 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
   };
 
   const toggleFavorite = async (techniqueId: string) => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        title: "Authentication Required", 
+        description: "Please sign in to save favorites",
+        variant: "destructive"
+      });
+      return;
+    }
     
     const isFavorite = userFavorites.includes(techniqueId);
-    const success = await toggleTechniqueFavorite(user.id, techniqueId, isFavorite);
     
-    if (success) {
-      if (isFavorite) {
-        setUserFavorites(prev => prev.filter(id => id !== techniqueId));
+    try {
+      const success = await toggleTechniqueFavorite(user.id, techniqueId, isFavorite);
+      
+      if (success) {
+        // Optimistically update the UI
+        if (isFavorite) {
+          setUserFavorites(prev => prev.filter(id => id !== techniqueId));
+        } else {
+          setUserFavorites(prev => [...prev, techniqueId]);
+        }
+        
+        // Update the techniques array to reflect the starred status
+        setTechniques(prev => prev.map(technique => 
+          technique.id === techniqueId 
+            ? { ...technique, starred: !isFavorite }
+            : technique
+        ));
+        
+        toast({
+          title: isFavorite ? "Removed from favorites" : "Added to favorites",
+          description: isFavorite ? "Technique removed from your favorites" : "Technique saved to your favorites"
+        });
       } else {
-        setUserFavorites(prev => [...prev, techniqueId]);
+        toast({
+          title: "Error",
+          description: "Failed to update favorite",
+          variant: "destructive"
+        });
       }
-    } else {
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
       toast({
         title: "Error",
         description: "Failed to update favorite",
