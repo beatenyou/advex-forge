@@ -413,7 +413,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       const conversationContext = messages.slice(-19).concat([userMessage as ChatMessage]);
 
       // Call AI with conversation context (keep loading state during API call)
-      console.log('🤖 Making AI chat router call for user:', user?.id, 'session:', currentSession.id);
+      console.log('🤖 Making AI chat router call for user:', user?.id, 'session:', currentSession.id, 'selectedModel:', selectedModel?.provider_id);
       const { data, error } = await supabase.functions.invoke('ai-chat-router', {
         body: {
           message: userQuestion,
@@ -422,7 +422,11 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
           selectedModelId: selectedModel?.provider_id
         }
       });
-      console.log('🤖 AI chat router response received:', { data, error });
+      console.log('🤖 AI chat router response received:', { 
+        data: data ? { providerName: data.providerName, providerId: data.providerId } : null, 
+        error, 
+        selectedModelId: selectedModel?.provider_id 
+      });
 
       // Handle quota exceeded error specifically
       if (error && error.message?.includes('quota exceeded')) {
@@ -491,9 +495,10 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       }
       setShowStopButton(false);
 
-      // Set provider information
+      // Set provider information and log usage
       if (data.providerName) {
         setCurrentProvider(data.providerName);
+        console.log('✅ AI response from provider:', data.providerName, 'Provider ID:', data.providerId);
       }
 
       // Check if request was aborted

@@ -108,8 +108,18 @@ export function UserModelSelector({ compact = false }: { compact?: boolean }) {
                     : 'hover:bg-muted/50'
                 }`}
                 onClick={() => {
+                  console.log('🔄 User switching to model:', model.provider?.name, model.provider_id);
                   selectModel(model.provider_id);
                   setOpen(false);
+                  
+                  // Show toast notification
+                  import('@/hooks/use-toast').then(({ toast }) => {
+                    toast({
+                      title: "Model Switched",
+                      description: `Now using ${model.provider?.name}`,
+                      duration: 2000,
+                    });
+                  });
                 }}
               >
                 <div className="flex items-center gap-3">

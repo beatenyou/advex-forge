@@ -218,8 +218,14 @@ export function useUserModelAccess() {
   const selectModel = (providerId: string) => {
     const model = userModels.find(m => m.provider_id === providerId);
     if (model) {
+      console.log('🎯 Selecting model:', providerId, model.provider?.name);
       setSelectedModelId(providerId);
       localStorage.setItem('selectedModelId', providerId);
+      
+      // Force immediate state update
+      window.dispatchEvent(new CustomEvent('modelChanged', { 
+        detail: { providerId, model } 
+      }));
     }
   };
 
@@ -230,15 +236,26 @@ export function useUserModelAccess() {
 
   useEffect(() => {
     if (user) {
-      // Restore selected model from localStorage
-      const savedModelId = localStorage.getItem('selectedModelId');
-      if (savedModelId) {
-        setSelectedModelId(savedModelId);
-      }
-      
       loadModels();
     }
   }, [user]);
+
+  // Restore selected model from localStorage after models are loaded
+  useEffect(() => {
+    if (userModels.length > 0 && !selectedModelId) {
+      const savedModelId = localStorage.getItem('selectedModelId');
+      if (savedModelId && userModels.find(m => m.provider_id === savedModelId)) {
+        console.log('🔄 Restoring saved model:', savedModelId);
+        setSelectedModelId(savedModelId);
+      } else if (userModels.length > 0) {
+        // Set first available model as default
+        const defaultModel = userModels[0];
+        console.log('🎯 Setting default model:', defaultModel.provider_id);
+        setSelectedModelId(defaultModel.provider_id);
+        localStorage.setItem('selectedModelId', defaultModel.provider_id);
+      }
+    }
+  }, [userModels, selectedModelId]);
 
   return {
     userModels,

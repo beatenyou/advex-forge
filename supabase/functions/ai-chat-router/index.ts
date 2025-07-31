@@ -286,15 +286,26 @@ serve(async (req) => {
 
     const result = providerResponse.data;
 
-    console.log('💳 Incrementing AI usage for user:', userId);
+    console.log('💳 Incrementing AI usage for user:', userId, 'using provider:', finalProvider.name);
     try {
+      // Increment general AI usage
       const { data: incrementResult, error: incrementError } = await supabase.rpc('increment_ai_usage', {
         user_id_param: userId
       });
-      console.log('💳 Increment result:', { incrementResult, incrementError });
+      console.log('💳 General usage increment result:', { incrementResult, incrementError });
       
-      if (incrementError) {
-        console.error('Failed to increment AI usage:', incrementError);
+      // Also increment model-specific usage
+      const { data: modelIncrementResult, error: modelIncrementError } = await supabase.rpc('increment_model_usage', {
+        user_id_param: userId,
+        provider_id_param: finalProvider.id,
+        tokens_used_param: result.tokensUsed || 1,
+        response_time_param: null,
+        session_id_param: sessionId
+      });
+      console.log('💳 Model usage increment result:', { modelIncrementResult, modelIncrementError });
+      
+      if (incrementError || modelIncrementError) {
+        console.error('Failed to increment usage:', { incrementError, modelIncrementError });
         // Don't fail the request, just log the error
       }
     } catch (usageError) {
