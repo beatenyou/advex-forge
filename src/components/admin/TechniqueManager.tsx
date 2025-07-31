@@ -47,7 +47,8 @@ const TechniqueManager = () => {
     how_to_use: '',
     detection: '',
     mitigation: '',
-    reference_links: ''
+    reference_links: '',
+    commands: ''
   });
   const { toast } = useToast();
 
@@ -191,7 +192,8 @@ const TechniqueManager = () => {
       how_to_use: '',
       detection: '',
       mitigation: '',
-      reference_links: ''
+      reference_links: '',
+      commands: ''
     });
     setEditingTechnique(null);
   };
@@ -209,7 +211,8 @@ const TechniqueManager = () => {
       how_to_use: Array.isArray(technique.how_to_use) ? technique.how_to_use.join('\n') : '',
       detection: Array.isArray(technique.detection) ? technique.detection.join('\n') : '',
       mitigation: Array.isArray(technique.mitigation) ? technique.mitigation.join('\n') : '',
-      reference_links: JSON.stringify(technique.reference_links || [], null, 2)
+      reference_links: JSON.stringify(technique.reference_links || [], null, 2),
+      commands: JSON.stringify(technique.commands || [], null, 2)
     });
     setIsDialogOpen(true);
   };
@@ -230,7 +233,7 @@ const TechniqueManager = () => {
         detection: formData.detection.split('\n').filter(Boolean),
         mitigation: formData.mitigation.split('\n').filter(Boolean),
         reference_links: formData.reference_links ? JSON.parse(formData.reference_links) : [],
-        commands: []
+        commands: formData.commands ? JSON.parse(formData.commands) : []
       };
 
       if (editingTechnique) {
@@ -405,6 +408,20 @@ const TechniqueManager = () => {
                     placeholder='[{"title": "MITRE ATT&CK", "url": "https://attack.mitre.org", "description": "Official documentation"}]'
                     rows={3}
                   />
+                </div>
+                
+                <div>
+                  <Label htmlFor="commands">Command Templates (JSON format)</Label>
+                  <Textarea
+                    id="commands"
+                    value={formData.commands}
+                    onChange={(e) => setFormData({...formData, commands: e.target.value})}
+                    placeholder='[{"tool": "SQLMap", "command": "sqlmap -u <url> --dbs", "description": "Enumerate databases"}]'
+                    rows={4}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Use {"<parameter>"} syntax for command parameters. Examples: {"<url>"}, {"<target>"}, {"<username>"}
+                  </p>
                 </div>
                 
                 <div className="flex justify-end gap-2">
