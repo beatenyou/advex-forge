@@ -218,15 +218,25 @@ export function useUserModelAccess() {
   const selectModel = useCallback(async (providerId: string) => {
     const model = userModels.find(m => m.provider_id === providerId);
     if (!model || !user) {
-      console.warn('Cannot save model preference: model not found or user not authenticated');
+      console.warn('🚨 Cannot save model preference: model not found or user not authenticated');
+      console.log('Available models:', userModels.map(m => ({ id: m.provider_id, name: m.provider?.name })));
       return;
     }
 
-    console.log('🎯 Selecting model:', providerId, model.provider?.name);
+    console.log('🎯 SELECTING MODEL:', { 
+      clickedProviderId: providerId, 
+      modelName: model.provider?.name,
+      modelType: model.provider?.type 
+    });
+    
+    // Update state immediately for instant UI feedback
+    setSelectedModelId(providerId);
     
     try {
-      // Save to database
-      const { error } = await supabase
+      // Save to database with explicit logging
+      console.log('💾 Saving to database:', { user_id: user.id, selected_model_id: providerId });
+      
+      const { data, error } = await supabase
         .from('user_preferences')
         .upsert({
           user_id: user.id,
@@ -234,21 +244,17 @@ export function useUserModelAccess() {
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'user_id'
-        });
+        })
+        .select('selected_model_id');
       
       if (error) {
-        console.error('Error saving model preference:', error);
+        console.error('❌ Error saving model preference:', error);
+        // Revert state on error
+        setSelectedModelId(null);
         return;
       }
       
-      // Update state immediately
-      setSelectedModelId(providerId);
-      
-      console.log('🚀 Model Selection: Model selected, will trigger database update', {
-        providerId,
-        modelName: model.provider?.name,
-        modelType: model.provider?.type
-      });
+      console.log('✅ Database save successful:', data);
       
       // Dispatch local event for immediate UI feedback
       const modelChangeEvent = new CustomEvent('modelChanged', { 
@@ -269,12 +275,17 @@ export function useUserModelAccess() {
       
       window.dispatchEvent(modelChangeEvent);
       
-      // Database update will trigger Supabase Realtime for global sync
-      // The trigger will automatically broadcast to all connected clients
+      console.log('🎉 Model selection complete:', { 
+        savedProviderId: providerId, 
+        modelName: model.provider?.name,
+        uiUpdated: true,
+        databaseUpdated: true
+      });
       
-      console.log('✅ Model selection saved to database:', { providerId, modelName: model.provider?.name });
     } catch (error) {
-      console.error('Error updating model preference:', error);
+      console.error('💥 Critical error updating model preference:', error);
+      // Revert state on error
+      setSelectedModelId(null);
     }
   }, [userModels, user]);
 
