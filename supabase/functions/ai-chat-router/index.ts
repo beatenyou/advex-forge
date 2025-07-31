@@ -122,31 +122,31 @@ serve(async (req) => {
         // Regular user - check model access
         const { data: userAccess } = await supabase
           .from('user_model_access')
-          .select('provider_id')
+          .select('provider_id, ai_providers!inner(name, type, is_active)')
           .eq('user_id', userId)
           .eq('provider_id', selectedModelId)
           .eq('is_enabled', true)
+          .eq('ai_providers.is_active', true)
           .single();
 
-        console.log('👤 User access check result:', userAccess);
+        console.log('👤 User access check result for model', selectedModelId, ':', userAccess);
 
-        if (userAccess) {
-          // Verify the provider is still active
-          const { data: provider } = await supabase
-            .from('ai_providers')
-            .select('*')
-            .eq('id', selectedModelId)
-            .eq('is_active', true)
-            .single();
-
-          if (provider) {
-            targetProviderId = selectedModelId;
-            console.log('✅ User can use selected model:', provider.name, 'ID:', provider.id);
-          } else {
-            console.log('❌ Selected model provider not found or inactive:', selectedModelId);
-          }
+        if (userAccess && userAccess.ai_providers) {
+          targetProviderId = selectedModelId;
+          console.log('✅ User can use selected model:', userAccess.ai_providers.name, 'ID:', selectedModelId);
         } else {
-          console.log('❌ User does not have access to selected model:', selectedModelId);
+          // Check if model exists but user doesn't have access
+          const { data: providerExists } = await supabase
+            .from('ai_providers')
+            .select('name, is_active')
+            .eq('id', selectedModelId)
+            .single();
+          
+          if (providerExists) {
+            console.log('❌ User does not have access to selected model:', providerExists.name, 'Active:', providerExists.is_active);
+          } else {
+            console.log('❌ Selected model does not exist:', selectedModelId);
+          }
         }
       }
     } else {
