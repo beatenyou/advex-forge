@@ -168,77 +168,13 @@ export class WebScraperService {
   static async extractTechniquesFromContent(
     content: string, 
     sourceUrl: string,
-    usePerplexityValidation: boolean = false
+    usePerplexityValidation: boolean = false,
+    customTemplate?: string
   ): Promise<ExtractionResult> {
     try {
-      // Enhanced extraction prompt
-      const extractionPrompt = `You are a cybersecurity expert tasked with extracting attack techniques from web content and converting them into a structured markdown format for a security dashboard.
-
-**EXTRACTION GUIDELINES:**
-1. Only extract content that clearly describes cybersecurity attack techniques, tools, or procedures
-2. Never invent or hallucinate information - only use what's explicitly stated
-3. For missing information, use "TODO" placeholder
-4. Keep all code snippets and commands exactly as written in the source
-5. Extract reference links from the source content
-
-**OUTPUT FORMAT:**
-For each technique found, use this exact markdown structure:
-
-\`\`\`markdown
-**Name:** [Exact technique name from source]
-**MITRE ID:** [T####.### if mentioned, otherwise "TODO"]
-**Phase:** [One of: Reconnaissance, Enumeration, Initial Access, Privilege Escalation, Persistence, Credential Access, Lateral Movement, Collection, Command and Control]
-**Description:** [1-2 sentence description from source]
-**When to use:** [Conditions/scenarios when technique applies]
-**Prerequisites:** [Requirements before using technique]
-**How to use:**
-
-1. [Step-by-step instructions from source]
-2. [Keep original formatting and details]
-
-### Tools
-
-1. **[Tool Name]:** \`[basic command/syntax from source]\` | [Tool description]
-2. **[Additional tools if present]:** \`[commands]\` | [descriptions]
-
-### Command Templates
-
-1. **[Tool Name]:** \`[full command with <parameter> placeholders]\` | [Command description and purpose]
-2. **[Tool Name 2]:** \`[full command with <parameter> placeholders]\` | [Command description and purpose]
-
-### Reference Links
-
-1. [Link Title] - [URL]
-2. [Additional links if present]
-
-**Detection:** [Blue team detection methods if mentioned]
-**Mitigation:** [Defense/prevention methods if mentioned]
-\`\`\`
-
-**COMMAND TEMPLATE GUIDELINES:**
-- Use <parameter> syntax for placeholders (e.g., <target>, <username>, <password>)
-- Include full command syntax with all necessary flags
-- Each command should be ready-to-use after parameter substitution
-- Focus on practical, executable commands
-
-**MULTIPLE TECHNIQUES:**
-If multiple techniques are found, separate each with "---"
-
-**SCENARIOS:**
-If attack workflows/scenarios are found, format as:
-\`\`\`markdown
-## Scenario: [Title]
-**Description:** [Brief summary]
-**Tags:** [comma-separated tags]
-### Linked Techniques
-- [Technique names or IDs]
-\`\`\`
-
-Source URL: ${sourceUrl}
-
-Now analyze the following content and extract cybersecurity techniques:
-
-${content}`;
+      // Use custom template if provided, otherwise use default
+      const template = customTemplate || this.getDefaultExtractionTemplate();
+      const extractionPrompt = template.replace('{sourceUrl}', sourceUrl).replace('{content}', content);
 
       // Use Perplexity for validation if enabled
       if (usePerplexityValidation) {
@@ -326,6 +262,76 @@ ${content}`;
 
     onProgress?.({ completed: total, total, currentUrl: '' });
     return results;
+  }
+
+  static getDefaultExtractionTemplate(): string {
+    return `You are a cybersecurity expert tasked with extracting attack techniques from web content and converting them into a structured markdown format for a security dashboard.
+
+**EXTRACTION GUIDELINES:**
+1. Only extract content that clearly describes cybersecurity attack techniques, tools, or procedures
+2. Never invent or hallucinate information - only use what's explicitly stated
+3. For missing information, use "TODO" placeholder
+4. Keep all code snippets and commands exactly as written in the source
+5. Extract reference links from the source content
+
+**OUTPUT FORMAT:**
+For each technique found, use this exact markdown structure:
+
+\`\`\`markdown
+**Name:** [Exact technique name from source]
+**MITRE ID:** [T####.### if mentioned, otherwise "TODO"]
+**Phase:** [One of: Reconnaissance, Enumeration, Initial Access, Privilege Escalation, Persistence, Credential Access, Lateral Movement, Collection, Command and Control]
+**Description:** [1-2 sentence description from source]
+**When to use:** [Conditions/scenarios when technique applies]
+**Prerequisites:** [Requirements before using technique]
+**How to use:**
+
+1. [Step-by-step instructions from source]
+2. [Keep original formatting and details]
+
+### Tools
+
+1. **[Tool Name]:** \`[basic command/syntax from source]\` | [Tool description]
+2. **[Additional tools if present]:** \`[commands]\` | [descriptions]
+
+### Command Templates
+
+1. **[Tool Name]:** \`[full command with <parameter> placeholders]\` | [Command description and purpose]
+2. **[Tool Name 2]:** \`[full command with <parameter> placeholders]\` | [Command description and purpose]
+
+### Reference Links
+
+1. [Link Title] - [URL]
+2. [Additional links if present]
+
+**Detection:** [Blue team detection methods if mentioned]
+**Mitigation:** [Defense/prevention methods if mentioned]
+\`\`\`
+
+**COMMAND TEMPLATE GUIDELINES:**
+- Use <parameter> syntax for placeholders (e.g., <target>, <username>, <password>)
+- Include full command syntax with all necessary flags
+- Each command should be ready-to-use after parameter substitution
+- Focus on practical, executable commands
+
+**MULTIPLE TECHNIQUES:**
+If multiple techniques are found, separate each with "---"
+
+**SCENARIOS:**
+If attack workflows/scenarios are found, format as:
+\`\`\`markdown
+## Scenario: [Title]
+**Description:** [Brief summary]
+**Tags:** [comma-separated tags]
+### Linked Techniques
+- [Technique names or IDs]
+\`\`\`
+
+Source URL: {sourceUrl}
+
+Now analyze the following content and extract cybersecurity techniques:
+
+{content}`;
   }
 
   static calculateQualityScore(extractedContent: string): {
