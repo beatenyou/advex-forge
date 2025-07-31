@@ -1,8 +1,10 @@
 import React, { ReactNode, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Bot, Maximize2, Minimize2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Bot, Maximize2, Minimize2, History } from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { EnhancedHistoryTab } from "@/components/EnhancedHistoryTab";
 
 interface FullScreenChatLayoutProps {
   children: ReactNode;
@@ -16,7 +18,9 @@ export const FullScreenChatLayout = ({
   onToggleMinimize 
 }: FullScreenChatLayoutProps) => {
   const navigate = useNavigate();
+  const { sessionId } = useParams();
   const [statusKey, setStatusKey] = useState(0);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
 
   // Listen for model changes to force status indicator refresh
   useEffect(() => {
@@ -43,6 +47,16 @@ export const FullScreenChatLayout = ({
     navigate('/');
   };
 
+  const handleSessionSelect = (selectedSessionId: string) => {
+    setHistoryDialogOpen(false);
+    navigate(`/fullscreen-chat/${selectedSessionId}`);
+  };
+
+  const handleNewSession = () => {
+    setHistoryDialogOpen(false);
+    navigate('/fullscreen-chat');
+  };
+
   return (
     <div className="min-h-screen w-full bg-background flex flex-col">
       {/* Top Navigation Bar */}
@@ -59,6 +73,31 @@ export const FullScreenChatLayout = ({
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Back to Dashboard</span>
             </Button>
+
+            <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
+              <DialogTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="flex items-center gap-2 hover:bg-primary/10"
+                >
+                  <History className="h-4 w-4" />
+                  <span className="hidden sm:inline">History</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
+                <DialogHeader>
+                  <DialogTitle>Chat History</DialogTitle>
+                </DialogHeader>
+                <div className="overflow-y-auto">
+                  <EnhancedHistoryTab
+                    currentSessionId={sessionId}
+                    onSessionSelect={handleSessionSelect}
+                    onNewSession={handleNewSession}
+                  />
+                </div>
+              </DialogContent>
+            </Dialog>
             
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
