@@ -39,9 +39,13 @@ export const useAIStatus = () => {
   };
 
   useEffect(() => {
+    console.log('🚀 AI Status: useAIStatus hook initializing...');
+    
     // Load user's model preference and check status
     const initializeStatus = async () => {
+      console.log('🔄 AI Status: Initializing status check...');
       const userModelId = await fetchUserSelectedModel();
+      console.log('🔍 AI Status: Found user model ID:', userModelId);
       setCurrentModelId(userModelId);
       checkAIStatus(userModelId);
     };
@@ -56,11 +60,13 @@ export const useAIStatus = () => {
       if (modelId) {
         console.log('🔄 AI Status: Updating status immediately for model change:', modelName, modelId);
         setCurrentModelId(modelId);
-        checkAIStatus(modelId);
+        // Force immediate status update
+        setTimeout(() => checkAIStatus(modelId), 0);
       }
     };
 
     // Listen to the DOM event dispatched by model selection
+    console.log('🎯 AI Status: Setting up modelChanged event listener');
     window.addEventListener('modelChanged', handleModelChange);
 
     // Listen for realtime changes to user_preferences table (user-specific)
