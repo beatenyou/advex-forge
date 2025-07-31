@@ -27,8 +27,16 @@ export const useAIStatus = () => {
       })
       .subscribe();
 
+    // Listen for model changes to update status display
+    const handleModelChange = () => {
+      checkAIStatus();
+    };
+
+    window.addEventListener('modelChanged', handleModelChange);
+
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener('modelChanged', handleModelChange);
     };
   }, []);
 
@@ -63,24 +71,35 @@ export const useAIStatus = () => {
       }
 
       const activeProviders = providersResult.data;
-      const defaultProvider = activeProviders.find(p => p.id === configResult.data.default_provider_id);
+      
+      // Get currently selected model from localStorage
+      const selectedModelId = localStorage.getItem('selectedModelId');
+      let currentProvider = null;
+      
+      if (selectedModelId) {
+        currentProvider = activeProviders.find(p => p.id === selectedModelId);
+      }
+      
+      // Fall back to default provider if no valid selection
+      if (!currentProvider) {
+        currentProvider = activeProviders.find(p => p.id === configResult.data.default_provider_id);
+      }
 
-      // Check if default provider is set and active
-      if (!defaultProvider) {
+      // Check if we have a valid provider
+      if (!currentProvider) {
         setStatus({
           status: 'issues',
-          message: 'No Default Provider',
-          details: 'Default AI provider not set or inactive'
+          message: 'No Active Provider',
+          details: 'No active AI provider available'
         });
         return;
       }
 
-      // All configuration checks passed - assume operational without AI test call
-      // Only actual user interactions should count toward usage
+      // All configuration checks passed
       setStatus({
         status: 'operational',
         message: 'AI System Online', 
-        details: `Using ${defaultProvider.name} (${defaultProvider.type.toUpperCase()})`
+        details: `Using ${currentProvider.name} (${currentProvider.type.toUpperCase()})`
       });
 
     } catch (error) {

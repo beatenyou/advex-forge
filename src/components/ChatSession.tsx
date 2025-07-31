@@ -14,7 +14,7 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 import { useAIUsage } from '@/hooks/useAIUsage';
 import { useUserModelAccess } from '@/hooks/useUserModelAccess';
 import { UserModelSelector } from '@/components/UserModelSelector';
-import { ModelStatusDisplay } from '@/components/ModelStatusDisplay';
+
 import { CompactUsageDisplay } from '@/components/CompactUsageDisplay';
 
 interface ChatMessage {
@@ -701,9 +701,6 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
               <span className="hidden sm:inline">New Chat</span>
             </Button>
           </div>
-        </div>
-        <div className="mt-3 p-2 bg-muted/30 rounded-lg border border-primary/20">
-          <ModelStatusDisplay compact={true} />
         </div>
       </div>
 
