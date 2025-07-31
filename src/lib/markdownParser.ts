@@ -82,7 +82,11 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
     
     // Collect content for sections
     if (currentSection === 'howToUse' && !trimmedLine.startsWith('**How to use:**') && trimmedLine && !trimmedLine.startsWith('###')) {
-      howToUse += (howToUse ? '\n' : '') + trimmedLine;
+      // Remove existing numbering (e.g., "1. ", "2. ", etc.) from the beginning of lines
+      const cleanedLine = trimmedLine.replace(/^\d+\.\s*/, '');
+      if (cleanedLine) {
+        howToUse += (howToUse ? '\n' : '') + cleanedLine;
+      }
     }
     
     if (isToolsSection && trimmedLine && !trimmedLine.startsWith('### Tools')) {
@@ -196,8 +200,8 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 **Prerequisites:** List of usernames.
 **How to use:**
 
-1. Obtain a valid username list.
-2. Try a few common passwords against all accounts.
+Obtain a valid username list.
+Try a few common passwords against all accounts.
 
 ### Tools
 
@@ -220,9 +224,9 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 **Prerequisites:** Domain user account access.
 **How to use:**
 
-1. Enumerate service accounts with SPNs.
-2. Request service tickets for these accounts.
-3. Extract and crack the tickets offline.
+Enumerate service accounts with SPNs.
+Request service tickets for these accounts.
+Extract and crack the tickets offline.
 
 ### Tools
 
@@ -245,9 +249,9 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 **Prerequisites:** Network access to target systems.
 **How to use:**
 
-1. Scan for open SMB ports (445, 139).
-2. Enumerate shares and permissions.
-3. List contents of accessible shares.
+Scan for open SMB ports (445, 139).
+Enumerate shares and permissions.
+List contents of accessible shares.
 
 ### Tools
 
@@ -270,9 +274,9 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 **Prerequisites:** Network access to target range.
 **How to use:**
 
-1. Identify target IP ranges.
-2. Scan for live hosts.
-3. Enumerate open ports and services.
+Identify target IP ranges.
+Scan for live hosts.
+Enumerate open ports and services.
 
 ### Tools
 
@@ -295,9 +299,9 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 **Prerequisites:** Target IP addresses or hostnames.
 **How to use:**
 
-1. Select target hosts.
-2. Choose scanning technique (TCP/UDP).
-3. Analyze results for potential entry points.
+Select target hosts.
+Choose scanning technique (TCP/UDP).
+Analyze results for potential entry points.
 
 ### Tools
 
@@ -320,9 +324,9 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 **Prerequisites:** List of open ports on target systems.
 **How to use:**
 
-1. Target identified open ports.
-2. Probe services for version information.
-3. Identify potential vulnerabilities.
+Target identified open ports.
+Probe services for version information.
+Identify potential vulnerabilities.
 
 ### Tools
 
@@ -345,9 +349,9 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 **Prerequisites:** Valid NTLM hash from compromised system.
 **How to use:**
 
-1. Extract NTLM hashes from compromised system.
-2. Use hash for authentication to other systems.
-3. Gain access without knowing plaintext password.
+Extract NTLM hashes from compromised system.
+Use hash for authentication to other systems.
+Gain access without knowing plaintext password.
 
 ### Tools
 
@@ -370,9 +374,9 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 **Prerequisites:** Valid credentials and RDP access to target system.
 **How to use:**
 
-1. Identify systems with RDP enabled.
-2. Authenticate using valid credentials.
-3. Gain interactive desktop access.
+Identify systems with RDP enabled.
+Authenticate using valid credentials.
+Gain interactive desktop access.
 
 ### Tools
 
@@ -395,9 +399,9 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 **Prerequisites:** Access to target data and compression tools.
 **How to use:**
 
-1. Identify valuable data for exfiltration.
-2. Use compression tools to reduce file size.
-3. Apply encryption if needed for stealth.
+Identify valuable data for exfiltration.
+Use compression tools to reduce file size.
+Apply encryption if needed for stealth.
 
 ### Tools
 
@@ -420,9 +424,9 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 **Prerequisites:** Access to encryption tools and communication channels.
 **How to use:**
 
-1. Establish encrypted communication channel.
-2. Transmit data or commands through secure tunnel.
-3. Maintain persistence while avoiding detection.
+Establish encrypted communication channel.
+Transmit data or commands through secure tunnel.
+Maintain persistence while avoiding detection.
 
 ### Tools
 
@@ -445,9 +449,9 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 **Prerequisites:** Web application with database interaction and insufficient input sanitization.
 **How to use:**
 
-1. Identify input fields that interact with databases.
-2. Test for SQL injection vulnerabilities.
-3. Exploit vulnerabilities to extract data or gain access.
+Identify input fields that interact with databases.
+Test for SQL injection vulnerabilities.
+Exploit vulnerabilities to extract data or gain access.
 
 ### Tools
 
@@ -470,9 +474,9 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 **Prerequisites:** Web application with insufficient input validation.
 **How to use:**
 
-1. Identify input fields that display user content.
-2. Test for XSS vulnerabilities.
-3. Craft malicious payloads to execute scripts.
+Identify input fields that display user content.
+Test for XSS vulnerabilities.
+Craft malicious payloads to execute scripts.
 
 ### Tools
 
@@ -495,9 +499,9 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 **Prerequisites:** Web application with file access functionality.
 **How to use:**
 
-1. Identify file access parameters.
-2. Test for path traversal vulnerabilities.
-3. Access sensitive files outside web root.
+Identify file access parameters.
+Test for path traversal vulnerabilities.
+Access sensitive files outside web root.
 
 ### Tools
 
@@ -520,9 +524,9 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 **Prerequisites:** Local access to target system.
 **How to use:**
 
-1. Enumerate system for privilege escalation vectors.
-2. Identify exploitable services or misconfigurations.
-3. Execute privilege escalation technique.
+Enumerate system for privilege escalation vectors.
+Identify exploitable services or misconfigurations.
+Execute privilege escalation technique.
 
 ### Tools
 
@@ -545,9 +549,9 @@ export const sampleMarkdownTechniques = `**Name:** Password Spraying
 **Prerequisites:** Local access and knowledge of kernel version vulnerabilities.
 **How to use:**
 
-1. Identify kernel version and architecture.
-2. Search for known kernel exploits.
-3. Compile and execute appropriate exploit.
+Identify kernel version and architecture.
+Search for known kernel exploits.
+Compile and execute appropriate exploit.
 
 ### Tools
 
