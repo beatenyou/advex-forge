@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { ChatSession } from "@/components/ChatSession";
 import { SessionHistory } from "@/components/SessionHistory";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
-import { UserModelSelector } from "@/components/UserModelSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
@@ -293,11 +292,6 @@ export const ChatSidebar = ({
               </TabsList>
               
               <TabsContent value="chat" className="mt-0 flex-1 flex flex-col overflow-hidden min-h-0 space-y-3">
-                {/* AI Model Selector at top */}
-                <div className="flex-shrink-0">
-                  <UserModelSelector compact />
-                </div>
-                
                 {/* Chat session */}
                 <div className="flex-1 overflow-hidden">
                   <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} />
@@ -348,11 +342,6 @@ export const ChatSidebar = ({
             </Tabs>
           ) : (
             <div className="h-full flex flex-col min-h-0 space-y-3">
-              {/* AI Model Selector at top */}
-              <div className="flex-shrink-0">
-                <UserModelSelector compact />
-              </div>
-              
               {/* Chat session */}
               <div className="flex-1 overflow-hidden">
                 <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} />
