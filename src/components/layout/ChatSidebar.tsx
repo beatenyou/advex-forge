@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ChatSession } from "@/components/ChatSession";
 import { SessionHistory } from "@/components/SessionHistory";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
+import { UserModelSelector } from "@/components/UserModelSelector";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
@@ -291,8 +292,25 @@ export const ChatSidebar = ({
                 <TabsTrigger value="links" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">Links</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="chat" className="mt-0 flex-1 flex flex-col overflow-hidden min-h-0">
-                <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} />
+              <TabsContent value="chat" className="mt-0 flex-1 flex flex-col overflow-hidden min-h-0 space-y-3">
+                {/* AI Model Selector at top */}
+                <div className="flex-shrink-0">
+                  <UserModelSelector compact />
+                </div>
+                
+                {/* Chat session */}
+                <div className="flex-1 overflow-hidden">
+                  <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} />
+                </div>
+                
+                {/* Session History at bottom */}
+                <div className="flex-shrink-0 border-t border-border pt-3">
+                  <SessionHistory 
+                    currentSessionId={currentSessionId}
+                    onSessionSelect={handleSessionSelect}
+                    onNewSession={handleNewSession}
+                  />
+                </div>
               </TabsContent>
               
               <TabsContent value="history" className="mt-0 flex-1 overflow-hidden">
@@ -329,14 +347,24 @@ export const ChatSidebar = ({
               </TabsContent>
             </Tabs>
           ) : (
-            <div className="h-full flex flex-col min-h-0">
-              <SessionHistory 
-                currentSessionId={currentSessionId}
-                onSessionSelect={handleSessionSelect}
-                onNewSession={handleNewSession}
-              />
-              <div className="flex-1 mt-4 border-t border-border pt-4">
+            <div className="h-full flex flex-col min-h-0 space-y-3">
+              {/* AI Model Selector at top */}
+              <div className="flex-shrink-0">
+                <UserModelSelector compact />
+              </div>
+              
+              {/* Chat session */}
+              <div className="flex-1 overflow-hidden">
                 <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} />
+              </div>
+              
+              {/* Session History at bottom */}
+              <div className="flex-shrink-0 border-t border-border pt-3">
+                <SessionHistory 
+                  currentSessionId={currentSessionId}
+                  onSessionSelect={handleSessionSelect}
+                  onNewSession={handleNewSession}
+                />
               </div>
             </div>
           )}

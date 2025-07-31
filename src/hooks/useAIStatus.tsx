@@ -30,23 +30,40 @@ export const useAIStatus = () => {
 
     // Listen for model changes to update status display immediately
     const handleModelChange = (event: CustomEvent) => {
-      const { providerId, model } = event.detail || {};
+      const { providerId, model, timestamp } = event.detail || {};
+      
+      console.log('🔄 AI Status: Model changed event received', { providerId, model, timestamp });
       
       if (providerId) {
         setCurrentModelId(providerId);
         
-        // Update status immediately with model info if available
+        // Update status immediately with enhanced model info
         if (model?.provider) {
-          setStatus({
-            status: 'operational',
+          const newStatus = {
+            status: 'operational' as AIStatusType,
             message: 'AI System Online',
             details: `Using ${model.provider.name} (${model.provider.type.toUpperCase()})`
+          };
+          
+          console.log('✅ AI Status: Immediate update', newStatus);
+          setStatus(newStatus);
+          
+          // Broadcast status update to other components
+          const channel = supabase.channel('ai-status-updates');
+          channel.send({
+            type: 'broadcast',
+            event: 'status-refresh',
+            payload: { 
+              immediate: true, 
+              model: model,
+              timestamp: Date.now()
+            }
           });
         }
       }
       
       // Also do full status check as backup
-      checkAIStatus();
+      setTimeout(() => checkAIStatus(), 100);
     };
 
     window.addEventListener('modelChanged', handleModelChange as EventListener);
