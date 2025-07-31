@@ -17,6 +17,7 @@ import { QuickReference } from "./QuickReference";
 import { AdminDashboard } from "./AdminDashboard";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
 import { ChatModeToggle } from "./ChatModeToggle";
+import { TagSelector } from "./TagSelector";
 
 import { useResponsiveGrid } from "@/hooks/useResponsiveGrid";
 import { ParsedTechnique } from "@/lib/markdownParser";
@@ -397,11 +398,13 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
           </div>
 
           {/* Tag Filters */}
-          <div className="flex flex-wrap gap-2 mt-4">
-            {allTags.map(tag => <Badge key={tag} variant={selectedTags.includes(tag) ? "default" : "outline"} className={`cursor-pointer transition-all hover:scale-105 ${selectedTags.includes(tag) ? "bg-gradient-cyber text-primary-foreground border-primary" : "hover:border-primary/50"}`} onClick={() => toggleTag(tag)}>
-                <Hash className="w-3 h-3 mr-1" />
-                {tag}
-              </Badge>)}
+          <div className="mt-4">
+            <TagSelector
+              allTags={allTags}
+              selectedTags={selectedTags}
+              onToggleTag={toggleTag}
+              maxVisibleTags={5}
+            />
           </div>
         </div>
       </header>
