@@ -17,8 +17,34 @@ export const useAIStatus = () => {
   const [loading, setLoading] = useState(true);
   const [currentModelId, setCurrentModelId] = useState<string | null>(null);
 
+  // Fetch user's selected model from database
+  const fetchUserSelectedModel = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data: preferences } = await supabase
+        .from('user_preferences')
+        .select('selected_model_id')
+        .eq('user_id', user.id)
+        .single();
+
+      return preferences?.selected_model_id || null;
+    } catch (error) {
+      console.error('Error fetching user model preference:', error);
+      return null;
+    }
+  };
+
   useEffect(() => {
-    checkAIStatus();
+    // Load user's model preference and check status
+    const initializeStatus = async () => {
+      const userModelId = await fetchUserSelectedModel();
+      setCurrentModelId(userModelId);
+      checkAIStatus();
+    };
+
+    initializeStatus();
 
     // Set up realtime channel for AI status updates
     const statusChannel = supabase
@@ -29,7 +55,7 @@ export const useAIStatus = () => {
       })
       .subscribe();
 
-    // Listen for realtime changes to user_preferences table
+    // Listen for realtime changes to user_preferences table (user-specific)
     const preferencesChannel = supabase
       .channel('user-preferences-changes')
       .on(
@@ -37,18 +63,19 @@ export const useAIStatus = () => {
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'user_preferences',
-          filter: 'selected_model_id=neq.null'
+          table: 'user_preferences'
         },
-        (payload) => {
+        async (payload) => {
           console.log('🔄 AI Status: User preferences changed via realtime', payload);
           
-          // Check if this affects the current user or update globally
+          // Check if this change affects the current user
+          const { data: { user } } = await supabase.auth.getUser();
           const { new: newRecord } = payload;
-          if (newRecord?.selected_model_id) {
-            console.log('📡 AI Status: Model selection changed in database, refreshing status');
+          
+          if (user && newRecord?.user_id === user.id && newRecord?.selected_model_id) {
+            console.log('📡 AI Status: Current user model selection changed, updating status');
             
-            // Update status immediately based on database change
+            // Update current model ID and refresh status
             setCurrentModelId(newRecord.selected_model_id);
             
             // Refresh full status after a brief delay
@@ -103,6 +130,12 @@ export const useAIStatus = () => {
     try {
       setLoading(true);
       
+      // Refresh user's selected model if not set
+      if (!currentModelId) {
+        const userModelId = await fetchUserSelectedModel();
+        setCurrentModelId(userModelId);
+      }
+      
       // Check AI configuration and providers
       const [configResult, providersResult] = await Promise.all([
         supabase.from('ai_chat_config').select('*').single(),
@@ -131,9 +164,10 @@ export const useAIStatus = () => {
 
       const activeProviders = providersResult.data;
       
-      // Get currently selected model
+      // Get currently selected model (prioritize user's preference)
       let currentProvider = null;
       
+      // Use the current user's selected model
       if (currentModelId) {
         currentProvider = activeProviders.find(p => p.id === currentModelId);
       }

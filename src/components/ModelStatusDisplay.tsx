@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Bot, Zap, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useUserModelAccess } from '@/hooks/useUserModelAccess';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ModelStatusDisplayProps {
   compact?: boolean;
@@ -13,18 +14,46 @@ export function ModelStatusDisplay({ compact = false, showQuota = false }: Model
   const [currentModel, setCurrentModel] = useState(getSelectedModel());
 
   useEffect(() => {
-    // Update display immediately when model changes
+    // Update display when component mounts or hook changes
+    setCurrentModel(getSelectedModel());
+
+    // Listen for real-time user preferences changes (user-specific)
+    const preferencesChannel = supabase
+      .channel('model-status-display-preferences')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_preferences'
+        },
+        async (payload) => {
+          // Check if this change affects the current user
+          const { data: { user } } = await supabase.auth.getUser();
+          const { new: newRecord } = payload;
+          
+          if (user && newRecord?.user_id === user.id && newRecord?.selected_model_id) {
+            console.log('🔄 ModelStatusDisplay: Current user model selection changed, updating display');
+            
+            // Refresh the selected model from the hook
+            setTimeout(() => {
+              setCurrentModel(getSelectedModel());
+            }, 100);
+          }
+        }
+      )
+      .subscribe();
+
+    // Update display immediately when model changes (local event)
     const handleModelChange = (event: CustomEvent) => {
       console.log('🔄 ModelStatusDisplay received model change:', event.detail);
       setCurrentModel(getSelectedModel());
     };
 
     window.addEventListener('modelChanged', handleModelChange as EventListener);
-    
-    // Also update when component mounts or hook changes
-    setCurrentModel(getSelectedModel());
 
     return () => {
+      supabase.removeChannel(preferencesChannel);
       window.removeEventListener('modelChanged', handleModelChange as EventListener);
     };
   }, [getSelectedModel]);
