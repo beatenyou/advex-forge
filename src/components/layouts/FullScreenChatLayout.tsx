@@ -3,9 +3,6 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Bot, Maximize2, Minimize2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
-import { UserModelSelector } from "@/components/UserModelSelector";
-import { CompactUsageDisplay } from "@/components/CompactUsageDisplay";
-import { useAIUsage } from "@/hooks/useAIUsage";
 
 interface FullScreenChatLayoutProps {
   children: ReactNode;
@@ -19,7 +16,6 @@ export const FullScreenChatLayout = ({
   onToggleMinimize 
 }: FullScreenChatLayoutProps) => {
   const navigate = useNavigate();
-  const { canUseAI, currentUsage, quotaLimit, planName } = useAIUsage();
   const [statusKey, setStatusKey] = useState(0);
 
   // Listen for model changes to force status indicator refresh
@@ -75,17 +71,8 @@ export const FullScreenChatLayout = ({
             </div>
           </div>
 
-          {/* Center section - Usage */}
-          <div className="flex items-center justify-center flex-1">
-            <div className="hidden md:block">
-              <CompactUsageDisplay
-                currentUsage={currentUsage}
-                quotaLimit={quotaLimit}
-                planName={planName}
-                canUseAI={canUseAI}
-              />
-            </div>
-          </div>
+          {/* Center section - Empty space for balance */}
+          <div className="flex-1"></div>
 
           {/* Right section */}
           <div className="flex items-center gap-2">
