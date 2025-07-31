@@ -244,18 +244,36 @@ export function useUserModelAccess() {
       // Update state immediately
       setSelectedModelId(providerId);
       
-      // Dispatch event immediately for real-time UI updates
-      window.dispatchEvent(new CustomEvent('modelChanged', { 
+      console.log('🚀 Model Selection: Dispatching modelChanged event', {
+        providerId,
+        modelName: model.provider?.name,
+        modelType: model.provider?.type
+      });
+      
+      // Dispatch event immediately for real-time UI updates with detailed model info
+      const modelChangeEvent = new CustomEvent('modelChanged', { 
         detail: { 
           providerId, 
           model: { 
-            provider: model.provider,
-            provider_id: model.provider_id,
-            name: model.provider?.name 
+            provider: {
+              id: model.provider?.id,
+              name: model.provider?.name,
+              type: model.provider?.type,
+              model_name: model.provider?.model_name
+            },
+            provider_id: model.provider_id
           }, 
           timestamp: Date.now() 
         } 
-      }));
+      });
+      
+      window.dispatchEvent(modelChangeEvent);
+      
+      // Additional timeout to ensure all components receive the event
+      setTimeout(() => {
+        console.log('🔄 Model Selection: Dispatching delayed sync event');
+        window.dispatchEvent(modelChangeEvent);
+      }, 100);
       
       console.log('✅ Model selection saved to database:', { providerId, modelName: model.provider?.name });
     } catch (error) {

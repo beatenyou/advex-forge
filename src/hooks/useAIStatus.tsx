@@ -34,22 +34,26 @@ export const useAIStatus = () => {
       
       console.log('🔄 AI Status: Model changed event received', { providerId, model, timestamp });
       
-      if (providerId) {
+      if (providerId && model?.provider) {
         setCurrentModelId(providerId);
         
         // Update status immediately with enhanced model info
-        if (model?.provider) {
-          const newStatus = {
-            status: 'operational' as AIStatusType,
-            message: 'AI System Online',
-            details: `Using ${model.provider.name} (${model.provider.type.toUpperCase()})`
-          };
-          
-          console.log('✅ AI Status: Immediate update', newStatus);
-          setStatus(newStatus);
-          
-          // Broadcast status update to other components
-          const channel = supabase.channel('ai-status-updates');
+        const newStatus = {
+          status: 'operational' as AIStatusType,
+          message: 'AI System Online',
+          details: `Using ${model.provider.name} (${model.provider.type.toUpperCase()})`
+        };
+        
+        console.log('✅ AI Status: Immediate update', newStatus);
+        setStatus(newStatus);
+        
+        // Force a re-render by updating loading state briefly
+        setLoading(true);
+        setTimeout(() => setLoading(false), 50);
+        
+        // Broadcast status update to other components
+        setTimeout(() => {
+          const channel = supabase.channel('ai-status-sync');
           channel.send({
             type: 'broadcast',
             event: 'status-refresh',
@@ -58,12 +62,17 @@ export const useAIStatus = () => {
               model: model,
               timestamp: Date.now()
             }
+          }).then(() => {
+            console.log('📡 AI Status: Broadcast sent to sync all indicators');
           });
-        }
+        }, 100);
       }
       
       // Also do full status check as backup
-      setTimeout(() => checkAIStatus(), 100);
+      setTimeout(() => {
+        console.log('🔄 AI Status: Running backup status check');
+        checkAIStatus();
+      }, 200);
     };
 
     window.addEventListener('modelChanged', handleModelChange as EventListener);
