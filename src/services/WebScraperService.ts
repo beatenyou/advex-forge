@@ -301,8 +301,8 @@ For each technique found, use this exact markdown structure:
 
 ### Reference Links
 
-1. [Link Title] - [URL]
-2. [Additional links if present]
+1. [Link Title](URL) - Description
+2. [Additional Link Title](URL) - Optional description
 
 **Detection:** [Blue team detection methods if mentioned]
 **Mitigation:** [Defense/prevention methods if mentioned]
