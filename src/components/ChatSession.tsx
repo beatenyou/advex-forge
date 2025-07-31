@@ -13,7 +13,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useAIUsage } from '@/hooks/useAIUsage';
 import { useUserModelAccess } from '@/hooks/useUserModelAccess';
-import { ChatHeader } from '@/components/ChatHeader';
 
 interface ChatMessage {
   id: string;
@@ -670,15 +669,6 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
 
   return (
     <div className="flex flex-col h-full max-h-full min-h-0 relative">
-      <ChatHeader
-        sessionTitle={currentSession?.title || 'New Conversation'}
-        currentUsage={currentUsage}
-        quotaLimit={quotaLimit}
-        planName={planName}
-        canUseAI={canUseAI}
-        onNewChat={createNewSession}
-      />
-
       <div className="flex-1 overflow-hidden min-h-0">
         <ScrollArea 
           ref={scrollAreaRef} 
