@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, UserPlus, Shield, User, Gift, Zap, Edit2, Lock, Unlock, Calendar } from 'lucide-react';
+import { Trash2, UserPlus, Shield, User, Gift, Zap, Edit2, Lock, Unlock, Calendar, CreditCard } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -31,11 +31,23 @@ interface UserBilling {
   account_locked: boolean;
   account_lock_date: string | null;
   account_lock_reason: string | null;
+  plan_name?: string;
+}
+
+interface BillingPlan {
+  id: string;
+  name: string;
+  description: string;
+  price_monthly: number;
+  price_yearly: number;
+  ai_quota_monthly: number;
+  features: any;
 }
 
 export function UserManager() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [userBilling, setUserBilling] = useState<Record<string, UserBilling>>({});
+  const [billingPlans, setBillingPlans] = useState<BillingPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
@@ -44,8 +56,10 @@ export function UserManager() {
   const [grantDialogOpen, setGrantDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [lockDialogOpen, setLockDialogOpen] = useState(false);
+  const [planDialogOpen, setPlanDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [selectedUserEmail, setSelectedUserEmail] = useState<string>('');
+  const [selectedPlanId, setSelectedPlanId] = useState<string>('');
   const [interactionsToGrant, setInteractionsToGrant] = useState<string>('100');
   const [newQuotaLimit, setNewQuotaLimit] = useState<string>('');
   const [newCurrentUsage, setNewCurrentUsage] = useState<string>('');
@@ -54,12 +68,14 @@ export function UserManager() {
   const [isGranting, setIsGranting] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isLocking, setIsLocking] = useState(false);
+  const [isAssigningPlan, setIsAssigningPlan] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
   useEffect(() => {
     fetchProfiles();
     fetchUserBilling();
+    fetchBillingPlans();
   }, []);
 
   const fetchProfiles = async () => {
@@ -87,9 +103,25 @@ export function UserManager() {
     try {
       const { data, error } = await supabase
         .from('user_billing')
-        .select('user_id, ai_usage_current, ai_quota_limit, subscription_status, account_locked, account_lock_date, account_lock_reason');
+        .select(`
+          user_id, 
+          ai_usage_current, 
+          ai_quota_limit, 
+          subscription_status, 
+          account_locked, 
+          account_lock_date, 
+          account_lock_reason,
+          plan_id
+        `);
 
       if (error) throw error;
+      
+      // Get all plans to lookup names
+      const { data: plansData } = await supabase
+        .from('billing_plans')
+        .select('id, name');
+      
+      const plansMap = new Map(plansData?.map(plan => [plan.id, plan.name]) || []);
       
       const billingMap: Record<string, UserBilling> = {};
       data?.forEach(billing => {
@@ -99,12 +131,28 @@ export function UserManager() {
           subscription_status: billing.subscription_status,
           account_locked: billing.account_locked,
           account_lock_date: billing.account_lock_date,
-          account_lock_reason: billing.account_lock_reason
+          account_lock_reason: billing.account_lock_reason,
+          plan_name: billing.plan_id ? plansMap.get(billing.plan_id) || 'Unknown' : 'Free'
         };
       });
       setUserBilling(billingMap);
     } catch (error) {
       console.error('Error fetching user billing:', error);
+    }
+  };
+
+  const fetchBillingPlans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('billing_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('price_monthly', { ascending: true });
+
+      if (error) throw error;
+      setBillingPlans(data || []);
+    } catch (error) {
+      console.error('Error fetching billing plans:', error);
     }
   };
 
@@ -246,6 +294,13 @@ export function UserManager() {
     setLockDialogOpen(true);
   };
 
+  const openPlanDialog = (userId: string, email: string) => {
+    setSelectedUserId(userId);
+    setSelectedUserEmail(email);
+    setSelectedPlanId('');
+    setPlanDialogOpen(true);
+  };
+
   const handleLockAccount = async () => {
     if (!selectedUserId) return;
 
@@ -376,6 +431,45 @@ export function UserManager() {
       });
     } finally {
       setIsEditing(false);
+    }
+  };
+
+  const handleAssignPlan = async () => {
+    if (!selectedUserId || !selectedPlanId) return;
+
+    setIsAssigningPlan(true);
+    try {
+      const selectedPlan = billingPlans.find(plan => plan.id === selectedPlanId);
+      if (!selectedPlan) throw new Error('Plan not found');
+
+      const { error } = await supabase
+        .from('user_billing')
+        .upsert({
+          user_id: selectedUserId,
+          plan_id: selectedPlanId,
+          ai_quota_limit: selectedPlan.ai_quota_monthly,
+          subscription_status: selectedPlan.name.toLowerCase() === 'free' ? 'free' : 'active',
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'user_id' });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Assigned ${selectedPlan.name} plan to ${selectedUserEmail}`,
+      });
+
+      setPlanDialogOpen(false);
+      fetchUserBilling();
+    } catch (error: any) {
+      console.error('Error assigning plan:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to assign plan",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAssigningPlan(false);
     }
   };
 
@@ -510,7 +604,7 @@ export function UserManager() {
                         </div>
                         <div className="flex gap-1">
                           <Badge variant="secondary" className="text-xs">
-                            {userBilling[profile.user_id].subscription_status}
+                            {userBilling[profile.user_id].plan_name || userBilling[profile.user_id].subscription_status}
                           </Badge>
                           {userBilling[profile.user_id].account_locked && (
                             <Badge variant="destructive" className="text-xs">
@@ -545,22 +639,39 @@ export function UserManager() {
                            </TooltipContent>
                          </Tooltip>
                          
-                         {/* Grant AI Interactions Button */}
-                         <Tooltip>
-                           <TooltipTrigger asChild>
-                             <Button
-                               variant="outline"
-                               size="sm"
-                               onClick={() => openGrantDialog(profile.user_id, profile.email)}
-                               className="text-green-600 hover:text-green-700 hover:bg-green-50 hover:border-green-200 hover:scale-105 transition-all duration-200"
-                             >
-                               <Gift className="h-4 w-4" />
-                             </Button>
-                           </TooltipTrigger>
-                           <TooltipContent>
-                             <p>Grant additional AI interactions</p>
-                           </TooltipContent>
-                         </Tooltip>
+                          {/* Grant AI Interactions Button */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openGrantDialog(profile.user_id, profile.email)}
+                                className="text-green-600 hover:text-green-700 hover:bg-green-50 hover:border-green-200 hover:scale-105 transition-all duration-200"
+                              >
+                                <Gift className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Grant additional AI interactions</p>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          {/* Assign Plan Button */}
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openPlanDialog(profile.user_id, profile.email)}
+                                className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 hover:border-purple-200 hover:scale-105 transition-all duration-200"
+                              >
+                                <CreditCard className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Assign subscription plan</p>
+                            </TooltipContent>
+                          </Tooltip>
 
                          {/* Lock/Unlock Account Button */}
                          {userBilling[profile.user_id]?.account_locked ? (
@@ -780,6 +891,73 @@ export function UserManager() {
               </Button>
               <Button onClick={handleLockAccount} disabled={isLocking} variant="destructive">
                 {isLocking ? 'Locking...' : 'Lock Account'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Plan Dialog */}
+      <Dialog open={planDialogOpen} onOpenChange={setPlanDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5" />
+              Assign Subscription Plan
+            </DialogTitle>
+            <DialogDescription>
+              Select a subscription plan for {selectedUserEmail}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-4">
+              {billingPlans.map((plan) => (
+                <div
+                  key={plan.id}
+                  className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                    selectedPlanId === plan.id
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                  onClick={() => setSelectedPlanId(plan.id)}
+                >
+                  <div className="flex justify-between items-start">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">{plan.name}</h3>
+                        <Badge variant={plan.name === 'Free' ? 'secondary' : plan.name === 'Pro' ? 'default' : 'destructive'}>
+                          {plan.ai_quota_monthly} AI interactions/month
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{plan.description}</p>
+                      {plan.features && Array.isArray(plan.features) && plan.features.length > 0 && (
+                        <ul className="text-xs text-muted-foreground space-y-1">
+                          {plan.features.map((feature: string, index: number) => (
+                            <li key={index}>• {feature}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <div className="font-semibold">
+                        ${plan.price_monthly}/month
+                      </div>
+                      {plan.price_yearly > 0 && (
+                        <div className="text-xs text-muted-foreground">
+                          ${plan.price_yearly}/year
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setPlanDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAssignPlan} disabled={isAssigningPlan || !selectedPlanId}>
+                {isAssigningPlan ? 'Assigning...' : 'Assign Plan'}
               </Button>
             </div>
           </div>
