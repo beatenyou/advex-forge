@@ -49,6 +49,9 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
   for (const line of lines) {
     const trimmedLine = line.trim();
     
+    // Debug: Log every line being processed
+    console.log(`Processing line: "${trimmedLine}"`);
+    
     // Parse header fields
     if (trimmedLine.startsWith('**Name:**')) {
       name = trimmedLine.replace('**Name:**', '').trim();
@@ -70,21 +73,25 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
     
     // Handle sections
     if (trimmedLine.startsWith('**How to use:**')) {
+      console.log('📝 Detected How to use section');
       currentSection = 'howToUse';
       isToolsSection = false;
       isCommandsSection = false;
       isReferenceLinksSection = false;
     } else if (trimmedLine.startsWith('### Tools') || trimmedLine.startsWith('### Tools and Commands')) {
+      console.log('🔧 Detected Tools section');
       currentSection = 'tools';
       isToolsSection = true;
       isCommandsSection = false;
       isReferenceLinksSection = false;
     } else if (trimmedLine.startsWith('### Commands') || trimmedLine.startsWith('### Command Templates')) {
+      console.log('⚡ Detected Commands section');
       currentSection = 'commands';
       isToolsSection = false;
       isCommandsSection = true;
       isReferenceLinksSection = false;
     } else if (trimmedLine.startsWith('### Reference Links') || trimmedLine.startsWith('**Reference Links:**') || trimmedLine.startsWith('**References:**')) {
+      console.log('🔗 Detected Reference Links section!');
       currentSection = 'referenceLinks';
       isToolsSection = false;
       isCommandsSection = false;
@@ -95,6 +102,7 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
           !trimmedLine.startsWith('### Tools') && 
           !trimmedLine.startsWith('### Commands') && 
           !trimmedLine.startsWith('### Command Templates')) {
+        console.log(`🚫 Detected other section header: "${trimmedLine}" - resetting flags`);
         currentSection = '';
         isToolsSection = false;
         isCommandsSection = false;
@@ -165,10 +173,14 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
     }
     
     if (isReferenceLinksSection && trimmedLine && !trimmedLine.startsWith('### Reference Links') && !trimmedLine.startsWith('**Reference Links:**') && !trimmedLine.startsWith('**References:**')) {
+      console.log(`🔗 Processing reference links line: "${trimmedLine}"`);
+      console.log(`🔗 isReferenceLinksSection: ${isReferenceLinksSection}`);
+      
       // Stop parsing reference links when we hit certain sections
       if (trimmedLine.startsWith('**Detection:**') || trimmedLine.startsWith('**Mitigation:**') || 
           trimmedLine.startsWith('### Detection') || trimmedLine.startsWith('### Mitigation') ||
-          trimmedLine.startsWith('### ') && !trimmedLine.startsWith('### Reference')) {
+          (trimmedLine.startsWith('### ') && !trimmedLine.startsWith('### Reference'))) {
+        console.log(`🚫 Stopping reference links parsing due to: "${trimmedLine}"`);
         isReferenceLinksSection = false;
       } else {
         // Parse reference link entries in multiple formats:
@@ -176,16 +188,34 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
         // Format 2: - [Title](URL): Description  
         // Format 3: 1. [Title](URL) - Description
         const linkMatch = trimmedLine.match(/^(?:\d+\.\s*|\-\s*)\[([^\]]+)\]\(([^)]+)\)(?:\s*[-:]\s*(.+))?$/);
+        console.log(`🔗 Regex test result:`, linkMatch);
+        
         if (linkMatch) {
           const [, title, url, description] = linkMatch;
-          referenceLinks.push({
+          const parsedLink = {
             title: title.trim(),
             url: url.trim(),
             description: description ? description.trim() : undefined
-          });
-          console.log('Parsed reference link:', { title: title.trim(), url: url.trim(), description: description?.trim() });
+          };
+          referenceLinks.push(parsedLink);
+          console.log('✅ Successfully parsed reference link:', parsedLink);
         } else {
-          console.log('Failed to match reference link:', trimmedLine);
+          console.log('❌ Failed to match reference link:', trimmedLine);
+          // Try alternative regex patterns
+          const altPattern1 = /^(\d+)\.\s*\[([^\]]+)\]\(([^)]+)\)\s*-\s*(.+)$/;
+          const altMatch1 = trimmedLine.match(altPattern1);
+          console.log('🔗 Alternative pattern 1 test:', altMatch1);
+          
+          if (altMatch1) {
+            const [, , title, url, description] = altMatch1;
+            const parsedLink = {
+              title: title.trim(),
+              url: url.trim(),
+              description: description.trim()
+            };
+            referenceLinks.push(parsedLink);
+            console.log('✅ Successfully parsed with alternative pattern:', parsedLink);
+          }
         }
       }
     }
@@ -211,6 +241,8 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
     ...(description.toLowerCase().includes('kerberos') ? ['Kerberos'] : []),
     ...(description.toLowerCase().includes('ntlm') ? ['NTLM'] : [])
   ];
+  
+  console.log(`🔗 Final referenceLinks array:`, referenceLinks);
   
   return {
     id: mitreId,
