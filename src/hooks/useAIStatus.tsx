@@ -53,15 +53,23 @@ export const useAIStatus = () => {
     initializeStatus();
 
     // Listen for DOM events from model selection (critical for side panel)
-    const handleModelChange = (event: any) => {
+    const handleModelChange = async (event: any) => {
       console.log('🎯 AI Status: Received modelChanged event in useAIStatus', event.detail);
       const { modelId, modelName, modelType } = event.detail;
       
       if (modelId) {
         console.log('🔄 AI Status: Updating status immediately for model change:', modelName, modelId);
+        // Force immediate state update
         setCurrentModelId(modelId);
-        // Force immediate status update without delay to prevent stale state
-        checkAIStatus(modelId);
+        setLoading(true);
+        
+        // Trigger immediate status check with new model
+        await checkAIStatus(modelId);
+        
+        // Dispatch a force refresh event to ensure all components update
+        window.dispatchEvent(new CustomEvent('forceStatusRefresh', { 
+          detail: { modelId, timestamp: Date.now() } 
+        }));
       }
     };
 
@@ -70,15 +78,28 @@ export const useAIStatus = () => {
     window.addEventListener('modelChanged', handleModelChange);
 
     // Listen for global refresh events to ensure all instances update
-    const handleGlobalRefresh = (event: any) => {
+    const handleGlobalRefresh = async (event: any) => {
       console.log('🌐 AI Status: Received global refresh event', event.detail);
       const { modelId } = event.detail;
       if (modelId) {
         setCurrentModelId(modelId);
-        checkAIStatus(modelId);
+        setLoading(true);
+        await checkAIStatus(modelId);
       }
     };
     window.addEventListener('globalStatusRefresh', handleGlobalRefresh);
+    
+    // Listen for force refresh events (ensures React components re-render)
+    const handleForceRefresh = async (event: any) => {
+      console.log('🔥 AI Status: Received force refresh event', event.detail);
+      const { modelId } = event.detail;
+      if (modelId) {
+        setCurrentModelId(modelId);
+        setLoading(true);
+        await checkAIStatus(modelId);
+      }
+    };
+    window.addEventListener('forceStatusRefresh', handleForceRefresh);
 
     // Listen for realtime changes to user_preferences table (user-specific)
     const preferencesChannel = supabase
@@ -131,6 +152,7 @@ export const useAIStatus = () => {
     return () => {
       window.removeEventListener('modelChanged', handleModelChange);
       window.removeEventListener('globalStatusRefresh', handleGlobalRefresh);
+      window.removeEventListener('forceStatusRefresh', handleForceRefresh);
       supabase.removeChannel(preferencesChannel);
       supabase.removeChannel(broadcastChannel);
     };
@@ -209,7 +231,7 @@ export const useAIStatus = () => {
       setStatus({
         status: 'operational',
         message: `Using ${currentProvider.name}`, 
-        details: `AI provider: ${currentProvider.name} (${currentProvider.type.toUpperCase()})`
+        details: `AI provider: ${currentProvider.name} (${currentProvider.type.toUpperCase()}) - Model ID: ${targetModelId}`
       });
 
     } catch (error) {

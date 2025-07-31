@@ -1,4 +1,4 @@
-import React, { ReactNode } from "react";
+import React, { ReactNode, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Bot, Maximize2, Minimize2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -20,6 +20,28 @@ export const FullScreenChatLayout = ({
 }: FullScreenChatLayoutProps) => {
   const navigate = useNavigate();
   const { canUseAI, currentUsage, quotaLimit, planName } = useAIUsage();
+  const [statusKey, setStatusKey] = useState(0);
+
+  // Listen for model changes to force status indicator refresh
+  useEffect(() => {
+    const handleModelChange = () => {
+      console.log('🔄 FullScreenChatLayout: Model changed, refreshing status indicator');
+      setStatusKey(prev => prev + 1);
+    };
+
+    const handleForceRefresh = () => {
+      console.log('🔥 FullScreenChatLayout: Force refresh triggered');
+      setStatusKey(prev => prev + 1);
+    };
+
+    window.addEventListener('modelChanged', handleModelChange);
+    window.addEventListener('forceStatusRefresh', handleForceRefresh);
+
+    return () => {
+      window.removeEventListener('modelChanged', handleModelChange);
+      window.removeEventListener('forceStatusRefresh', handleForceRefresh);
+    };
+  }, []);
 
   const handleBackToMain = () => {
     navigate('/');
@@ -48,7 +70,7 @@ export const FullScreenChatLayout = ({
               </div>
               <div>
                 <h1 className="font-semibold text-foreground">RT AI Chat</h1>
-                <AIStatusIndicator key="fullscreen-status" size="sm" showLabel />
+                <AIStatusIndicator key={`fullscreen-status-${statusKey}`} size="sm" showLabel />
               </div>
             </div>
           </div>
