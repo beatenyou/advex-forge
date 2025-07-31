@@ -72,7 +72,7 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
 
         <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="p-6">
-            <TabsList className="flex flex-col gap-2 h-auto bg-muted/50 p-3">
+            <TabsList className="flex flex-col gap-2 h-auto bg-muted/50 p-3 items-start">
               {/* First Row - Core Management */}
               <div className="flex flex-wrap gap-2 justify-start">
                 <TabsTrigger 
