@@ -3,10 +3,8 @@ import { Bot, Download, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChatSession } from "@/components/ChatSession";
-import { EnhancedHistoryTab } from "@/components/EnhancedHistoryTab";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
 import { supabase } from "@/integrations/supabase/client";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -251,27 +249,12 @@ export const ChatSidebar = ({
 
         {/* Content */}
         <div className="flex-1 p-4 bg-background overflow-hidden min-h-0">
-          <Tabs defaultValue="chat" className="w-full h-full flex flex-col min-h-0">
-            <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted/50">
-              <TabsTrigger value="chat" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">Chat</TabsTrigger>
-              <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">History</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="chat" className="mt-0 flex-1 flex flex-col overflow-hidden min-h-0">
-              {/* Chat session */}
-              <div className="flex-1 overflow-hidden">
-                <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} />
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="history" className="mt-0 flex-1 overflow-hidden">
-              <EnhancedHistoryTab 
-                currentSessionId={currentSessionId}
-                onSessionSelect={handleSessionSelect}
-                onNewSession={handleNewSession}
-              />
-            </TabsContent>
-          </Tabs>
+          <div className="w-full h-full flex flex-col min-h-0">
+            {/* Chat session */}
+            <div className="flex-1 overflow-hidden">
+              <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} />
+            </div>
+          </div>
         </div>
       </div>
     </TooltipProvider>;
