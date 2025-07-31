@@ -107,18 +107,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       // Refresh the model access hook to get latest state
       refreshModels();
       
-      // Add a visual indicator that the model has switched
-      if (messages.length > 0) {
-        const switchMessage = {
-          id: `switch-${Date.now()}`,
-          session_id: currentSession?.id || '',
-          role: 'system' as const,
-          content: `🔄 Switched to ${model?.provider?.name || 'new model'} for subsequent responses`,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        setMessages(prev => [...prev, switchMessage]);
-      }
+      // Model switched - no visual indicator needed
       
       console.log('✅ ChatSession model change handled and refreshed:', { 
         providerId, 

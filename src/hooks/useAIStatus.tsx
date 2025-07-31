@@ -231,7 +231,7 @@ export const useAIStatus = () => {
       setStatus({
         status: 'operational',
         message: `Using ${currentProvider.name}`, 
-        details: `AI provider: ${currentProvider.name} (${currentProvider.type.toUpperCase()}) - Model ID: ${targetModelId}`
+        details: `AI provider: ${currentProvider.name} (${currentProvider.type.toUpperCase()})`
       });
 
     } catch (error) {
