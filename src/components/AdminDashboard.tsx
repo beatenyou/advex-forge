@@ -74,45 +74,45 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="p-6">
             <TabsList className="flex flex-col gap-2 h-auto bg-muted/50 p-3">
               {/* First Row - Core Management */}
-              <div className="flex flex-wrap gap-2 justify-center">
+              <div className="flex flex-wrap gap-2 justify-start">
                 <TabsTrigger 
                   value="guidance" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground"
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground min-w-[120px]"
                 >
                   <BookOpen className="w-4 h-4" />
                   Guidance
                 </TabsTrigger>
                 <TabsTrigger 
                   value="techniques" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground"
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground min-w-[120px]"
                 >
                   <Shield className="w-4 h-4" />
                   Techniques
                 </TabsTrigger>
                 <TabsTrigger 
                   value="cheatsheets" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground"
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground min-w-[120px]"
                 >
                   <FileText className="w-4 h-4" />
                   Cheat Sheets
                 </TabsTrigger>
                 <TabsTrigger 
                   value="linktabs" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground"
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground min-w-[120px]"
                 >
                   <Link className="w-4 h-4" />
                   Link Tabs
                 </TabsTrigger>
                 <TabsTrigger 
                   value="scenarios" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground"
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground min-w-[120px]"
                 >
                   <Target className="w-4 h-4" />
                   Scenarios
                 </TabsTrigger>
                 <TabsTrigger 
                   value="users" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground"
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground min-w-[120px]"
                 >
                   <Users className="w-4 h-4" />
                   Users
@@ -120,45 +120,45 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
               </div>
               
               {/* Second Row - System & Support */}
-              <div className="flex flex-wrap gap-2 justify-center">
+              <div className="flex flex-wrap gap-2 justify-start">
                 <TabsTrigger 
                   value="ai-providers" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground"
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground min-w-[120px]"
                 >
                   <Bot className="w-4 h-4" />
                   AI Chat
                 </TabsTrigger>
                 <TabsTrigger 
                   value="model-access" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground"
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground min-w-[120px]"
                 >
                   <Key className="w-4 h-4" />
                   Model Access
                 </TabsTrigger>
                 <TabsTrigger 
                   value="announcements" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground"
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground min-w-[120px]"
                 >
                   <Megaphone className="w-4 h-4" />
                   Announcements
                 </TabsTrigger>
                 <TabsTrigger 
                   value="faq" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground"
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground min-w-[120px]"
                 >
                   <HelpCircle className="w-4 h-4" />
                   FAQ
                 </TabsTrigger>
                 <TabsTrigger 
                   value="support" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground"
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground min-w-[120px]"
                 >
                   <MessageSquare className="w-4 h-4" />
                   Support
                 </TabsTrigger>
                 <TabsTrigger 
                   value="bulk-import" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground"
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground min-w-[120px]"
                 >
                   <Upload className="w-4 h-4" />
                   Bulk Import
