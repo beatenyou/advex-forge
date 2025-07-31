@@ -20,6 +20,7 @@ import AIProviderManager from "@/components/AIProviderManager";
 import ModelAccessManager from "@/components/admin/ModelAccessManager";
 import AnnouncementManager from "@/components/admin/AnnouncementManager";
 import FAQManager from "@/components/admin/FAQManager";
+import SupportTicketManager from "@/components/admin/SupportTicketManager";
 
 interface AdminDashboardProps {
   techniques: ParsedTechnique[];
@@ -589,6 +590,10 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
 
             <TabsContent value="faq" className="space-y-6 mt-6">
               <FAQManager />
+            </TabsContent>
+
+            <TabsContent value="support" className="space-y-6 mt-6">
+              <SupportTicketManager />
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-6 mt-6">
