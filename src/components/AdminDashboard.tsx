@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
-import { Settings, Upload, FileText, Globe, Plus, Edit, Trash2, Save } from "lucide-react";
+import { Settings, Upload, FileText, Globe, Plus, Edit, Trash2, Save, Zap } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,6 +22,7 @@ import AnnouncementManager from "@/components/admin/AnnouncementManager";
 import FAQManager from "@/components/admin/FAQManager";
 import SupportTicketManager from "@/components/admin/SupportTicketManager";
 import TechniqueManager from "@/components/admin/TechniqueManager";
+import { BulkImportManager } from "@/components/admin/BulkImportManager";
 
 interface AdminDashboardProps {
   techniques: ParsedTechnique[];
@@ -109,6 +110,7 @@ export const AdminDashboard = ({ techniques, onTechniquesUpdate, onClose }: Admi
 2. Never invent or hallucinate information - only use what's explicitly stated
 3. For missing information, use "TODO" placeholder
 4. Keep all code snippets and commands exactly as written in the source
+5. Extract and preserve reference links from the source content
 
 **OUTPUT FORMAT:**
 For each technique found, use this exact markdown structure:
@@ -116,7 +118,7 @@ For each technique found, use this exact markdown structure:
 \`\`\`markdown
 **Name:** [Exact technique name from source]
 **MITRE ID:** [T####.### if mentioned, otherwise "TODO"]
-**Phase:** [One of: Enumeration, Initial Access, Privilege Escalation, Persistence, Credential Access, Lateral Movement]
+**Phase:** [One of: Reconnaissance, Enumeration, Initial Access, Privilege Escalation, Persistence, Credential Access, Lateral Movement, Collection, Command and Control]
 **Description:** [1-2 sentence description from source]
 **When to use:** [Conditions/scenarios when technique applies]
 **Prerequisites:** [Requirements before using technique]
@@ -135,6 +137,11 @@ For each technique found, use this exact markdown structure:
 1. **[Tool Name]:** \`[full command with <parameter> placeholders]\` | [Command description and purpose]
 2. **[Tool Name 2]:** \`[full command with <parameter> placeholders]\` | [Command description and purpose]
 
+### Reference Links
+
+1. [Link Title] - [URL from source]
+2. [Additional reference links if present]
+
 **Detection:** [Blue team detection methods if mentioned]
 **Mitigation:** [Defense/prevention methods if mentioned]
 \`\`\`
@@ -144,6 +151,13 @@ For each technique found, use this exact markdown structure:
 - Include full command syntax with all necessary flags
 - Each command should be ready-to-use after parameter substitution
 - Focus on practical, executable commands
+- Maintain parameter consistency across related techniques
+
+**REFERENCE LINKS GUIDELINES:**
+- Extract all relevant URLs mentioned in the source content
+- Include official documentation, tools, and related resources
+- Format as descriptive title followed by URL
+- Prioritize authoritative sources and official documentation
 
 **MULTIPLE TECHNIQUES:**
 If multiple techniques are found, separate each with "---"
@@ -391,6 +405,12 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
             Analytics
           </TabsTrigger>
           <TabsTrigger 
+            value="bulk-import" 
+            className="bg-primary/10 hover:bg-primary/20 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2"
+          >
+            Bulk Import
+          </TabsTrigger>
+          <TabsTrigger 
             value="webscraper" 
             className="bg-primary/10 hover:bg-primary/20 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2"
           >
@@ -403,62 +423,92 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <FileText className="w-5 h-5" />
-                    Administrator Guidance
+                    Enhanced Administrator Guidance
                   </CardTitle>
                   <CardDescription>
-                    Step-by-step guide for managing techniques and scenarios
+                    Comprehensive guide for managing database-backed techniques with automation
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <h4 className="font-semibold mb-2">Adding New Techniques</h4>
+                    <h4 className="font-semibold mb-2">Database-First Workflow</h4>
                     <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>Use the "Upload Cards" tab to add techniques via markdown</li>
-                      <li>Follow the exact markdown schema provided in the template</li>
-                      <li>Include all required fields: Name, MITRE ID, Phase, Description</li>
-                      <li>Add tools with command templates using &lt;parameter&gt; syntax</li>
-                      <li>Include both "Tools" and "Command Templates" sections for full functionality</li>
-                      <li>Separate multiple techniques with "---"</li>
+                      <li>All techniques are now stored in Supabase database with real-time updates</li>
+                      <li>Use "Techniques" tab for CRUD operations with instant collaboration</li>
+                      <li>Leverage "Bulk Import" tab for automated website extraction</li>
+                      <li>Monitor data quality with built-in validation scores</li>
+                      <li>Reference links are now fully integrated into the database schema</li>
+                      <li>Real-time collaboration: multiple admins can work simultaneously</li>
                     </ol>
                   </div>
                   
                   <Separator />
                   
                   <div>
-                    <h4 className="font-semibold mb-2">Command Generator Integration</h4>
+                    <h4 className="font-semibold mb-2">Automated Bulk Import Process</h4>
                     <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>Include "Command Templates" section in markdown for command generator functionality</li>
-                      <li>Use &lt;parameter&gt; syntax for placeholders (e.g., &lt;target&gt;, &lt;username&gt;, &lt;password&gt;)</li>
-                      <li>Provide full command syntax with all necessary flags and options</li>
-                      <li>Each command template should be executable after parameter substitution</li>
-                      <li>Include command descriptions to explain purpose and usage</li>
+                      <li>Configure Firecrawl API key for automated website scraping</li>
+                      <li>Optional: Add Perplexity API key for enhanced content validation</li>
+                      <li>Input multiple URLs (one per line) for batch processing</li>
+                      <li>Monitor extraction progress with real-time status updates</li>
+                      <li>Review quality scores before importing to database</li>
+                      <li>Bulk import directly to database with duplicate detection</li>
                     </ul>
                   </div>
                   
                   <Separator />
                   
                   <div>
-                    <h4 className="font-semibold mb-2">Data Consistency Best Practices</h4>
+                    <h4 className="font-semibold mb-2">Enhanced Command Generator Integration</h4>
                     <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>Use consistent phase names: Enumeration, Initial Access, Privilege Escalation, Persistence, Credential Access, Lateral Movement</li>
-                      <li>Include MITRE ATT&CK IDs for proper mapping (format: T####.###)</li>
-                      <li>Keep tool command templates consistent with parameter syntax</li>
-                      <li>Tag techniques appropriately for better searchability</li>
-                      <li>Include both detection and mitigation information when available</li>
-                      <li>Ensure command templates use consistent parameter naming across techniques</li>
+                      <li>Command templates now stored as structured JSON in database</li>
+                      <li>Standardized parameter syntax: &lt;target&gt;, &lt;username&gt;, &lt;password&gt;, &lt;domain&gt;</li>
+                      <li>Tool-specific parameter validation and suggestions</li>
+                      <li>Command templates are editable directly in admin interface</li>
+                      <li>Copy individual or bulk commands with parameter substitution</li>
+                      <li>Cross-technique parameter consistency validation</li>
                     </ul>
                   </div>
                   
                   <Separator />
                   
                   <div>
-                    <h4 className="font-semibold mb-2">Linking Guidelines</h4>
+                    <h4 className="font-semibold mb-2">Reference Links Management</h4>
                     <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      <li>Link related techniques through similar tags</li>
-                      <li>Group techniques by attack phases for logical progression</li>
-                      <li>Reference tools consistently across related techniques</li>
-                      <li>Maintain scenario connections through technique references</li>
-                      <li>Use consistent command template parameters across related techniques</li>
+                      <li>Reference links stored as structured JSON with title and URL</li>
+                      <li>Automatic link validation during import process</li>
+                      <li>Link accessibility testing and broken link detection</li>
+                      <li>Categorized links: documentation, tools, research, MITRE ATT&CK</li>
+                      <li>Bulk link extraction from source websites during automation</li>
+                      <li>Link preview and metadata extraction for better organization</li>
+                    </ul>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">Quality Assurance & Validation</h4>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                      <li>Automated quality scoring: required fields, command templates, references</li>
+                      <li>MITRE ATT&CK ID format validation (T####.### pattern)</li>
+                      <li>Command template syntax validation and parameter detection</li>
+                      <li>Duplicate technique detection across import batches</li>
+                      <li>Phase consistency enforcement with standardized phase names</li>
+                      <li>Reference link accessibility and relevance validation</li>
+                    </ul>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2">Scaling & Performance</h4>
+                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
+                      <li>Database optimization for hundreds of techniques</li>
+                      <li>Real-time updates with minimal latency using Supabase</li>
+                      <li>Efficient search and filtering with database indexing</li>
+                      <li>Batch operations for bulk modifications</li>
+                      <li>API rate limiting and retry logic for external services</li>
+                      <li>Progressive loading and pagination for large datasets</li>
                     </ul>
                   </div>
                 </CardContent>
