@@ -160,94 +160,136 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                 </CardHeader>
                 <CardContent className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <Card className="bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-950/50 dark:to-cyan-900/50 border-cyan-200 dark:border-cyan-800">
+                    <Card className="bg-gradient-to-br from-cyan-50 to-cyan-100 dark:from-cyan-950/50 dark:to-cyan-900/50 border-cyan-200 dark:border-cyan-800 hover:shadow-lg transition-all duration-200 cursor-pointer group" onClick={() => setActiveTab("techniques")}>
                       <CardHeader className="pb-3">
                         <div className="flex items-center gap-2">
-                          <Database className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                          <Database className="w-5 h-5 text-cyan-600 dark:text-cyan-400 group-hover:scale-110 transition-transform duration-200" />
                           <CardTitle className="text-base">Technique Management</CardTitle>
                         </div>
                       </CardHeader>
                       <CardContent className="pt-0 space-y-2">
-                        <p className="text-sm text-muted-foreground">Comprehensive technique management with import, edit, search, and tracking</p>
-                        <Badge className="bg-cyan-600 hover:bg-cyan-700 text-white">Central Hub</Badge>
+                        <p className="text-sm text-muted-foreground">Manage all techniques with import, edit, search, and tracking capabilities</p>
+                        <Button 
+                          size="sm" 
+                          className="bg-cyan-600 hover:bg-cyan-700 text-white w-full"
+                          onClick={(e) => { e.stopPropagation(); setActiveTab("techniques"); }}
+                        >
+                          Central Hub →
+                        </Button>
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/50 border-purple-200 dark:border-purple-800">
+                    <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/50 border-purple-200 dark:border-purple-800 hover:shadow-lg transition-all duration-200 cursor-pointer group" onClick={() => setActiveTab("cheatsheets")}>
                       <CardHeader className="pb-3">
                         <div className="flex items-center gap-2">
-                          <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                          <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform duration-200" />
                           <CardTitle className="text-base">Cheat Sheets</CardTitle>
                         </div>
                       </CardHeader>
                       <CardContent className="pt-0 space-y-2">
-                        <p className="text-sm text-muted-foreground">Quick reference commands and tools</p>
-                        <Badge className="bg-purple-600 hover:bg-purple-700 text-white">Quick Reference</Badge>
+                        <p className="text-sm text-muted-foreground">Access quick reference commands and tools for efficient operations</p>
+                        <Button 
+                          size="sm" 
+                          className="bg-purple-600 hover:bg-purple-700 text-white w-full"
+                          onClick={(e) => { e.stopPropagation(); setActiveTab("cheatsheets"); }}
+                        >
+                          Quick Reference →
+                        </Button>
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/50 border-orange-200 dark:border-orange-800">
+                    <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/50 dark:to-orange-900/50 border-orange-200 dark:border-orange-800 hover:shadow-lg transition-all duration-200 cursor-pointer group" onClick={() => setActiveTab("linktabs")}>
                       <CardHeader className="pb-3">
                         <div className="flex items-center gap-2">
-                          <Globe className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                          <Globe className="w-5 h-5 text-orange-600 dark:text-orange-400 group-hover:scale-110 transition-transform duration-200" />
                           <CardTitle className="text-base">Link Tabs</CardTitle>
                         </div>
                       </CardHeader>
                       <CardContent className="pt-0 space-y-2">
-                        <p className="text-sm text-muted-foreground">External resources and documentation links</p>
-                        <Badge className="bg-orange-600 hover:bg-orange-700 text-white">External Resources</Badge>
+                        <p className="text-sm text-muted-foreground">Discover external resources and documentation links for further learning</p>
+                        <Button 
+                          size="sm" 
+                          className="bg-orange-600 hover:bg-orange-700 text-white w-full"
+                          onClick={(e) => { e.stopPropagation(); setActiveTab("linktabs"); }}
+                        >
+                          External Resources →
+                        </Button>
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/50 dark:to-red-900/50 border-red-200 dark:border-red-800">
+                    <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/50 dark:to-red-900/50 border-red-200 dark:border-red-800 hover:shadow-lg transition-all duration-200 cursor-pointer group" onClick={() => setActiveTab("scenarios")}>
                       <CardHeader className="pb-3">
                         <div className="flex items-center gap-2">
-                          <Target className="w-5 h-5 text-red-600 dark:text-red-400" />
+                          <Target className="w-5 h-5 text-red-600 dark:text-red-400 group-hover:scale-110 transition-transform duration-200" />
                           <CardTitle className="text-base">Scenarios</CardTitle>
                         </div>
                       </CardHeader>
                       <CardContent className="pt-0 space-y-2">
-                        <p className="text-sm text-muted-foreground">Complete attack chains and workflows</p>
-                        <Badge className="bg-red-600 hover:bg-red-700 text-white">Attack Scenarios</Badge>
+                        <p className="text-sm text-muted-foreground">Explore complete attack chains and workflows for comprehensive understanding</p>
+                        <Button 
+                          size="sm" 
+                          className="bg-red-600 hover:bg-red-700 text-white w-full"
+                          onClick={(e) => { e.stopPropagation(); setActiveTab("scenarios"); }}
+                        >
+                          Attack Scenarios →
+                        </Button>
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950/50 dark:to-gray-900/50 border-gray-200 dark:border-gray-800">
+                    <Card className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-950/50 dark:to-gray-900/50 border-gray-200 dark:border-gray-800 hover:shadow-lg transition-all duration-200 cursor-pointer group" onClick={() => setActiveTab("users")}>
                       <CardHeader className="pb-3">
                         <div className="flex items-center gap-2">
-                          <Users className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                          <Users className="w-5 h-5 text-gray-600 dark:text-gray-400 group-hover:scale-110 transition-transform duration-200" />
                           <CardTitle className="text-base">User Management</CardTitle>
                         </div>
                       </CardHeader>
                       <CardContent className="pt-0 space-y-2">
-                        <p className="text-sm text-muted-foreground">Manage user accounts and permissions</p>
-                        <Badge className="bg-gray-600 hover:bg-gray-700 text-white">User Admin</Badge>
+                        <p className="text-sm text-muted-foreground">Manage user accounts and permissions efficiently</p>
+                        <Button 
+                          size="sm" 
+                          className="bg-gray-600 hover:bg-gray-700 text-white w-full"
+                          onClick={(e) => { e.stopPropagation(); setActiveTab("users"); }}
+                        >
+                          User Admin →
+                        </Button>
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/50 dark:to-indigo-900/50 border-indigo-200 dark:border-indigo-800">
+                    <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-950/50 dark:to-indigo-900/50 border-indigo-200 dark:border-indigo-800 hover:shadow-lg transition-all duration-200 cursor-pointer group" onClick={() => setActiveTab("ai-providers")}>
                       <CardHeader className="pb-3">
                         <div className="flex items-center gap-2">
-                          <Rocket className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                          <Rocket className="w-5 h-5 text-indigo-600 dark:text-indigo-400 group-hover:scale-110 transition-transform duration-200" />
                           <CardTitle className="text-base">AI & Models</CardTitle>
                         </div>
                       </CardHeader>
                       <CardContent className="pt-0 space-y-2">
-                        <p className="text-sm text-muted-foreground">Configure AI providers and model access</p>
-                        <Badge className="bg-indigo-600 hover:bg-indigo-700 text-white">AI Configuration</Badge>
+                        <p className="text-sm text-muted-foreground">Configure AI providers and model access for advanced capabilities</p>
+                        <Button 
+                          size="sm" 
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white w-full"
+                          onClick={(e) => { e.stopPropagation(); setActiveTab("ai-providers"); }}
+                        >
+                          AI Configuration →
+                        </Button>
                       </CardContent>
                     </Card>
 
-                    <Card className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-950/50 dark:to-pink-900/50 border-pink-200 dark:border-pink-800">
+                    <Card className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-950/50 dark:to-pink-900/50 border-pink-200 dark:border-pink-800 hover:shadow-lg transition-all duration-200 cursor-pointer group" onClick={() => setActiveTab("announcements")}>
                       <CardHeader className="pb-3">
                         <div className="flex items-center gap-2">
-                          <Shield className="w-5 h-5 text-pink-600 dark:text-pink-400" />
+                          <Shield className="w-5 h-5 text-pink-600 dark:text-pink-400 group-hover:scale-110 transition-transform duration-200" />
                           <CardTitle className="text-base">Support System</CardTitle>
                         </div>
                       </CardHeader>
                       <CardContent className="pt-0 space-y-2">
-                        <p className="text-sm text-muted-foreground">Announcements, FAQ, and ticket management</p>
-                        <Badge className="bg-pink-600 hover:bg-pink-700 text-white">Support Tools</Badge>
+                        <p className="text-sm text-muted-foreground">Handle announcements, FAQ, and ticket management</p>
+                        <Button 
+                          size="sm" 
+                          className="bg-pink-600 hover:bg-pink-700 text-white w-full"
+                          onClick={(e) => { e.stopPropagation(); setActiveTab("announcements"); }}
+                        >
+                          Support Tools →
+                        </Button>
                       </CardContent>
                     </Card>
                   </div>
