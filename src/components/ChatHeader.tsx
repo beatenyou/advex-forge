@@ -64,6 +64,18 @@ export function ChatHeader({
               )}
             </Button>
             
+            {/* Model Selector - Primary element */}
+            <div className="flex-1 max-w-xs">
+              <UserModelSelector compact />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Row - Collapsible on mobile */}
+      <div className={`transition-all duration-200 ease-out ${isCollapsed ? 'max-h-0 overflow-hidden' : 'max-h-16'} md:max-h-16`}>
+        <div className="px-3 pb-3 pt-1">
+          <div className="flex items-center justify-between gap-3">
             {/* New Chat Button */}
             <Button
               variant="outline"
@@ -74,18 +86,6 @@ export function ChatHeader({
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">New Chat</span>
             </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Row - Collapsible on mobile */}
-      <div className={`transition-all duration-200 ease-out ${isCollapsed ? 'max-h-0 overflow-hidden' : 'max-h-16'} md:max-h-16`}>
-        <div className="px-3 pb-3 pt-1">
-          <div className="flex items-center justify-between gap-3">
-            {/* Model Selector - Primary element */}
-            <div className="flex-1">
-              <UserModelSelector compact />
-            </div>
             
             {/* Usage on mobile when expanded - smaller and right-aligned */}
             <div className="md:hidden flex-shrink-0">
