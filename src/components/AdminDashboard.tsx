@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
-import { Settings, FileText, Globe, Users, Database, Shield, Target, Rocket, Wrench } from "lucide-react";
+import { Settings, FileText, Globe, Users, Database, Shield, Target, Rocket, Wrench, BookOpen, Link, Bot, Key, Megaphone, HelpCircle, MessageSquare, Upload } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -72,79 +72,98 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
 
         <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="p-6">
-            <TabsList className="grid w-full grid-cols-6 lg:grid-cols-12 gap-1 p-2 h-auto">
-              <TabsTrigger 
-                value="guidance" 
-                className="bg-primary/10 hover:bg-primary/20 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2"
-              >
-                Guidance
-              </TabsTrigger>
-              <TabsTrigger 
-                value="cheatsheets" 
-                className="bg-secondary/10 hover:bg-secondary/20 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-xs px-2 py-2"
-              >
-                Cheat Sheets
-              </TabsTrigger>
-              <TabsTrigger 
-                value="linktabs" 
-                className="bg-primary/10 hover:bg-primary/20 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2"
-              >
-                Link Tabs
-              </TabsTrigger>
-              <TabsTrigger 
-                value="scenarios" 
-                className="bg-secondary/10 hover:bg-secondary/20 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-xs px-2 py-2"
-              >
-                Scenarios
-              </TabsTrigger>
-              <TabsTrigger 
-                value="techniques" 
-                className="bg-primary/10 hover:bg-primary/20 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2"
-              >
-                Technique Management
-              </TabsTrigger>
-              <TabsTrigger 
-                value="users" 
-                className="bg-secondary/10 hover:bg-secondary/20 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-xs px-2 py-2"
-              >
-                Users
-              </TabsTrigger>
-              <TabsTrigger 
-                value="ai-providers" 
-                className="bg-secondary/10 hover:bg-secondary/20 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-xs px-2 py-2"
-              >
-                AI Chat
-              </TabsTrigger>
-              <TabsTrigger 
-                value="model-access" 
-                className="bg-primary/10 hover:bg-primary/20 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2"
-              >
-                Model Access
-              </TabsTrigger>
-              <TabsTrigger 
-                value="announcements" 
-                className="bg-secondary/10 hover:bg-secondary/20 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-xs px-2 py-2"
-              >
-                Announcements
-              </TabsTrigger>
-              <TabsTrigger 
-                value="faq" 
-                className="bg-primary/10 hover:bg-primary/20 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2"
-              >
-                FAQ
-              </TabsTrigger>
-              <TabsTrigger 
-                value="support" 
-                className="bg-secondary/10 hover:bg-secondary/20 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-xs px-2 py-2"
-              >
-                Support
-              </TabsTrigger>
-              <TabsTrigger 
-                value="bulk-import" 
-                className="bg-primary/10 hover:bg-primary/20 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2"
-              >
-                Bulk Import
-              </TabsTrigger>
+            <TabsList className="flex flex-col gap-2 h-auto bg-muted/50 p-3">
+              {/* First Row - Core Management */}
+              <div className="flex flex-wrap gap-2 justify-center">
+                <TabsTrigger 
+                  value="guidance" 
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Guidance
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="techniques" 
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground"
+                >
+                  <Shield className="w-4 h-4" />
+                  Techniques
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="cheatsheets" 
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground"
+                >
+                  <FileText className="w-4 h-4" />
+                  Cheat Sheets
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="linktabs" 
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground"
+                >
+                  <Link className="w-4 h-4" />
+                  Link Tabs
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="scenarios" 
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground"
+                >
+                  <Target className="w-4 h-4" />
+                  Scenarios
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="users" 
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground"
+                >
+                  <Users className="w-4 h-4" />
+                  Users
+                </TabsTrigger>
+              </div>
+              
+              {/* Second Row - System & Support */}
+              <div className="flex flex-wrap gap-2 justify-center">
+                <TabsTrigger 
+                  value="ai-providers" 
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground"
+                >
+                  <Bot className="w-4 h-4" />
+                  AI Chat
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="model-access" 
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground"
+                >
+                  <Key className="w-4 h-4" />
+                  Model Access
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="announcements" 
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground"
+                >
+                  <Megaphone className="w-4 h-4" />
+                  Announcements
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="faq" 
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                  FAQ
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="support" 
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  Support
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="bulk-import" 
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground"
+                >
+                  <Upload className="w-4 h-4" />
+                  Bulk Import
+                </TabsTrigger>
+              </div>
             </TabsList>
 
             <TabsContent value="guidance" className="space-y-6">
