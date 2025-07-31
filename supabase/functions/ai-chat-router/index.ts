@@ -66,6 +66,14 @@ serve(async (req) => {
     }
 
     console.log('🚀 AI Chat Router - Processing request for user:', userId, 'at', new Date().toISOString());
+    console.log('📨 Received selectedModelId:', selectedModelId);
+    
+    // Validate selectedModelId
+    if (selectedModelId) {
+      console.log('🎯 User selected specific model:', selectedModelId);
+    } else {
+      console.log('⚠️ No selectedModelId provided, will use fallback logic');
+    }
 
     // Get AI configuration
     const { data: config, error: configError } = await supabase
@@ -93,6 +101,8 @@ serve(async (req) => {
 
     if (selectedModelId) {
       // User has selected a specific model - verify access
+      console.log('🔍 Verifying access to selectedModelId:', selectedModelId, 'isAdmin:', isAdmin);
+      
       if (isAdmin) {
         // Admin can use any active model
         const { data: selectedProvider } = await supabase
@@ -104,6 +114,9 @@ serve(async (req) => {
 
         if (selectedProvider) {
           targetProviderId = selectedModelId;
+          console.log('✅ Admin can use selected model:', selectedProvider.name, 'ID:', selectedProvider.id);
+        } else {
+          console.log('❌ Admin selected model not found or inactive:', selectedModelId);
         }
       } else {
         // Regular user - check model access
@@ -114,6 +127,8 @@ serve(async (req) => {
           .eq('provider_id', selectedModelId)
           .eq('is_enabled', true)
           .single();
+
+        console.log('👤 User access check result:', userAccess);
 
         if (userAccess) {
           // Verify the provider is still active
@@ -126,16 +141,27 @@ serve(async (req) => {
 
           if (provider) {
             targetProviderId = selectedModelId;
+            console.log('✅ User can use selected model:', provider.name, 'ID:', provider.id);
+          } else {
+            console.log('❌ Selected model provider not found or inactive:', selectedModelId);
           }
+        } else {
+          console.log('❌ User does not have access to selected model:', selectedModelId);
         }
       }
+    } else {
+      console.log('⚠️ No selectedModelId provided, proceeding with fallback logic');
     }
 
     // Fallback to user's available models or admin defaults
     if (!targetProviderId) {
+      console.log('🔄 No target provider found, using fallback logic');
+      isUsingFallback = true;
+      
       if (isAdmin) {
         // Admin fallback to primary provider
         targetProviderId = providerId || config.primary_provider_id || config.default_provider_id;
+        console.log('🔧 Admin fallback attempt 1:', targetProviderId);
         
         if (!targetProviderId) {
           const { data: firstProvider } = await supabase
@@ -145,6 +171,7 @@ serve(async (req) => {
             .limit(1)
             .single();
           targetProviderId = firstProvider?.id;
+          console.log('🔧 Admin fallback attempt 2 (first active):', targetProviderId);
         }
       } else {
         // Regular user - get first available model
@@ -157,10 +184,15 @@ serve(async (req) => {
           .limit(1)
           .single();
 
+        console.log('👤 User fallback models query result:', userModels);
+
         if (userModels) {
           targetProviderId = userModels.provider_id;
+          console.log('👤 User fallback selected:', targetProviderId);
         }
       }
+    } else {
+      console.log('✅ Using specified target provider:', targetProviderId);
     }
 
     if (!targetProviderId) {
@@ -179,7 +211,8 @@ serve(async (req) => {
       throw new Error('AI provider not found or inactive');
     }
 
-    console.log('Using provider:', provider.name, 'Type:', provider.type, 'Fallback:', isUsingFallback);
+    console.log('🎯 FINAL SELECTION - Using provider:', provider.name, 'ID:', provider.id, 'Type:', provider.type, 'Fallback:', isUsingFallback);
+    console.log('🔗 Provider mapping - selectedModelId:', selectedModelId, '-> targetProviderId:', targetProviderId, '-> finalProvider:', provider.id);
 
     // Route to appropriate provider function
     const functionName = provider.type === 'openai' ? 'ai-chat-openai' : 'ai-chat-mistral';

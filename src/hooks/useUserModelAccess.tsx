@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -214,20 +214,30 @@ export function useUserModelAccess() {
     setLoading(false);
   };
 
-  // Select a model
-  const selectModel = (providerId: string) => {
+  // Select a model with immediate state synchronization
+  const selectModel = useCallback((providerId: string) => {
     const model = userModels.find(m => m.provider_id === providerId);
     if (model) {
       console.log('🎯 Selecting model:', providerId, model.provider?.name);
-      setSelectedModelId(providerId);
+      
+      // Update localStorage first
       localStorage.setItem('selectedModelId', providerId);
       
-      // Force immediate state update
-      window.dispatchEvent(new CustomEvent('modelChanged', { 
-        detail: { providerId, model } 
-      }));
+      // Force immediate state update using callback to ensure latest state
+      setSelectedModelId(prevId => {
+        console.log('🔄 State change:', prevId, '->', providerId);
+        
+        // Dispatch event with updated model info
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('modelChanged', { 
+            detail: { providerId, model, timestamp: Date.now() } 
+          }));
+        }, 0);
+        
+        return providerId;
+      });
     }
-  };
+  }, [userModels]);
 
   // Get currently selected model
   const getSelectedModel = () => {
@@ -263,6 +273,7 @@ export function useUserModelAccess() {
     selectedModel: getSelectedModel(),
     loading,
     selectModel,
+    getSelectedModel,
     refreshModels: loadModels
   };
 }

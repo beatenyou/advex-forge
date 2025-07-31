@@ -49,7 +49,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
   const { user } = useAuth();
   const { trackActivity, trackPerformance } = useAnalytics();
   const { canUseAI, currentUsage, quotaLimit, planName, refreshQuota } = useAIUsage();
-  const { selectedModel } = useUserModelAccess();
+  const { selectedModel, getSelectedModel } = useUserModelAccess();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [question, setQuestion] = useState('');
@@ -91,15 +91,26 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
     scrollToBottom();
   }, [messages]);
 
-  // Expose clear function to parent component
+  // Expose clear function to parent component and listen for model changes
   useEffect(() => {
     if (onClear) {
       (window as any).__clearChatFunction = clearChatAndResetSession;
     }
+
+    // Listen for model changes and force re-render
+    const handleModelChange = (event: CustomEvent) => {
+      console.log('🔄 Model changed in ChatSession:', event.detail);
+      // Force a small state update to ensure the latest selectedModel is used
+      setIsStreaming(prev => prev);
+    };
+
+    window.addEventListener('modelChanged', handleModelChange as EventListener);
+
     return () => {
       if ((window as any).__clearChatFunction) {
         delete (window as any).__clearChatFunction;
       }
+      window.removeEventListener('modelChanged', handleModelChange as EventListener);
     };
   }, [onClear]);
 
@@ -412,20 +423,22 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       // Get conversation context (last 20 messages)
       const conversationContext = messages.slice(-19).concat([userMessage as ChatMessage]);
 
-      // Call AI with conversation context (keep loading state during API call)
-      console.log('🤖 Making AI chat router call for user:', user?.id, 'session:', currentSession.id, 'selectedModel:', selectedModel?.provider_id);
+      // Get the most current selected model to avoid stale state
+      const currentSelectedModel = getSelectedModel();
+      console.log('🤖 Making AI chat router call for user:', user?.id, 'session:', currentSession.id, 'selectedModel:', currentSelectedModel?.provider_id, 'modelName:', currentSelectedModel?.provider?.name);
       const { data, error } = await supabase.functions.invoke('ai-chat-router', {
         body: {
           message: userQuestion,
           messages: conversationContext,
           sessionId: currentSession.id,
-          selectedModelId: selectedModel?.provider_id
+          selectedModelId: currentSelectedModel?.provider_id
         }
       });
       console.log('🤖 AI chat router response received:', { 
         data: data ? { providerName: data.providerName, providerId: data.providerId } : null, 
-        error, 
-        selectedModelId: selectedModel?.provider_id 
+        selectedModelSent: currentSelectedModel?.provider_id,
+        actualProviderUsed: data?.providerId,
+        error: error?.message 
       });
 
       // Handle quota exceeded error specifically
