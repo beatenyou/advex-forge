@@ -1147,6 +1147,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      backfill_model_usage_from_interactions: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       calculate_daily_stats: {
         Args: { target_date?: string }
         Returns: undefined

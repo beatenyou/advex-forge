@@ -74,6 +74,42 @@ export default function ModelAccessManager() {
     fetchData();
   }, []);
 
+  // Real-time subscription for model usage changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('model-usage-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_model_access'
+        },
+        () => {
+          console.log('📊 ModelAccessManager: Model usage changed, refreshing data');
+          fetchUserAccess(); // Refresh user access data
+          fetchUsageStats(); // Refresh usage statistics
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'model_usage_analytics'
+        },
+        () => {
+          console.log('📊 ModelAccessManager: Analytics changed, refreshing stats');
+          fetchUsageStats(); // Refresh usage statistics
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const fetchData = async () => {
     setLoading(true);
     try {
