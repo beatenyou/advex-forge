@@ -14,7 +14,7 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 import { useAIUsage } from '@/hooks/useAIUsage';
 import { useUserModelAccess } from '@/hooks/useUserModelAccess';
 import { UserModelSelector } from '@/components/UserModelSelector';
-
+import { ChatHeaderRow } from '@/components/ChatHeaderRow';
 import { CompactUsageDisplay } from '@/components/CompactUsageDisplay';
 
 interface ChatMessage {
@@ -672,6 +672,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
 
   return (
     <div className="flex flex-col h-full max-h-full min-h-0 relative">
+      {/* Top row: Chat title and New Chat button only */}
       <div className="flex-shrink-0 p-3 border-b border-border">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
@@ -681,28 +682,25 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
             </h2>
           </div>
           
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <UserModelSelector compact />
-            <div className="h-6 w-px bg-border" />
-            <CompactUsageDisplay 
-              currentUsage={currentUsage}
-              quotaLimit={quotaLimit}
-              planName={planName}
-              canUseAI={canUseAI}
-              className="hidden sm:flex"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={createNewSession}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">New Chat</span>
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={createNewSession}
+            className="flex items-center gap-2 flex-shrink-0"
+          >
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">New Chat</span>
+          </Button>
         </div>
       </div>
+
+      {/* Bottom row: Consolidated plan, usage, and model selector */}
+      <ChatHeaderRow 
+        currentUsage={currentUsage}
+        quotaLimit={quotaLimit}
+        planName={planName}
+        canUseAI={canUseAI}
+      />
 
       <div className="flex-1 overflow-hidden min-h-0">
         <ScrollArea 
