@@ -346,8 +346,7 @@ export default function AIUsagePreferences() {
                             <div className="flex justify-between text-sm">
                               <span>Usage</span>
                               <span>
-                                {usage.current_usage.toLocaleString()} 
-                                {usage.usage_limit ? ` / ${usage.usage_limit.toLocaleString()}` : ' (Unlimited)'}
+                                {usage.usage_limit ? `${usage.current_usage.toLocaleString()} / ${usage.usage_limit.toLocaleString()}` : 'Depends on Credits'}
                               </span>
                             </div>
                             {usage.usage_limit && (
