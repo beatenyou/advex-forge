@@ -28,11 +28,24 @@ export const useAIStatus = () => {
       })
       .subscribe();
 
-    // Listen for model changes to update status display
+    // Listen for model changes to update status display immediately
     const handleModelChange = (event: CustomEvent) => {
-      if (event.detail?.providerId) {
-        setCurrentModelId(event.detail.providerId);
+      const { providerId, model } = event.detail || {};
+      
+      if (providerId) {
+        setCurrentModelId(providerId);
+        
+        // Update status immediately with model info if available
+        if (model?.provider) {
+          setStatus({
+            status: 'operational',
+            message: 'AI System Online',
+            details: `Using ${model.provider.name} (${model.provider.type.toUpperCase()})`
+          });
+        }
       }
+      
+      // Also do full status check as backup
       checkAIStatus();
     };
 

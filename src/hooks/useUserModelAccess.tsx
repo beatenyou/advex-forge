@@ -246,7 +246,15 @@ export function useUserModelAccess() {
       
       // Dispatch event immediately for real-time UI updates
       window.dispatchEvent(new CustomEvent('modelChanged', { 
-        detail: { providerId, model, timestamp: Date.now() } 
+        detail: { 
+          providerId, 
+          model: { 
+            provider: model.provider,
+            provider_id: model.provider_id,
+            name: model.provider?.name 
+          }, 
+          timestamp: Date.now() 
+        } 
       }));
       
       console.log('✅ Model selection saved to database:', { providerId, modelName: model.provider?.name });

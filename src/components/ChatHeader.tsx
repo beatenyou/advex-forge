@@ -40,8 +40,8 @@ export function ChatHeader({
             {/* AI Status - Always visible */}
             <AIStatusIndicator />
             
-            {/* Usage Display - Hidden on small screens when collapsed */}
-            <div className={`hidden md:flex ${isCollapsed ? 'sm:hidden' : ''}`}>
+            {/* Usage Display - Always visible on desktop */}
+            <div className="hidden md:flex">
               <CompactUsageDisplay 
                 currentUsage={currentUsage}
                 quotaLimit={quotaLimit}
@@ -87,14 +87,14 @@ export function ChatHeader({
               <UserModelSelector compact />
             </div>
             
-            {/* Usage on mobile when expanded */}
+            {/* Usage on mobile when expanded - smaller and right-aligned */}
             <div className="md:hidden flex-shrink-0">
               <CompactUsageDisplay 
                 currentUsage={currentUsage}
                 quotaLimit={quotaLimit}
                 planName={planName}
                 canUseAI={canUseAI}
-                className="scale-90"
+                className="scale-75 origin-right"
               />
             </div>
           </div>
