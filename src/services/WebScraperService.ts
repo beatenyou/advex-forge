@@ -288,7 +288,7 @@ Return a JSON array of technique objects. Each technique object must have this e
       "phase": "One of: Reconnaissance, Enumeration, Initial Access, Privilege Escalation, Persistence, Credential Access, Lateral Movement, Collection, Command and Control",
       "description": "1-2 sentence description from source",
       "whenToUse": "Conditions/scenarios when technique applies",
-      "howToUse": "Step-by-step instructions from source, keep original formatting and details",
+      "howToUse": "Step-by-step instructions formatted as **Step 1:**, **Step 2:**, etc. (without numbering like 1. 2. 3.)",
       "tools": [
         "Tool Name: basic command/syntax from source | Tool description"
       ],

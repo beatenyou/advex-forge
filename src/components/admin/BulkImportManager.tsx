@@ -275,7 +275,7 @@ export const BulkImportManager: React.FC<BulkImportManagerProps> = ({ onTechniqu
             tools: technique.tools,
             category: technique.category,
             commands: technique.commands || [],
-            mitre_id: technique.mitreMapping,
+            mitre_id: technique.mitreId || technique.mitreMapping || null,
             detection: technique.detection ? [technique.detection] : [],
             mitigation: technique.mitigation ? [technique.mitigation] : [],
             when_to_use: technique.whenToUse ? [technique.whenToUse] : [],

@@ -18,6 +18,7 @@ export interface ParsedTechnique {
   detection?: string;
   mitigation?: string;
   mitreMapping?: string;
+  mitreId?: string;
   referenceLinks?: Array<{
     title: string;
     url: string;
