@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Bot, Users, Shield, Zap, Plus, Edit2, Trash2, Calendar, Clock, Activity, TrendingUp, UserPlus, Settings } from 'lucide-react';
+import { Bot, Users, Shield, Zap, Plus, Edit2, Trash2, Calendar, Clock, Activity, TrendingUp, UserPlus, Settings, Brain, Cpu, Sparkles } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 interface Profile {
@@ -316,6 +316,60 @@ export default function ModelAccessManager() {
     return userAccess.filter(access => access.user_id === userId && access.is_enabled);
   };
 
+  // Helper function to get model icon and styling based on provider type and name
+  const getModelIconAndStyle = (provider: AIProvider) => {
+    const type = provider.type?.toLowerCase() || '';
+    const name = provider.name?.toLowerCase() || '';
+    
+    // OpenAI models
+    if (type === 'openai' || name.includes('openai') || name.includes('gpt')) {
+      return {
+        icon: Bot,
+        bgClass: 'bg-blue-500/10',
+        textClass: 'text-blue-700',
+        borderClass: 'border-blue-200'
+      };
+    }
+    
+    // Mistral models (including Mistral Agent)
+    if (type === 'mistral' || name.includes('mistral')) {
+      return {
+        icon: Brain,
+        bgClass: 'bg-orange-500/10', 
+        textClass: 'text-orange-700',
+        borderClass: 'border-orange-200'
+      };
+    }
+    
+    // Claude models
+    if (name.includes('claude') || name.includes('anthropic')) {
+      return {
+        icon: Sparkles,
+        bgClass: 'bg-purple-500/10',
+        textClass: 'text-purple-700', 
+        borderClass: 'border-purple-200'
+      };
+    }
+    
+    // Gemini models
+    if (name.includes('gemini') || name.includes('google')) {
+      return {
+        icon: Cpu,
+        bgClass: 'bg-green-500/10',
+        textClass: 'text-green-700',
+        borderClass: 'border-green-200'
+      };
+    }
+    
+    // Default for unknown models
+    return {
+      icon: Activity,
+      bgClass: 'bg-gray-500/10',
+      textClass: 'text-gray-700',
+      borderClass: 'border-gray-200'
+    };
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -493,21 +547,19 @@ export default function ModelAccessManager() {
                               </Badge>
                             ) : userModels.length > 0 ? (
                               userModels.map(access => {
-                                const getModelColor = (type: string) => {
-                                  switch (type?.toLowerCase()) {
-                                    case 'openai': return 'bg-blue-500/10 text-blue-700 border-blue-200';
-                                    case 'mistral': return 'bg-orange-500/10 text-orange-700 border-orange-200';
-                                    default: return 'bg-gray-500/10 text-gray-700 border-gray-200';
-                                  }
-                                };
+                                if (!access.provider) return null;
+                                
+                                const iconStyle = getModelIconAndStyle(access.provider);
+                                const IconComponent = iconStyle.icon;
                                 
                                 return (
                                   <Badge 
                                     key={access.id} 
                                     variant="outline" 
-                                    className={`text-xs ${getModelColor(access.provider?.type || '')}`}
+                                    className={`text-xs flex items-center gap-1 ${iconStyle.bgClass} ${iconStyle.textClass} ${iconStyle.borderClass}`}
                                   >
-                                    {access.provider?.name}
+                                    <IconComponent className="h-3 w-3" />
+                                    {access.provider.name}
                                   </Badge>
                                 );
                               })
