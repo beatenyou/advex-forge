@@ -112,24 +112,44 @@ export default function ModelAccessManager() {
   };
 
   const fetchUserAccess = async () => {
-    const { data, error } = await supabase
+    // Fetch user access records with manual joins for better reliability
+    const { data: accessData, error: accessError } = await supabase
       .from('user_model_access')
-      .select(`
-        *,
-        ai_providers!inner(id, name, type, model_name, is_active),
-        profiles!inner(id, user_id, email, display_name, role)
-      `)
-      .eq('ai_providers.is_active', true)
+      .select('*')
       .order('granted_at', { ascending: false });
     
-    if (error) throw error;
+    if (accessError) throw accessError;
     
-    const access = data?.map(item => ({
-      ...item,
-      provider: item.ai_providers as any,
-      user: item.profiles as any
-    })) || [];
+    // Fetch providers separately
+    const { data: providersData, error: providersError } = await supabase
+      .from('ai_providers')
+      .select('*')
+      .eq('is_active', true);
     
+    if (providersError) throw providersError;
+    
+    // Fetch profiles separately
+    const { data: profilesData, error: profilesError } = await supabase
+      .from('profiles')
+      .select('*');
+    
+    if (profilesError) throw profilesError;
+    
+    // Create lookup maps
+    const providerMap = new Map(providersData?.map(p => [p.id, p]) || []);
+    const profileMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
+    
+    // Manually join the data
+    const access = accessData
+      ?.filter(item => providerMap.has(item.provider_id)) // Only include active providers
+      ?.map(item => ({
+        ...item,
+        provider: providerMap.get(item.provider_id),
+        user: profileMap.get(item.user_id)
+      }))
+      ?.filter(item => item.provider && item.user) || []; // Only include records with valid joins
+    
+    console.log('Fetched user access:', access.length, 'records');
     setUserAccess(access);
   };
 
@@ -182,16 +202,19 @@ export default function ModelAccessManager() {
     setUsageStats(processedStats);
   };
 
-  const grantModelAccess = async (userId: string, providerId: string) => {
+  const grantModelAccess = async (userId: string, providerId: string, usageLimit?: number, expiresAt?: string) => {
     try {
       const { error } = await supabase
         .from('user_model_access')
-        .insert({
+        .upsert({
           user_id: userId,
           provider_id: providerId,
           granted_by: user?.id,
-          is_enabled: true
-        });
+          is_enabled: true,
+          usage_limit: usageLimit || null,
+          expires_at: expiresAt || null,
+          granted_at: new Date().toISOString()
+        }, { onConflict: 'user_id,provider_id' });
 
       if (error) throw error;
 
@@ -463,12 +486,31 @@ export default function ModelAccessManager() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
-                            {userModels.length > 0 ? (
-                              userModels.map(access => (
-                                <Badge key={access.id} variant="outline" className="text-xs">
-                                  {access.provider?.name}
-                                </Badge>
-                              ))
+                            {profile.role === 'admin' ? (
+                              <Badge variant="default" className="text-xs">
+                                <Shield className="h-3 w-3 mr-1" />
+                                All Models
+                              </Badge>
+                            ) : userModels.length > 0 ? (
+                              userModels.map(access => {
+                                const getModelColor = (type: string) => {
+                                  switch (type?.toLowerCase()) {
+                                    case 'openai': return 'bg-blue-500/10 text-blue-700 border-blue-200';
+                                    case 'mistral': return 'bg-orange-500/10 text-orange-700 border-orange-200';
+                                    default: return 'bg-gray-500/10 text-gray-700 border-gray-200';
+                                  }
+                                };
+                                
+                                return (
+                                  <Badge 
+                                    key={access.id} 
+                                    variant="outline" 
+                                    className={`text-xs ${getModelColor(access.provider?.type || '')}`}
+                                  >
+                                    {access.provider?.name}
+                                  </Badge>
+                                );
+                              })
                             ) : (
                               <span className="text-sm text-muted-foreground">No models assigned</span>
                             )}
@@ -482,55 +524,129 @@ export default function ModelAccessManager() {
                                 Manage
                               </Button>
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
                               <DialogHeader>
                                 <DialogTitle>Manage Model Access</DialogTitle>
                                 <DialogDescription>
                                   Grant or revoke AI model access for {profile.display_name || profile.email}
                                 </DialogDescription>
                               </DialogHeader>
-                              <div className="space-y-4">
-                                {providers.map(provider => {
-                                  const hasAccess = userModels.some(access => 
-                                    access.provider_id === provider.id && access.is_enabled
-                                  );
-                                  
-                                  return (
-                                    <div key={provider.id} className="flex items-center justify-between p-3 border rounded-lg">
-                                      <div>
-                                        <div className="font-medium">{provider.name}</div>
-                                        <div className="text-sm text-muted-foreground">
-                                          {provider.model_name} • {provider.type}
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        {hasAccess ? (
-                                          <>
-                                            <Badge variant="default">Granted</Badge>
-                                            <Button
-                                              variant="outline"
-                                              size="sm"
-                                              onClick={() => {
-                                                const access = userModels.find(a => a.provider_id === provider.id);
-                                                if (access) revokeModelAccess(access.id);
-                                              }}
+                              <div className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {providers.map(provider => {
+                                    const accessRecord = userModels.find(access => 
+                                      access.provider_id === provider.id && access.is_enabled
+                                    );
+                                    const hasAccess = !!accessRecord;
+                                    
+                                    const getProviderIcon = (type: string) => {
+                                      switch (type?.toLowerCase()) {
+                                        case 'openai': return '🤖';
+                                        case 'mistral': return '🧠';
+                                        default: return '⚡';
+                                      }
+                                    };
+                                    
+                                    const getProviderColor = (type: string) => {
+                                      switch (type?.toLowerCase()) {
+                                        case 'openai': return 'border-blue-200 bg-blue-50/50';
+                                        case 'mistral': return 'border-orange-200 bg-orange-50/50';
+                                        default: return 'border-gray-200 bg-gray-50/50';
+                                      }
+                                    };
+                                    
+                                    return (
+                                      <Card key={provider.id} className={`relative ${getProviderColor(provider.type)}`}>
+                                        <CardHeader className="pb-3">
+                                          <div className="flex items-start justify-between">
+                                            <div className="flex items-center gap-2">
+                                              <span className="text-lg">{getProviderIcon(provider.type)}</span>
+                                              <div>
+                                                <CardTitle className="text-base">{provider.name}</CardTitle>
+                                                <p className="text-sm text-muted-foreground">{provider.model_name}</p>
+                                              </div>
+                                            </div>
+                                            <Badge 
+                                              variant={hasAccess ? "default" : "secondary"}
+                                              className="text-xs"
                                             >
-                                              Revoke
-                                            </Button>
-                                          </>
-                                        ) : (
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => grantModelAccess(profile.user_id, provider.id)}
-                                          >
-                                            Grant Access
-                                          </Button>
-                                        )}
-                                      </div>
+                                              {hasAccess ? "Granted" : "Not Granted"}
+                                            </Badge>
+                                          </div>
+                                        </CardHeader>
+                                        <CardContent className="pt-0">
+                                          {hasAccess && accessRecord ? (
+                                            <div className="space-y-3">
+                                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                                <div>
+                                                  <span className="text-muted-foreground">Current Usage:</span>
+                                                  <div className="font-medium">{(accessRecord as any).usage_current || 0}</div>
+                                                </div>
+                                                <div>
+                                                  <span className="text-muted-foreground">Usage Limit:</span>
+                                                  <div className="font-medium">
+                                                    {(accessRecord as any).usage_limit || 'Unlimited'}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                              
+                                              {(accessRecord as any).expires_at && (
+                                                <div className="text-sm">
+                                                  <span className="text-muted-foreground">Expires:</span>
+                                                  <div className="font-medium text-yellow-600">
+                                                    {formatDate((accessRecord as any).expires_at)}
+                                                  </div>
+                                                </div>
+                                              )}
+                                              
+                                              <div className="text-sm">
+                                                <span className="text-muted-foreground">Granted:</span>
+                                                <div className="font-medium">{formatDate(accessRecord.granted_at)}</div>
+                                              </div>
+                                              
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="w-full"
+                                                onClick={() => revokeModelAccess(accessRecord.id)}
+                                              >
+                                                <Trash2 className="h-3 w-3 mr-1" />
+                                                Revoke Access
+                                              </Button>
+                                            </div>
+                                          ) : (
+                                            <div className="space-y-3">
+                                              <div className="text-sm text-muted-foreground">
+                                                User does not have access to this model
+                                              </div>
+                                              <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="w-full"
+                                                onClick={() => grantModelAccess(profile.user_id, provider.id)}
+                                              >
+                                                <Plus className="h-3 w-3 mr-1" />
+                                                Grant Access
+                                              </Button>
+                                            </div>
+                                          )}
+                                        </CardContent>
+                                      </Card>
+                                    );
+                                  })}
+                                </div>
+                                
+                                {profile.role === 'admin' && (
+                                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                                    <div className="flex items-center gap-2">
+                                      <Shield className="h-4 w-4 text-yellow-600" />
+                                      <span className="font-medium text-yellow-800">Admin User</span>
                                     </div>
-                                  );
-                                })}
+                                    <p className="text-sm text-yellow-700 mt-1">
+                                      Admin users have automatic access to all available AI models regardless of individual grants.
+                                    </p>
+                                  </div>
+                                )}
                               </div>
                             </DialogContent>
                           </Dialog>
