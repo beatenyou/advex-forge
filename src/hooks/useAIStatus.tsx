@@ -41,7 +41,7 @@ export const useAIStatus = () => {
     const initializeStatus = async () => {
       const userModelId = await fetchUserSelectedModel();
       setCurrentModelId(userModelId);
-      checkAIStatus();
+      checkAIStatus(userModelId);
     };
 
     initializeStatus();
@@ -66,9 +66,8 @@ export const useAIStatus = () => {
           if (user && newRecord?.user_id === user.id && newRecord?.selected_model_id) {
             console.log('📡 AI Status: Current user model selection changed, updating status');
             
-            // Update current model ID and refresh status immediately
-            setCurrentModelId(newRecord.selected_model_id);
-            checkAIStatus();
+            // Update status immediately with the new model ID
+            checkAIStatus(newRecord.selected_model_id);
           }
         }
       )
@@ -85,8 +84,7 @@ export const useAIStatus = () => {
         if (user && payload.payload?.user_id === user.id) {
           console.log('📡 AI Status: Broadcast for current user, refreshing');
           const userModelId = await fetchUserSelectedModel();
-          setCurrentModelId(userModelId);
-          checkAIStatus();
+          checkAIStatus(userModelId);
         }
       })
       .subscribe();
@@ -97,14 +95,19 @@ export const useAIStatus = () => {
     };
   }, []);
 
-  const checkAIStatus = async () => {
+  const checkAIStatus = async (modelId?: string | null) => {
     try {
       setLoading(true);
       
-      // Refresh user's selected model if not set
-      if (!currentModelId) {
-        const userModelId = await fetchUserSelectedModel();
-        setCurrentModelId(userModelId);
+      // Use provided modelId or fetch from user preferences
+      let targetModelId = modelId;
+      if (targetModelId === undefined) {
+        targetModelId = currentModelId || await fetchUserSelectedModel();
+      }
+      
+      // Update current model ID state if we have a new one
+      if (targetModelId !== currentModelId) {
+        setCurrentModelId(targetModelId);
       }
       
       // Check AI configuration and providers
@@ -138,9 +141,9 @@ export const useAIStatus = () => {
       // Get currently selected model (prioritize user's preference)
       let currentProvider = null;
       
-      // Use the current user's selected model
-      if (currentModelId) {
-        currentProvider = activeProviders.find(p => p.id === currentModelId);
+      // Use the target model ID (user's selection)
+      if (targetModelId) {
+        currentProvider = activeProviders.find(p => p.id === targetModelId);
       }
       
       // Fall back to default provider if no valid selection
