@@ -13,9 +13,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { useAIUsage } from '@/hooks/useAIUsage';
 import { useUserModelAccess } from '@/hooks/useUserModelAccess';
-import { UserModelSelector } from '@/components/UserModelSelector';
-
-import { CompactUsageDisplay } from '@/components/CompactUsageDisplay';
+import { ChatHeader } from '@/components/ChatHeader';
 
 interface ChatMessage {
   id: string;
@@ -672,37 +670,14 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
 
   return (
     <div className="flex flex-col h-full max-h-full min-h-0 relative">
-      <div className="flex-shrink-0 p-3 border-b border-border">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <h2 className="flex items-center gap-2 text-lg font-semibold truncate">
-              <MessageSquare className="h-5 w-5 flex-shrink-0" />
-              <span className="truncate">{currentSession?.title || 'New Conversation'}</span>
-            </h2>
-          </div>
-          
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <UserModelSelector compact />
-            <div className="h-6 w-px bg-border" />
-            <CompactUsageDisplay 
-              currentUsage={currentUsage}
-              quotaLimit={quotaLimit}
-              planName={planName}
-              canUseAI={canUseAI}
-              className="hidden sm:flex"
-            />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={createNewSession}
-              className="flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">New Chat</span>
-            </Button>
-          </div>
-        </div>
-      </div>
+      <ChatHeader
+        sessionTitle={currentSession?.title || 'New Conversation'}
+        currentUsage={currentUsage}
+        quotaLimit={quotaLimit}
+        planName={planName}
+        canUseAI={canUseAI}
+        onNewChat={createNewSession}
+      />
 
       <div className="flex-1 overflow-hidden min-h-0">
         <ScrollArea 
