@@ -75,9 +75,8 @@ export const FullScreenChatLayout = ({
             </div>
           </div>
 
-          {/* Center section - Model and Usage */}
-          <div className="flex items-center gap-4 flex-1 justify-center max-w-lg">
-            <UserModelSelector compact />
+          {/* Center section - Usage */}
+          <div className="flex items-center justify-center flex-1">
             <div className="hidden md:block">
               <CompactUsageDisplay
                 currentUsage={currentUsage}

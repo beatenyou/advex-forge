@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { CompactUsageDisplay } from '@/components/CompactUsageDisplay';
+import { UserModelSelector } from '@/components/UserModelSelector';
 
 interface ChatHeaderProps {
   currentUsage: number;
@@ -63,7 +64,7 @@ export function ChatHeader({
         </div>
       </div>
 
-      {/* Bottom Row - New Chat and History */}
+      {/* Bottom Row - New Chat, Model Selector and History */}
       <div className={`transition-all duration-200 ease-out ${isCollapsed ? 'max-h-0 overflow-hidden' : 'max-h-16'} md:max-h-16`}>
         <div className="px-3 pb-3 pt-1">
           <div className="flex items-center justify-between gap-3">
@@ -79,6 +80,8 @@ export function ChatHeader({
                 <span className="hidden sm:inline">New Chat</span>
               </Button>
               
+              {/* AI Model Selector */}
+              <UserModelSelector compact />
             </div>
             
             {/* Usage on mobile when expanded - smaller and right-aligned */}
