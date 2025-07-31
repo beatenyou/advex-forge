@@ -128,12 +128,15 @@ export const HistoryManager = ({
         };
       });
 
+      // Filter out sessions with no messages for cleaner display
+      const sessionsWithMessages = formattedSessions.filter(session => session.message_count > 0);
+      
       setSessions(formattedSessions);
       
-      // Calculate stats
-      const totalMessages = formattedSessions.reduce((sum, session) => sum + (session.message_count || 0), 0);
+      // Calculate stats - only count sessions that have messages
+      const totalMessages = sessionsWithMessages.reduce((sum, session) => sum + (session.message_count || 0), 0);
       setStats({
-        totalSessions: formattedSessions.length,
+        totalSessions: sessionsWithMessages.length,
         totalMessages
       });
 
