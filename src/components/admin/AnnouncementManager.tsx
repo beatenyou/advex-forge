@@ -21,7 +21,6 @@ const announcementSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   message: z.string().min(1, 'Message is required'),
   type: z.enum(['info', 'warning', 'success', 'error']),
-  target_audience: z.enum(['all', 'admins', 'users']),
   priority: z.coerce.number().min(1).max(3),
   is_active: z.boolean(),
   start_date: z.string().optional(),
@@ -35,7 +34,6 @@ interface Announcement {
   title: string;
   message: string;
   type: 'info' | 'warning' | 'success' | 'error';
-  target_audience: 'all' | 'admins' | 'users';
   priority: number;
   is_active: boolean;
   start_date: string | null;
@@ -57,7 +55,6 @@ export default function AnnouncementManager() {
       title: '',
       message: '',
       type: 'info',
-      target_audience: 'all',
       priority: 1,
       is_active: true,
       start_date: '',
@@ -92,7 +89,7 @@ export default function AnnouncementManager() {
         title: data.title,
         message: data.message,
         type: data.type,
-        target_audience: data.target_audience,
+        target_audience: 'all', // Always set to 'all' users
         priority: data.priority,
         is_active: data.is_active,
         start_date: data.start_date || null,
@@ -172,7 +169,6 @@ export default function AnnouncementManager() {
       title: announcement.title,
       message: announcement.message,
       type: announcement.type,
-      target_audience: announcement.target_audience,
       priority: announcement.priority,
       is_active: announcement.is_active,
       start_date: announcement.start_date ? announcement.start_date.split('T')[0] : '',
@@ -286,54 +282,29 @@ export default function AnnouncementManager() {
                     )}
                   />
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="type"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Type</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="info">Info</SelectItem>
-                              <SelectItem value="warning">Warning</SelectItem>
-                              <SelectItem value="success">Success</SelectItem>
-                              <SelectItem value="error">Error</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="target_audience"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Audience</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select audience" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="all">All Users</SelectItem>
-                              <SelectItem value="admins">Admins Only</SelectItem>
-                              <SelectItem value="users">Regular Users</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Type</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="info">Info</SelectItem>
+                            <SelectItem value="warning">Warning</SelectItem>
+                            <SelectItem value="success">Success</SelectItem>
+                            <SelectItem value="error">Error</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
@@ -436,8 +407,8 @@ export default function AnnouncementManager() {
                         {announcement.type}
                       </Badge>
                       <Badge variant="outline" className="flex items-center gap-1">
-                        {getAudienceIcon(announcement.target_audience)}
-                        {announcement.target_audience}
+                        <Globe className="w-4 h-4" />
+                        All Users
                       </Badge>
                       <Badge variant="secondary">
                         {getPriorityText(announcement.priority)} Priority

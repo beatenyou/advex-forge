@@ -12,7 +12,6 @@ interface Announcement {
   message: string;
   type: 'info' | 'warning' | 'success' | 'error';
   priority: number;
-  target_audience: string;
 }
 
 export default function AnnouncementBanner() {
@@ -58,33 +57,20 @@ export default function AnnouncementBanner() {
     try {
       console.log('🔔 Fetching announcements for user:', user.id, 'isAdmin:', isAdmin);
       
-      // Fetch active announcements based on user role
-      let query = supabase
+      // Fetch active announcements (all are now for 'all users')
+      const { data, error } = await supabase
         .from('announcements')
-        .select('id, title, message, type, priority, target_audience')
+        .select('id, title, message, type, priority')
         .eq('is_active', true)
         .lte('start_date', new Date().toISOString())
         .or(`end_date.is.null,end_date.gte.${new Date().toISOString()}`)
         .order('priority', { ascending: false })
         .order('created_at', { ascending: false });
 
-      const { data, error } = await query;
-
       if (error) throw error;
       
-      console.log('🔔 Raw announcements data:', data);
-
-      // Filter announcements based on target audience and user role
-      const filteredData = (data?.filter(announcement => {
-        const shouldShow = announcement.target_audience === 'all' || 
-                          (announcement.target_audience === 'admins' && isAdmin) || 
-                          (announcement.target_audience === 'users' && !isAdmin);
-        console.log('🔔 Filtering announcement:', announcement.id, 'target_audience:', announcement.target_audience, 'isAdmin:', isAdmin, 'shouldShow:', shouldShow);
-        return shouldShow;
-      }) || []) as Announcement[];
-
-      console.log('🔔 Filtered announcements:', filteredData);
-      setAnnouncements(filteredData);
+      console.log('🔔 Announcements data:', data);
+      setAnnouncements((data || []) as Announcement[]);
     } catch (error) {
       console.error('Error fetching announcements:', error);
     }
