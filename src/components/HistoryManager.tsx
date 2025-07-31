@@ -604,17 +604,7 @@ export const HistoryManager = ({
 
         {/* Footer with quick actions */}
         <div className="p-4 border-t border-border">
-          <div className="flex items-center justify-between">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onNewSession}
-              className="flex items-center gap-2"
-            >
-              <MessageSquare className="w-4 h-4" />
-              New Chat
-            </Button>
-            
+          <div className="flex items-center justify-end">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm">
