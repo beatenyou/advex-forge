@@ -477,8 +477,6 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
       {/* Admin Dashboard */}
       {showAdminDashboard && (
         <AdminDashboard
-          techniques={techniques}
-          onTechniquesUpdate={setTechniques}
           onClose={() => setShowAdminDashboard(false)}
         />
       )}
