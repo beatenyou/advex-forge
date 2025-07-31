@@ -34,7 +34,29 @@ export function useModelQuotas() {
 
       if (accessError) throw accessError;
 
-      if (!accessData || accessData.length === 0) {
+      // Get active AI providers that the user has access to
+      let providerIds: string[] = [];
+      if (accessData && accessData.length > 0) {
+        providerIds = accessData.map(access => access.provider_id);
+      } else {
+        // If no access data, get default models from config
+        const { data: configData, error: configError } = await supabase
+          .from('ai_chat_config')
+          .select('default_user_primary_model_id, default_user_secondary_model_id')
+          .limit(1)
+          .single();
+
+        if (configError) throw configError;
+        
+        if (configData) {
+          providerIds = [
+            configData.default_user_primary_model_id,
+            configData.default_user_secondary_model_id
+          ].filter(Boolean);
+        }
+      }
+
+      if (providerIds.length === 0) {
         setModelUsages([]);
         setLoading(false);
         return;
@@ -45,22 +67,25 @@ export function useModelQuotas() {
         .from('ai_providers')
         .select('id, name, type, model_name, is_active')
         .eq('is_active', true)
-        .in('id', accessData.map(access => access.provider_id));
+        .in('id', providerIds);
 
       if (providersError) throw providersError;
 
-      // Manually join the data
-      const usages: ModelUsage[] = accessData
-        .map(access => {
-          const provider = providersData?.find(p => p.id === access.provider_id);
+      // Create usage data - either from access records or default unlimited
+      const usages: ModelUsage[] = providerIds
+        .map(providerId => {
+          const provider = providersData?.find(p => p.id === providerId);
           if (!provider) return null;
           
+          const access = accessData?.find(a => a.provider_id === providerId);
+          
           return {
-            provider_id: access.provider_id,
+            provider_id: providerId,
             provider_name: provider.name,
-            current_usage: access.usage_current || 0,
-            usage_limit: access.usage_limit,
-            can_use_model: access.usage_limit === null || (access.usage_current || 0) < access.usage_limit
+            current_usage: access?.usage_current || 0,
+            usage_limit: access?.usage_limit || null, // null = unlimited for default models
+            can_use_model: access?.usage_limit === null || access?.usage_limit === undefined || 
+                          (access?.usage_current || 0) < (access?.usage_limit || Infinity)
           };
         })
         .filter(Boolean) as ModelUsage[];
@@ -110,7 +135,10 @@ export function useModelQuotas() {
 
   const getRemainingQuota = (providerId: string) => {
     const usage = modelUsages.find(u => u.provider_id === providerId);
-    if (!usage) return 0;
+    if (!usage) {
+      // If no usage data found, assume unlimited for default models
+      return Infinity;
+    }
     if (usage.usage_limit === null) return Infinity;
     return Math.max(0, usage.usage_limit - usage.current_usage);
   };

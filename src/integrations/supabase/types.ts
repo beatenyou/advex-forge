@@ -1169,6 +1169,10 @@ export type Database = {
           provider_name: string
         }[]
       }
+      ensure_default_model_access_for_all_users: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       increment_ai_usage: {
         Args: { user_id_param: string }
         Returns: boolean
