@@ -113,8 +113,12 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
     
     // Collect content for sections
     if (currentSection === 'howToUse' && !trimmedLine.startsWith('**How to use:**') && trimmedLine && !trimmedLine.startsWith('###')) {
-      // Remove existing numbering (e.g., "1. ", "2. ", etc.) from the beginning of lines
-      const cleanedLine = trimmedLine.replace(/^\d+\.\s*/, '');
+      // Remove existing numbering and step formatting
+      let cleanedLine = trimmedLine
+        .replace(/^\d+\.\s*/, '') // Remove "1. ", "2. ", etc.
+        .replace(/^\*\*Step\s+\d+:\*\*\s*/, '') // Remove "**Step 1:** ", "**Step 2:** ", etc.
+        .replace(/^\*\*Step\s+\d+\*\*\s*/, ''); // Remove "**Step 1** ", "**Step 2** ", etc.
+      
       if (cleanedLine) {
         howToUse += (howToUse ? '\n' : '') + cleanedLine;
       }
@@ -261,6 +265,7 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
     detection,
     mitigation,
     mitreMapping: mitreId,
+    mitreId, // Add clean MITRE ID field
     referenceLinks
   };
 }

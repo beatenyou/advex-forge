@@ -20,6 +20,16 @@ interface Technique {
   category: string;
 }
 
+// Helper function to extract clean MITRE ID
+const extractCleanMitreId = (id: string): string => {
+  // Extract MITRE ID from extended IDs like "T1110.003-password-spraying"
+  // Return everything before the first hyphen if it contains a hyphen
+  if (id.includes('-')) {
+    return id.split('-')[0];
+  }
+  return id;
+};
+
 interface TechniqueCardProps {
   technique: Technique;
   onToggleFavorite: (techniqueId: string) => Promise<void>;
@@ -99,7 +109,7 @@ export const TechniqueCard = ({ technique, onToggleFavorite }: TechniqueCardProp
                 </Button>
               </div>
               <Badge variant="outline" className={`text-xs ${getPhaseColor(technique.phase)}`}>
-                {technique.mitre_id || technique.id}
+                {extractCleanMitreId(technique.mitre_id || technique.id)}
               </Badge>
             </div>
             <div className="flex items-center gap-2">

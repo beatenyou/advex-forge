@@ -13,6 +13,7 @@ import { CommandGenerator } from "./CommandGenerator";
 
 interface Technique {
   id: string;
+  mitre_id?: string;
   title: string;
   description: string;
   phase: string;
@@ -32,6 +33,27 @@ interface Technique {
   }>;
 }
 
+// Helper function to extract clean MITRE ID
+const extractCleanMitreId = (id: string): string => {
+  // Extract MITRE ID from extended IDs like "T1110.003-password-spraying"
+  // Return everything before the first hyphen if it contains a hyphen
+  if (id.includes('-')) {
+    return id.split('-')[0];
+  }
+  return id;
+};
+
+// Helper function to clean "How to Use" steps
+const cleanHowToUseSteps = (steps: string[]): string[] => {
+  return steps.map(step => 
+    step
+      .replace(/^\d+\.\s*/, '') // Remove "1. ", "2. ", etc.
+      .replace(/^\*\*Step\s+\d+:\*\*\s*/, '') // Remove "**Step 1:** ", "**Step 2:** ", etc.
+      .replace(/^\*\*Step\s+\d+\*\*\s*/, '') // Remove "**Step 1** ", "**Step 2** ", etc.
+      .trim()
+  ).filter(step => step.length > 0);
+};
+
 interface TechniqueModalProps {
   technique: Technique;
   isOpen: boolean;
@@ -43,11 +65,12 @@ interface TechniqueModalProps {
 const getDetailedTechnique = (technique: any) => {
   // If the technique already has detailed data from markdown parsing, use it
   if (technique.whenToUse && technique.commands) {
+    const rawHowToUse = Array.isArray(technique.howToUse) ? technique.howToUse : (technique.howToUse || "Follow standard procedures").split('\n').filter(Boolean);
     return {
       ...technique,
       whenToUse: Array.isArray(technique.whenToUse) ? technique.whenToUse : [technique.whenToUse],
       prerequisites: Array.isArray(technique.prerequisites) ? technique.prerequisites : [technique.prerequisites || "No specific prerequisites"],
-      howToUse: Array.isArray(technique.howToUse) ? technique.howToUse : (technique.howToUse || "Follow standard procedures").split('\n').filter(Boolean),
+      howToUse: cleanHowToUseSteps(rawHowToUse),
       commands: technique.commands.map((cmd: any) => ({
         tool: cmd.tool,
         template: cmd.command,
@@ -160,7 +183,7 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite }:
           <div className="flex items-center gap-2">
             <DialogTitle className="text-xl font-semibold">{technique.title}</DialogTitle>
             <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-xs">
-              {technique.id}
+              {extractCleanMitreId(technique.mitre_id || technique.id)}
             </Badge>
           </div>
           <div className="flex items-center gap-1">
