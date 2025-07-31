@@ -256,7 +256,7 @@ export function useUserModelAccess() {
       
       console.log('✅ Database save successful:', data);
       
-      // Dispatch local event for immediate UI feedback
+      // Dispatch enhanced event with complete model data for immediate UI sync
       const modelChangeEvent = new CustomEvent('modelChanged', { 
         detail: { 
           providerId, 
@@ -268,7 +268,8 @@ export function useUserModelAccess() {
               model_name: model.provider?.model_name
             },
             provider_id: model.provider_id
-          }, 
+          },
+          selectedModelId: providerId,
           timestamp: Date.now() 
         } 
       });
@@ -289,9 +290,13 @@ export function useUserModelAccess() {
     }
   }, [userModels, user]);
 
-  // Get currently selected model
+  // Get currently selected model with validation
   const getSelectedModel = () => {
-    return userModels.find(m => m.provider_id === selectedModelId);
+    const model = userModels.find(m => m.provider_id === selectedModelId);
+    if (!model && selectedModelId) {
+      console.warn('⚠️ Selected model not found in userModels:', { selectedModelId, availableModels: userModels.map(m => m.provider_id) });
+    }
+    return model;
   };
 
   useEffect(() => {
@@ -299,6 +304,22 @@ export function useUserModelAccess() {
       loadModels();
     }
   }, [user]);
+
+  // Listen for model changes from other components and refresh state
+  useEffect(() => {
+    const handleModelChange = (event: CustomEvent) => {
+      const { selectedModelId: newSelectedModelId } = event.detail;
+      if (newSelectedModelId && newSelectedModelId !== selectedModelId) {
+        console.log('🔄 useUserModelAccess: Refreshing state for model change:', newSelectedModelId);
+        setSelectedModelId(newSelectedModelId);
+      }
+    };
+
+    window.addEventListener('modelChanged', handleModelChange as EventListener);
+    return () => {
+      window.removeEventListener('modelChanged', handleModelChange as EventListener);
+    };
+  }, [selectedModelId]);
 
   // Load user's saved model preference from database
   const loadUserModelPreference = async () => {

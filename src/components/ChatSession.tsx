@@ -17,7 +17,7 @@ import { ChatHeader } from '@/components/ChatHeader';
 
 interface ChatMessage {
   id: string;
-  role: 'user' | 'assistant';
+  role: 'user' | 'assistant' | 'system';
   content: string;
   created_at: string;
   provider_name?: string;
@@ -48,7 +48,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
   const { user } = useAuth();
   const { trackActivity, trackPerformance } = useAnalytics();
   const { canUseAI, currentUsage, quotaLimit, planName, refreshQuota } = useAIUsage();
-  const { selectedModel, getSelectedModel } = useUserModelAccess();
+  const { selectedModel, selectedModelId, getSelectedModel, refreshModels } = useUserModelAccess();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
   const [question, setQuestion] = useState('');
@@ -96,7 +96,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       (window as any).__clearChatFunction = clearChatAndResetSession;
     }
 
-    // Listen for model changes and update UI immediately
+    // Listen for model changes and refresh state immediately
     const handleModelChange = (event: CustomEvent) => {
       console.log('🔄 Model changed in ChatSession:', event.detail);
       const { providerId, model } = event.detail;
@@ -104,10 +104,28 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       // Update current provider display immediately
       setCurrentProvider(model?.provider?.name || '');
       
-      // Force component re-render to ensure latest model is used
-      setIsStreaming(prev => prev);
+      // Refresh the model access hook to get latest state
+      refreshModels();
       
-      console.log('✅ ChatSession model change handled:', { providerId, modelName: model?.provider?.name });
+      // Add a visual indicator that the model has switched
+      if (messages.length > 0) {
+        const switchMessage = {
+          id: `switch-${Date.now()}`,
+          session_id: currentSession?.id || '',
+          role: 'system' as const,
+          content: `🔄 Switched to ${model?.provider?.name || 'new model'} for subsequent responses`,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, switchMessage]);
+      }
+      
+      console.log('✅ ChatSession model change handled and refreshed:', { 
+        providerId, 
+        modelName: model?.provider?.name,
+        refreshTriggered: true,
+        visualIndicatorAdded: messages.length > 0
+      });
     };
 
     window.addEventListener('modelChanged', handleModelChange as EventListener);
@@ -118,7 +136,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       }
       window.removeEventListener('modelChanged', handleModelChange as EventListener);
     };
-  }, [onClear]);
+  }, [onClear, refreshModels]);
 
   const checkAdminStatus = async () => {
     if (!user) return;
@@ -433,16 +451,18 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       // Get conversation context (last 20 messages)
       const conversationContext = messages.slice(-19).concat([userMessage as ChatMessage]);
 
-      // Get the most current selected model - prioritize the actual selectedModel from hook
+      // Get the most current selected model and validate it exists
       const currentSelectedModel = getSelectedModel();
       const modelIdToUse = currentSelectedModel?.provider_id;
       
       console.log('🤖 Making AI chat router call - User:', user?.id, 'Session:', currentSession.id);
-      console.log('🎯 Model selection details:', { 
+      console.log('🎯 Model selection validation:', { 
         selectedModelObject: currentSelectedModel,
         modelIdToUse,
         modelName: currentSelectedModel?.provider?.name,
-        modelType: currentSelectedModel?.provider?.type
+        modelType: currentSelectedModel?.provider?.type,
+        isValidModel: !!currentSelectedModel,
+        selectedModelIdFromHook: selectedModelId
       });
       
       // Validate model selection before making request
@@ -704,6 +724,8 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
                     className={`max-w-[80%] rounded-lg p-3 ${
                       message.role === 'user'
                         ? 'bg-red-950 text-red-100 ml-12'
+                        : message.role === 'system'
+                        ? 'bg-primary/10 text-primary-foreground mx-4 text-center border border-primary/20'
                         : 'bg-muted mr-12'
                     }`}
                   >
@@ -724,6 +746,10 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
                             <Copy className="h-3 w-3" />
                           </Button>
                         </div>
+                      </div>
+                    ) : message.role === 'system' ? (
+                      <div className="text-xs font-medium">
+                        {message.content}
                       </div>
                     ) : (
                       <div className="space-y-2">
