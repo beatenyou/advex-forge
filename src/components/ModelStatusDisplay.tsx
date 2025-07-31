@@ -35,26 +35,31 @@ export function ModelStatusDisplay({ compact = false, showQuota = false }: Model
           if (user && newRecord?.user_id === user.id && newRecord?.selected_model_id) {
             console.log('🔄 ModelStatusDisplay: Current user model selection changed, updating display');
             
-            // Refresh the selected model from the hook
-            setTimeout(() => {
-              setCurrentModel(getSelectedModel());
-            }, 100);
+            // Refresh the selected model from the hook immediately
+            setCurrentModel(getSelectedModel());
           }
         }
       )
       .subscribe();
 
-    // Update display immediately when model changes (local event)
-    const handleModelChange = (event: CustomEvent) => {
-      console.log('🔄 ModelStatusDisplay received model change:', event.detail);
-      setCurrentModel(getSelectedModel());
-    };
-
-    window.addEventListener('modelChanged', handleModelChange as EventListener);
+    // Listen for broadcast events from database trigger
+    const broadcastChannel = supabase
+      .channel('model-display-broadcast')
+      .on('broadcast', { event: 'model_changed' }, async (payload) => {
+        console.log('🔄 ModelStatusDisplay: Received model change broadcast', payload);
+        
+        // Check if this affects the current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && payload.payload?.user_id === user.id) {
+          console.log('📡 ModelStatusDisplay: Broadcast for current user, refreshing');
+          setCurrentModel(getSelectedModel());
+        }
+      })
+      .subscribe();
 
     return () => {
       supabase.removeChannel(preferencesChannel);
-      window.removeEventListener('modelChanged', handleModelChange as EventListener);
+      supabase.removeChannel(broadcastChannel);
     };
   }, [getSelectedModel]);
 

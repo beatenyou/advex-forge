@@ -46,18 +46,9 @@ export const useAIStatus = () => {
 
     initializeStatus();
 
-    // Set up realtime channel for AI status updates
-    const statusChannel = supabase
-      .channel('ai-status-updates')
-      .on('broadcast', { event: 'status-refresh' }, () => {
-        console.log('🔄 AI Status: Received broadcast refresh event');
-        checkAIStatus();
-      })
-      .subscribe();
-
     // Listen for realtime changes to user_preferences table (user-specific)
     const preferencesChannel = supabase
-      .channel('user-preferences-changes')
+      .channel('user-preferences-realtime')
       .on(
         'postgres_changes',
         {
@@ -75,54 +66,34 @@ export const useAIStatus = () => {
           if (user && newRecord?.user_id === user.id && newRecord?.selected_model_id) {
             console.log('📡 AI Status: Current user model selection changed, updating status');
             
-            // Update current model ID and refresh status
+            // Update current model ID and refresh status immediately
             setCurrentModelId(newRecord.selected_model_id);
-            
-            // Refresh full status after a brief delay
-            setTimeout(() => {
-              checkAIStatus();
-            }, 100);
+            checkAIStatus();
           }
         }
       )
       .subscribe();
 
-    // Keep the local event listener as fallback for immediate updates
-    const handleModelChange = (event: CustomEvent) => {
-      const { providerId, model, timestamp } = event.detail || {};
-      
-      console.log('🔄 AI Status: Model changed event received (local)', { providerId, model, timestamp });
-      
-      if (providerId && model?.provider) {
-        setCurrentModelId(providerId);
+    // Listen for broadcast events from the database trigger
+    const broadcastChannel = supabase
+      .channel('ai-model-broadcast')
+      .on('broadcast', { event: 'model_changed' }, async (payload) => {
+        console.log('🔄 AI Status: Received model change broadcast', payload);
         
-        const newStatus = {
-          status: 'operational' as AIStatusType,
-          message: 'AI System Online',
-          details: `Using ${model.provider.name} (${model.provider.type.toUpperCase()})`
-        };
-        
-        console.log('✅ AI Status: Immediate local update', newStatus);
-        setStatus(newStatus);
-        
-        // Force a re-render
-        setLoading(true);
-        setTimeout(() => setLoading(false), 50);
-      }
-      
-      // Also do full status check as backup
-      setTimeout(() => {
-        console.log('🔄 AI Status: Running backup status check');
-        checkAIStatus();
-      }, 200);
-    };
-
-    window.addEventListener('modelChanged', handleModelChange as EventListener);
+        // Check if this affects the current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user && payload.payload?.user_id === user.id) {
+          console.log('📡 AI Status: Broadcast for current user, refreshing');
+          const userModelId = await fetchUserSelectedModel();
+          setCurrentModelId(userModelId);
+          checkAIStatus();
+        }
+      })
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(statusChannel);
       supabase.removeChannel(preferencesChannel);
-      window.removeEventListener('modelChanged', handleModelChange);
+      supabase.removeChannel(broadcastChannel);
     };
   }, []);
 
