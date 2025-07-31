@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAIUsage } from '@/hooks/useAIUsage';
-import { EnhancedUsageToggle } from '@/components/EnhancedUsageToggle';
+
 interface LinkTab {
   id: string;
   title: string;
@@ -291,12 +291,7 @@ export const ChatSidebar = ({
                 <TabsTrigger value="links" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">Links</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="chat" className="mt-0 flex-1 flex flex-col overflow-hidden min-h-0 space-y-3">
-                <EnhancedUsageToggle 
-                  className="mb-3"
-                  defaultExpanded={false}
-                  showCompactWhenCollapsed={true}
-                />
+              <TabsContent value="chat" className="mt-0 flex-1 flex flex-col overflow-hidden min-h-0">
                 <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} />
               </TabsContent>
               
@@ -334,12 +329,7 @@ export const ChatSidebar = ({
               </TabsContent>
             </Tabs>
           ) : (
-            <div className="h-full flex flex-col min-h-0 space-y-3">
-              <EnhancedUsageToggle 
-                className="mb-3"
-                defaultExpanded={false}
-                showCompactWhenCollapsed={true}
-              />
+            <div className="h-full flex flex-col min-h-0">
               <SessionHistory 
                 currentSessionId={currentSessionId}
                 onSessionSelect={handleSessionSelect}
