@@ -109,8 +109,7 @@ export function CommandTemplateEditor({ commands, onChange }: CommandTemplateEdi
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Label className="text-sm font-medium">Command Templates</Label>
+      <div className="flex items-center justify-end">
         <Badge variant="secondary">{commands.length} commands</Badge>
       </div>
 
