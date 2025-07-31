@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Copy, Star, Zap, Shield, AlertTriangle, Eye, Settings, Bolt } from "lucide-react";
+import { X, Copy, Star, Zap, Shield, AlertTriangle, Eye, Settings, Bolt, ExternalLink } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +24,11 @@ interface Technique {
     tool: string;
     command: string;
     description: string;
+  }>;
+  referenceLinks?: Array<{
+    title: string;
+    url: string;
+    description?: string;
   }>;
 }
 
@@ -273,6 +278,33 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite }:
                   detailedTechnique.mitigation.join(". ") : 
                   detailedTechnique.mitigation}
               </p>
+            </div>
+          )}
+
+          {/* Reference Links */}
+          {technique.referenceLinks && technique.referenceLinks.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-2">References</h3>
+              <div className="space-y-2">
+                {technique.referenceLinks.map((link, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:text-primary/80 text-sm font-medium flex items-center gap-1"
+                    >
+                      {link.title}
+                      <ExternalLink className="h-3 w-3" />
+                    </a>
+                    {link.description && (
+                      <span className="text-xs text-muted-foreground">
+                        — {link.description}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

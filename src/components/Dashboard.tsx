@@ -19,10 +19,9 @@ import { AIStatusIndicator } from "@/components/AIStatusIndicator";
 import { ChatModeToggle } from "./ChatModeToggle";
 
 import { useResponsiveGrid } from "@/hooks/useResponsiveGrid";
-import { sampleMarkdownTechniques, parseMultipleMarkdownTechniques, ParsedTechnique } from "@/lib/markdownParser";
-
-// Parse techniques from markdown
-const initialTechniques = parseMultipleMarkdownTechniques(sampleMarkdownTechniques);
+import { ParsedTechnique } from "@/lib/markdownParser";
+import { supabase } from "@/integrations/supabase/client";
+import { fetchTechniquesFromDatabase, fetchUserFavorites, toggleTechniqueFavorite } from "@/lib/techniqueDataMigration";
 
 interface DashboardProps {
   onTechniqueSelect?: (technique: ParsedTechnique) => void;
@@ -41,7 +40,9 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
     toast
   } = useToast();
   const navigate = useNavigate();
-  const [techniques, setTechniques] = useState<ParsedTechnique[]>(initialTechniques);
+  const [techniques, setTechniques] = useState<any[]>([]);
+  const [userFavorites, setUserFavorites] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPhase, setSelectedPhase] = useState("All Phases");
   const [filteredTechniques, setFilteredTechniques] = useState(techniques);
@@ -53,6 +54,82 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
   const { containerRef, columnCount, gridStyle } = useResponsiveGrid({ 
     isChatVisible 
   });
+
+  // Load techniques and favorites on mount
+  useEffect(() => {
+    loadTechniques();
+    if (user) {
+      loadUserFavorites();
+    }
+  }, [user]);
+
+  // Set up realtime subscriptions
+  useEffect(() => {
+    const channel = supabase
+      .channel('techniques-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'techniques'
+        },
+        () => {
+          loadTechniques();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const loadTechniques = async () => {
+    try {
+      const data = await fetchTechniquesFromDatabase();
+      const formattedTechniques = data.map(technique => ({
+        ...technique,
+        tags: technique.tags || [],
+        tools: technique.tools || [],
+        starred: userFavorites.includes(technique.id),
+        whenToUse: technique.when_to_use,
+        howToUse: technique.how_to_use,
+        commands: technique.commands || [],
+        detection: technique.detection,
+        mitigation: technique.mitigation,
+        referenceLinks: technique.reference_links || []
+      }));
+      setTechniques(formattedTechniques);
+      
+      // Update starred status based on favorites
+      if (userFavorites.length > 0) {
+        setTechniques(prev => prev.map(technique => ({
+          ...technique,
+          starred: userFavorites.includes(technique.id)
+        })));
+      }
+    } catch (error) {
+      console.error('Error loading techniques:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load techniques",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadUserFavorites = async () => {
+    if (!user) return;
+    try {
+      const favorites = await fetchUserFavorites(user.id);
+      setUserFavorites(favorites);
+    } catch (error) {
+      console.error('Error loading user favorites:', error);
+    }
+  };
 
   const handleSessionSelect = (sessionId: string) => {
     navigate(`/chat/${sessionId}`);
@@ -116,20 +193,51 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
 
-  const toggleFavorite = (techniqueId: string) => {
-    setTechniques(prev => prev.map(technique => 
-      technique.id === techniqueId 
-        ? { ...technique, starred: !technique.starred }
-        : technique
-    ));
+  const toggleFavorite = async (techniqueId: string) => {
+    if (!user) return;
+    
+    const isFavorite = userFavorites.includes(techniqueId);
+    const success = await toggleTechniqueFavorite(user.id, techniqueId, isFavorite);
+    
+    if (success) {
+      if (isFavorite) {
+        setUserFavorites(prev => prev.filter(id => id !== techniqueId));
+      } else {
+        setUserFavorites(prev => [...prev, techniqueId]);
+      }
+    } else {
+      toast({
+        title: "Error",
+        description: "Failed to update favorite",
+        variant: "destructive"
+      });
+    }
   };
 
-  const clearAllFavorites = () => {
-    setTechniques(prev => prev.map(technique => 
-      technique.starred 
-        ? { ...technique, starred: false }
-        : technique
-    ));
+  const clearAllFavorites = async () => {
+    if (!user || userFavorites.length === 0) return;
+    
+    try {
+      const { error } = await supabase
+        .from('user_favorites')
+        .delete()
+        .eq('user_id', user.id);
+      
+      if (error) throw error;
+      
+      setUserFavorites([]);
+      toast({
+        title: "Success",
+        description: "All favorites cleared",
+      });
+    } catch (error) {
+      console.error('Error clearing favorites:', error);
+      toast({
+        title: "Error",
+        description: "Failed to clear favorites",
+        variant: "destructive"
+      });
+    }
   };
 
   const openTechniqueModal = (technique: any) => {

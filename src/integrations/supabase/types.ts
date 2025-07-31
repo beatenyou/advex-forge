@@ -805,6 +805,66 @@ export type Database = {
         }
         Relationships: []
       }
+      techniques: {
+        Row: {
+          category: string
+          commands: Json
+          created_at: string
+          created_by: string | null
+          description: string
+          detection: string[]
+          how_to_use: string[]
+          id: string
+          is_active: boolean
+          mitigation: string[]
+          phase: string
+          reference_links: Json
+          tags: string[]
+          title: string
+          tools: string[]
+          updated_at: string
+          when_to_use: string[]
+        }
+        Insert: {
+          category?: string
+          commands?: Json
+          created_at?: string
+          created_by?: string | null
+          description: string
+          detection?: string[]
+          how_to_use?: string[]
+          id?: string
+          is_active?: boolean
+          mitigation?: string[]
+          phase?: string
+          reference_links?: Json
+          tags?: string[]
+          title: string
+          tools?: string[]
+          updated_at?: string
+          when_to_use?: string[]
+        }
+        Update: {
+          category?: string
+          commands?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string
+          detection?: string[]
+          how_to_use?: string[]
+          id?: string
+          is_active?: boolean
+          mitigation?: string[]
+          phase?: string
+          reference_links?: Json
+          tags?: string[]
+          title?: string
+          tools?: string[]
+          updated_at?: string
+          when_to_use?: string[]
+        }
+        Relationships: []
+      }
       traffic_analytics: {
         Row: {
           browser: string | null
@@ -959,6 +1019,35 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_favorites: {
+        Row: {
+          created_at: string
+          id: string
+          technique_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          technique_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          technique_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_favorites_technique_id_fkey"
+            columns: ["technique_id"]
+            isOneToOne: false
+            referencedRelation: "techniques"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_model_access: {
         Row: {

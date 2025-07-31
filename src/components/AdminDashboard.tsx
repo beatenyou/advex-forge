@@ -21,6 +21,7 @@ import ModelAccessManager from "@/components/admin/ModelAccessManager";
 import AnnouncementManager from "@/components/admin/AnnouncementManager";
 import FAQManager from "@/components/admin/FAQManager";
 import SupportTicketManager from "@/components/admin/SupportTicketManager";
+import TechniqueManager from "@/components/admin/TechniqueManager";
 
 interface AdminDashboardProps {
   techniques: ParsedTechnique[];
@@ -304,7 +305,7 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
 
         <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
           <Tabs defaultValue="guidance" className="p-6">
-        <TabsList className="grid w-full grid-cols-6 lg:grid-cols-14 gap-1 p-2 h-auto">
+        <TabsList className="grid w-full grid-cols-6 lg:grid-cols-15 gap-1 p-2 h-auto">
           <TabsTrigger 
             value="guidance" 
             className="bg-primary/10 hover:bg-primary/20 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2"
@@ -342,8 +343,14 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
             Scenarios
           </TabsTrigger>
           <TabsTrigger 
-            value="users" 
+            value="techniques" 
             className="bg-primary/10 hover:bg-primary/20 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2"
+          >
+            Techniques
+          </TabsTrigger>
+          <TabsTrigger 
+            value="users" 
+            className="bg-secondary/10 hover:bg-secondary/20 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-xs px-2 py-2"
           >
             Users
           </TabsTrigger>
@@ -590,6 +597,10 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
 
             <TabsContent value="faq" className="space-y-6 mt-6">
               <FAQManager />
+            </TabsContent>
+
+            <TabsContent value="techniques" className="space-y-6 mt-6">
+              <TechniqueManager />
             </TabsContent>
 
             <TabsContent value="support" className="space-y-6 mt-6">
