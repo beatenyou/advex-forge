@@ -90,10 +90,16 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
       isCommandsSection = false;
       isReferenceLinksSection = true;
     } else if (trimmedLine.startsWith('##') || trimmedLine.startsWith('###')) {
-      currentSection = '';
-      isToolsSection = false;
-      isCommandsSection = false;
-      isReferenceLinksSection = false;
+      // Only reset section flags if this is not a known section we want to continue parsing
+      if (!trimmedLine.startsWith('### Reference Links') && 
+          !trimmedLine.startsWith('### Tools') && 
+          !trimmedLine.startsWith('### Commands') && 
+          !trimmedLine.startsWith('### Command Templates')) {
+        currentSection = '';
+        isToolsSection = false;
+        isCommandsSection = false;
+        isReferenceLinksSection = false;
+      }
     }
     
     // Collect content for sections
@@ -159,18 +165,28 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
     }
     
     if (isReferenceLinksSection && trimmedLine && !trimmedLine.startsWith('### Reference Links') && !trimmedLine.startsWith('**Reference Links:**') && !trimmedLine.startsWith('**References:**')) {
-      // Parse reference link entries in multiple formats:
-      // Format 1: - [Title](URL) - Description
-      // Format 2: - [Title](URL): Description  
-      // Format 3: 1. [Title](URL) - Description
-      const linkMatch = trimmedLine.match(/^(?:\d+\.\s*|\-\s*)\[([^\]]+)\]\(([^)]+)\)(?:\s*[-:]\s*(.+))?$/);
-      if (linkMatch) {
-        const [, title, url, description] = linkMatch;
-        referenceLinks.push({
-          title: title.trim(),
-          url: url.trim(),
-          description: description ? description.trim() : undefined
-        });
+      // Stop parsing reference links when we hit certain sections
+      if (trimmedLine.startsWith('**Detection:**') || trimmedLine.startsWith('**Mitigation:**') || 
+          trimmedLine.startsWith('### Detection') || trimmedLine.startsWith('### Mitigation') ||
+          trimmedLine.startsWith('### ') && !trimmedLine.startsWith('### Reference')) {
+        isReferenceLinksSection = false;
+      } else {
+        // Parse reference link entries in multiple formats:
+        // Format 1: - [Title](URL) - Description
+        // Format 2: - [Title](URL): Description  
+        // Format 3: 1. [Title](URL) - Description
+        const linkMatch = trimmedLine.match(/^(?:\d+\.\s*|\-\s*)\[([^\]]+)\]\(([^)]+)\)(?:\s*[-:]\s*(.+))?$/);
+        if (linkMatch) {
+          const [, title, url, description] = linkMatch;
+          referenceLinks.push({
+            title: title.trim(),
+            url: url.trim(),
+            description: description ? description.trim() : undefined
+          });
+          console.log('Parsed reference link:', { title: title.trim(), url: url.trim(), description: description?.trim() });
+        } else {
+          console.log('Failed to match reference link:', trimmedLine);
+        }
       }
     }
   }
