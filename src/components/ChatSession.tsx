@@ -313,7 +313,12 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
   };
 
   const createNewSession = async () => {
+    console.log('🆕 Creating new session - showHistory state:', showHistory);
+    
     try {
+      // Reset history view first to ensure proper state
+      setShowHistory(false);
+      
       const { data: newSession, error } = await supabase
         .from('chat_sessions')
         .insert({
@@ -324,6 +329,8 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
         .single();
 
       if (error) throw error;
+
+      console.log('✅ New session created:', newSession.id);
 
       setCurrentSession(newSession);
       setMessages([]);
@@ -342,8 +349,10 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       
       // Scroll to top after creating new session
       setTimeout(scrollToTop, 100);
+      
+      console.log('🎯 New session setup complete - returning to chat view');
     } catch (error) {
-      console.error('Error creating new session:', error);
+      console.error('❌ Error creating new session:', error);
       toast({
         title: "Error",
         description: "Failed to create new conversation",
