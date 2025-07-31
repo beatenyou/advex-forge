@@ -13,8 +13,10 @@ import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Brain, Save, Plus, Trash2, Star, Download, BarChart, StarOff } from 'lucide-react';
+import { Brain, Save, Plus, Trash2, Star, Download, BarChart, StarOff, Shield, Clock, User } from 'lucide-react';
 import { format } from 'date-fns';
+import { useUserModelAccess } from '@/hooks/useUserModelAccess';
+import { useModelQuotas } from '@/hooks/useModelQuotas';
 
 const promptSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -45,6 +47,8 @@ export default function AIUsagePreferences() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const { userModels, selectedModelId, loading: modelsLoading } = useUserModelAccess();
+  const { modelUsages, getUsagePercentage, getRemainingQuota } = useModelQuotas();
   const [savedPrompts, setSavedPrompts] = useState<SavedPrompt[]>([]);
   const [aiInteractions, setAiInteractions] = useState<AIInteraction[]>([]);
   const [usageStats, setUsageStats] = useState({
@@ -299,6 +303,83 @@ export default function AIUsagePreferences() {
             </div>
             <Progress value={(usageStats.currentQuota / usageStats.quotaLimit) * 100} className="w-full" />
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Model Access Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="w-5 h-5" />
+            Model Access Overview
+          </CardTitle>
+          <CardDescription>
+            Your AI model access permissions and usage details
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {modelsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            </div>
+          ) : userModels.length > 0 ? (
+            <div className="space-y-4">
+              {userModels.map((model) => {
+                const usage = modelUsages.find(u => u.provider_id === model.provider_id);
+                const usagePercentage = usage ? getUsagePercentage(model.provider_id) : 0;
+                const remainingQuota = usage ? getRemainingQuota(model.provider_id) : 0;
+                
+                return (
+                  <div key={model.provider_id} className="p-4 border rounded-lg space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-medium">{model.provider?.name || 'Unknown Model'}</h4>
+                          {selectedModelId === model.provider_id && (
+                            <Badge variant="default">Current</Badge>
+                          )}
+                          <Badge variant="secondary">{model.provider?.type || 'Unknown'}</Badge>
+                        </div>
+                        
+                        {usage && (
+                          <div className="space-y-2">
+                            <div className="flex justify-between text-sm">
+                              <span>Usage</span>
+                              <span>
+                                {usage.current_usage.toLocaleString()} 
+                                {usage.usage_limit ? ` / ${usage.usage_limit.toLocaleString()}` : ' (Unlimited)'}
+                              </span>
+                            </div>
+                            {usage.usage_limit && (
+                              <div className="space-y-1">
+                                <Progress value={usagePercentage} className="w-full" />
+                                <div className="text-xs text-muted-foreground">
+                                  {remainingQuota} requests remaining
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-2 border-t">
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Clock className="w-4 h-4" />
+                        <span>Access granted {format(new Date(model.granted_at), 'MMM dd, yyyy')}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <Shield className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>No model access found.</p>
+              <p className="text-sm">Contact an administrator to request model access.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
