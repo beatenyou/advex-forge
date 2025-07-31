@@ -40,6 +40,7 @@ export const AdminDashboard = ({ techniques, onTechniquesUpdate, onClose }: Admi
   const [selectedTechnique, setSelectedTechnique] = useState<ParsedTechnique | null>(null);
   const [editingTechnique, setEditingTechnique] = useState<ParsedTechnique | null>(null);
   const [webscraperUrl, setWebscraperUrl] = useState("");
+  const [activeTab, setActiveTab] = useState("guidance");
   
   const markdownTemplate = `**Name:** SMB Enumeration
 **MITRE ID:** T1021.002
@@ -320,7 +321,7 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
         </div>
 
         <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
-          <Tabs defaultValue="guidance" className="p-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="p-6">
         <TabsList className="grid w-full grid-cols-6 lg:grid-cols-15 gap-1 p-2 h-auto">
           <TabsTrigger 
             value="guidance" 
@@ -528,7 +529,16 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                                 <ArrowRight className="w-4 h-4 text-muted-foreground" />
                               </div>
                               <p className="text-sm text-muted-foreground mb-3">{item.description}</p>
-                              <Button size="sm" variant="outline" className="text-xs">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                className="text-xs"
+                                onClick={() => {
+                                  if (item.action === "Go to Techniques tab") setActiveTab("techniques");
+                                  else if (item.action === "Browse current cards") setActiveTab("manage");
+                                  else if (item.action === "Go to Upload Cards tab") setActiveTab("upload");
+                                }}
+                              >
                                 {item.action}
                               </Button>
                             </Card>
@@ -677,7 +687,16 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                                 <div className="flex-1">
                                   <h5 className="font-medium text-sm">{item.title}</h5>
                                   <p className="text-xs text-muted-foreground mb-2">{item.description}</p>
-                                  <Badge variant="secondary" className="text-xs">{item.action}</Badge>
+                                   <Badge 
+                                     variant="secondary" 
+                                     className="text-xs cursor-pointer hover:bg-secondary/80" 
+                                     onClick={() => {
+                                       if (item.action.includes("LLM Webscraper tab")) setActiveTab("webscraper");
+                                       else if (item.action.includes("Upload Cards tab")) setActiveTab("upload");
+                                     }}
+                                   >
+                                     {item.action}
+                                   </Badge>
                                 </div>
                               </div>
                             ))}
@@ -765,9 +784,19 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                                       </div>
                                     ))}
                                   </div>
-                                  <Button size="sm" variant="outline" className="text-xs mt-3">
-                                    Go to {item.tab}
-                                  </Button>
+                                   <Button 
+                                     size="sm" 
+                                     variant="outline" 
+                                     className="text-xs mt-3"
+                                     onClick={() => {
+                                       if (item.tab === "Techniques") setActiveTab("techniques");
+                                       else if (item.tab === "Users") setActiveTab("users");
+                                       else if (item.tab === "Model Access") setActiveTab("model-access");
+                                       else if (item.tab === "Analytics") setActiveTab("analytics");
+                                     }}
+                                   >
+                                     Go to {item.tab}
+                                   </Button>
                                 </div>
                               </div>
                             </Card>
@@ -826,10 +855,16 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
                         { label: "Manage Users", tab: "users", icon: Users },
                         { label: "View Analytics", tab: "analytics", icon: Target }
                       ].map((item) => (
-                        <Button key={item.label} variant="outline" size="sm" className="h-auto p-3 flex flex-col gap-2">
-                          <item.icon className="w-4 h-4" />
-                          <span className="text-xs">{item.label}</span>
-                        </Button>
+                         <Button 
+                           key={item.label} 
+                           variant="outline" 
+                           size="sm" 
+                           className="h-auto p-3 flex flex-col gap-2"
+                           onClick={() => setActiveTab(item.tab)}
+                         >
+                           <item.icon className="w-4 h-4" />
+                           <span className="text-xs">{item.label}</span>
+                         </Button>
                       ))}
                     </div>
                   </CardContent>
