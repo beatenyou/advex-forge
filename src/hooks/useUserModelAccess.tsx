@@ -35,33 +35,44 @@ export function useUserModelAccess() {
     try {
       console.log('🤖 Fetching AI models for user:', user.id);
       
-      const { data, error } = await supabase
+      // First get user model access records
+      const { data: accessData, error } = await supabase
         .from('user_model_access')
-        .select(`
-          id,
-          provider_id,
-          is_enabled,
-          granted_at,
-          ai_providers!inner(
-            id,
-            name,
-            type,
-            model_name,
-            is_active
-          )
-        `)
+        .select('id, provider_id, is_enabled, granted_at')
         .eq('user_id', user.id)
-        .eq('is_enabled', true)
-        .eq('ai_providers.is_active', true);
+        .eq('is_enabled', true);
 
       if (error) {
         console.log('📝 Query error or no user_model_access:', error);
       }
 
-      let models = data?.map(item => ({
-        ...item,
-        provider: item.ai_providers as any
-      })) || [];
+      let models: UserModelAccess[] = [];
+
+      if (accessData && accessData.length > 0) {
+        // Get the AI providers for these access records
+        const { data: providersData, error: providersError } = await supabase
+          .from('ai_providers')
+          .select('id, name, type, model_name, is_active')
+          .eq('is_active', true)
+          .in('id', accessData.map(access => access.provider_id));
+
+        if (providersError) {
+          console.error('Error fetching providers:', providersError);
+        } else {
+          // Manually join the data
+          models = accessData
+            .map(access => {
+              const provider = providersData?.find(p => p.id === access.provider_id);
+              if (!provider) return null;
+              
+              return {
+                ...access,
+                provider
+              };
+            })
+            .filter(Boolean) as UserModelAccess[];
+        }
+      }
 
       console.log('📊 Found user model access records:', models.length);
 

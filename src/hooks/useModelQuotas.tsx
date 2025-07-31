@@ -25,35 +25,45 @@ export function useModelQuotas() {
     }
 
     try {
-      // Get all user's model access
+      // Get user's model access records
       const { data: accessData, error: accessError } = await supabase
         .from('user_model_access')
-        .select(`
-          provider_id,
-          usage_current,
-          usage_limit,
-          is_enabled,
-          ai_providers!inner(
-            id,
-            name,
-            type,
-            model_name,
-            is_active
-          )
-        `)
+        .select('provider_id, usage_current, usage_limit, is_enabled')
         .eq('user_id', user.id)
-        .eq('is_enabled', true)
-        .eq('ai_providers.is_active', true);
+        .eq('is_enabled', true);
 
       if (accessError) throw accessError;
 
-      const usages: ModelUsage[] = accessData?.map(access => ({
-        provider_id: access.provider_id,
-        provider_name: (access.ai_providers as any).name,
-        current_usage: access.usage_current || 0,
-        usage_limit: access.usage_limit,
-        can_use_model: access.usage_limit === null || (access.usage_current || 0) < access.usage_limit
-      })) || [];
+      if (!accessData || accessData.length === 0) {
+        setModelUsages([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get active AI providers
+      const { data: providersData, error: providersError } = await supabase
+        .from('ai_providers')
+        .select('id, name, type, model_name, is_active')
+        .eq('is_active', true)
+        .in('id', accessData.map(access => access.provider_id));
+
+      if (providersError) throw providersError;
+
+      // Manually join the data
+      const usages: ModelUsage[] = accessData
+        .map(access => {
+          const provider = providersData?.find(p => p.id === access.provider_id);
+          if (!provider) return null;
+          
+          return {
+            provider_id: access.provider_id,
+            provider_name: provider.name,
+            current_usage: access.usage_current || 0,
+            usage_limit: access.usage_limit,
+            can_use_model: access.usage_limit === null || (access.usage_current || 0) < access.usage_limit
+          };
+        })
+        .filter(Boolean) as ModelUsage[];
 
       setModelUsages(usages);
     } catch (error) {
