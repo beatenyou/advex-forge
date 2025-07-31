@@ -107,9 +107,10 @@ export function UserModelSelector({ compact = false }: { compact?: boolean }) {
                     ? 'bg-primary/10 border border-primary/20'
                     : 'hover:bg-muted/50'
                 }`}
-                onClick={() => {
+                onClick={async () => {
                   console.log('🔄 User switching to model:', model.provider?.name, model.provider_id);
-                  selectModel(model.provider_id);
+                  
+                  // Immediate UI feedback
                   setOpen(false);
                   
                   // Show immediate feedback toast
@@ -120,6 +121,9 @@ export function UserModelSelector({ compact = false }: { compact?: boolean }) {
                       duration: 3000,
                     });
                   });
+                  
+                  // Perform model selection with enhanced event handling
+                  await selectModel(model.provider_id);
                   
                   console.log('✅ Model switch UI action complete:', model.provider?.name);
                 }}

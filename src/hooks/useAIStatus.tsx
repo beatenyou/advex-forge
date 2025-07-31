@@ -55,19 +55,30 @@ export const useAIStatus = () => {
     // Listen for DOM events from model selection (critical for side panel)
     const handleModelChange = (event: any) => {
       console.log('🎯 AI Status: Received modelChanged event in useAIStatus', event.detail);
-      const { modelId, modelName } = event.detail;
+      const { modelId, modelName, modelType } = event.detail;
       
       if (modelId) {
         console.log('🔄 AI Status: Updating status immediately for model change:', modelName, modelId);
         setCurrentModelId(modelId);
-        // Force immediate status update
-        setTimeout(() => checkAIStatus(modelId), 0);
+        // Force immediate status update without delay to prevent stale state
+        checkAIStatus(modelId);
       }
     };
 
     // Listen to the DOM event dispatched by model selection
     console.log('🎯 AI Status: Setting up modelChanged event listener');
     window.addEventListener('modelChanged', handleModelChange);
+
+    // Listen for global refresh events to ensure all instances update
+    const handleGlobalRefresh = (event: any) => {
+      console.log('🌐 AI Status: Received global refresh event', event.detail);
+      const { modelId } = event.detail;
+      if (modelId) {
+        setCurrentModelId(modelId);
+        checkAIStatus(modelId);
+      }
+    };
+    window.addEventListener('globalStatusRefresh', handleGlobalRefresh);
 
     // Listen for realtime changes to user_preferences table (user-specific)
     const preferencesChannel = supabase
@@ -119,6 +130,7 @@ export const useAIStatus = () => {
 
     return () => {
       window.removeEventListener('modelChanged', handleModelChange);
+      window.removeEventListener('globalStatusRefresh', handleGlobalRefresh);
       supabase.removeChannel(preferencesChannel);
       supabase.removeChannel(broadcastChannel);
     };

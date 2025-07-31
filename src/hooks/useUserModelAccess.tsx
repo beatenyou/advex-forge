@@ -259,6 +259,9 @@ export function useUserModelAccess() {
       // Dispatch enhanced event with complete model data for immediate UI sync
       const modelChangeEvent = new CustomEvent('modelChanged', { 
         detail: { 
+          modelId: providerId,
+          modelName: model.provider?.name,
+          modelType: model.provider?.type,
           providerId, 
           model: { 
             provider: {
@@ -275,6 +278,12 @@ export function useUserModelAccess() {
       });
       
       window.dispatchEvent(modelChangeEvent);
+      
+      // Also trigger a global refresh to ensure all status indicators update
+      const globalRefreshEvent = new CustomEvent('globalStatusRefresh', {
+        detail: { modelId: providerId, timestamp: Date.now() }
+      });
+      window.dispatchEvent(globalRefreshEvent);
       
       console.log('🎉 Model selection complete:', { 
         savedProviderId: providerId, 
