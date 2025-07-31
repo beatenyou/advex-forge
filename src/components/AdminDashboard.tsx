@@ -303,7 +303,7 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
 
         <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
           <Tabs defaultValue="guidance" className="p-6">
-        <TabsList className="grid w-full grid-cols-6 lg:grid-cols-13 gap-1 p-2 h-auto">
+        <TabsList className="grid w-full grid-cols-6 lg:grid-cols-14 gap-1 p-2 h-auto">
           <TabsTrigger 
             value="guidance" 
             className="bg-primary/10 hover:bg-primary/20 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2"
@@ -369,6 +369,12 @@ Now analyze the following webpage content and extract cybersecurity techniques:`
             className="bg-primary/10 hover:bg-primary/20 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs px-2 py-2"
           >
             FAQ
+          </TabsTrigger>
+          <TabsTrigger 
+            value="support" 
+            className="bg-secondary/10 hover:bg-secondary/20 data-[state=active]:bg-secondary data-[state=active]:text-secondary-foreground text-xs px-2 py-2"
+          >
+            Support
           </TabsTrigger>
           <TabsTrigger 
             value="analytics" 

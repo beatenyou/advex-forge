@@ -10,11 +10,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { HelpCircle, MessageSquare, Plus, ExternalLink, Send, Edit, X, User, Clock, Reply } from 'lucide-react';
+import { HelpCircle, MessageSquare, Plus, ExternalLink, Send, User, Clock, Reply, Eye, MessageCircle, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 
 const ticketSchema = z.object({
@@ -25,7 +26,7 @@ const ticketSchema = z.object({
 });
 
 const messageSchema = z.object({
-  message_text: z.string().min(1, 'Message is required'),
+  message: z.string().min(1, 'Message is required'),
 });
 
 type TicketFormData = z.infer<typeof ticketSchema>;
@@ -69,23 +70,12 @@ interface TicketMessage {
 export default function SupportPreferences() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [faqs, setFaqs] = useState<FAQ[]>([]);
-  const [tickets, setTickets] = useState<SupportTicket[]>([]);
-  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
-  const [ticketMessages, setTicketMessages] = useState<TicketMessage[]>([]);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [ticketDialogOpen, setTicketDialogOpen] = useState(false);
-  const [editingTicket, setEditingTicket] = useState<SupportTicket | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState('all');
-
   const form = useForm<TicketFormData>({
     resolver: zodResolver(ticketSchema),
     defaultValues: {
       subject: '',
       description: '',
-      category: '',
+      category: 'general',
       priority: 'medium',
     },
   });
@@ -93,41 +83,26 @@ export default function SupportPreferences() {
   const messageForm = useForm<MessageFormData>({
     resolver: zodResolver(messageSchema),
     defaultValues: {
-      message_text: '',
+      message: '',
     },
   });
 
-  const editForm = useForm<{ status: string; priority: string }>({
-    defaultValues: {
-      status: '',
-      priority: '',
-    },
-  });
+  const [loading, setLoading] = useState(true);
+  const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
+  const [ticketMessages, setTicketMessages] = useState<TicketMessage[]>([]);
+  const [showTicketDialog, setShowTicketDialog] = useState(false);
+  const [newMessage, setNewMessage] = useState('');
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
   useEffect(() => {
-    checkAdminStatus();
-    fetchFAQs();
-  }, [user]);
-
-  useEffect(() => {
-    fetchTickets();
-  }, [user, isAdmin]);
-
-  const checkAdminStatus = async () => {
-    if (!user) return;
-
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      setIsAdmin(profile?.role === 'admin');
-    } catch (error) {
-      console.error('Error checking admin status:', error);
+    if (user) {
+      fetchFAQs();
+      fetchTickets();
     }
-  };
+  }, [user]);
 
   const fetchFAQs = async () => {
     try {
@@ -146,43 +121,25 @@ export default function SupportPreferences() {
 
   const fetchTickets = async () => {
     if (!user) return;
-
+    
     try {
-      let query = supabase
+      const { data, error } = await supabase
         .from('support_tickets')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
-      // If not admin, only show user's tickets
-      if (!isAdmin) {
-        query = query.eq('user_id', user.id);
-      }
-
-      const { data: ticketsData, error: ticketsError } = await query;
-
-      if (ticketsError) throw ticketsError;
-
-      // Fetch profile data for each ticket if admin
-      if (isAdmin && ticketsData) {
-        const userIds = [...new Set(ticketsData.map(ticket => ticket.user_id))];
-        const { data: profilesData } = await supabase
-          .from('profiles')
-          .select('user_id, display_name, email')
-          .in('user_id', userIds);
-
-        const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
-        
-        const ticketsWithProfiles = ticketsData.map(ticket => ({
-          ...ticket,
-          profiles: profilesMap.get(ticket.user_id)
-        }));
-
-        setTickets(ticketsWithProfiles);
-      } else {
-        setTickets(ticketsData || []);
-      }
+      if (error) throw error;
+      setTickets(data || []);
     } catch (error) {
       console.error('Error fetching tickets:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load your support tickets',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -215,34 +172,39 @@ export default function SupportPreferences() {
       }
     } catch (error) {
       console.error('Error fetching ticket messages:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load ticket messages',
+        variant: 'destructive',
+      });
     }
   };
 
   const onSubmit = async (data: TicketFormData) => {
     if (!user) return;
 
-    setLoading(true);
     try {
       const { error } = await supabase
         .from('support_tickets')
-        .insert({
-          user_id: user.id,
-          subject: data.subject,
-          description: data.description,
-          category: data.category,
-          priority: data.priority,
-        });
+        .insert([
+          {
+            user_id: user.id,
+            subject: data.subject,
+            description: data.description,
+            category: data.category,
+            priority: data.priority,
+          },
+        ]);
 
       if (error) throw error;
 
-      toast({
-        title: 'Support Ticket Created',
-        description: 'Your support ticket has been submitted. We\'ll get back to you soon.',
-      });
-
       form.reset();
-      setDialogOpen(false);
-      fetchTickets();
+      await fetchTickets();
+      
+      toast({
+        title: 'Success',
+        description: 'Your support ticket has been created successfully.',
+      });
     } catch (error) {
       console.error('Error creating ticket:', error);
       toast({
@@ -250,127 +212,74 @@ export default function SupportPreferences() {
         description: 'Failed to create support ticket. Please try again.',
         variant: 'destructive',
       });
-    } finally {
-      setLoading(false);
     }
   };
 
-  const sendMessage = async (data: MessageFormData) => {
-    if (!user || !selectedTicket) return;
+  const sendMessage = async () => {
+    if (!selectedTicket || !newMessage.trim() || !user) return;
 
-    setLoading(true);
+    setSendingMessage(true);
     try {
       const { error } = await supabase
         .from('support_ticket_messages')
-        .insert({
-          ticket_id: selectedTicket.id,
-          sender_id: user.id,
-          message_text: data.message_text,
-          is_internal: false,
-        });
+        .insert([
+          {
+            ticket_id: selectedTicket.id,
+            sender_id: user.id,
+            message_text: newMessage.trim(),
+            is_internal: false,
+          },
+        ]);
 
       if (error) throw error;
 
+      setNewMessage('');
+      await fetchTicketMessages(selectedTicket.id);
+      
       toast({
-        title: 'Message Sent',
-        description: 'Your message has been sent.',
+        title: 'Success',
+        description: 'Message sent successfully',
       });
-
-      messageForm.reset();
-      fetchTicketMessages(selectedTicket.id);
     } catch (error) {
       console.error('Error sending message:', error);
       toast({
         title: 'Error',
-        description: 'Failed to send message. Please try again.',
+        description: 'Failed to send message',
         variant: 'destructive',
       });
     } finally {
-      setLoading(false);
+      setSendingMessage(false);
     }
   };
 
-  const updateTicket = async (data: { status: string; priority: string }) => {
-    if (!editingTicket) return;
-
-    setLoading(true);
-    try {
-      const { error } = await supabase
-        .from('support_tickets')
-        .update({
-          status: data.status,
-          priority: data.priority,
-        })
-        .eq('id', editingTicket.id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Ticket Updated',
-        description: 'The ticket has been updated successfully.',
-      });
-
-      setEditingTicket(null);
-      fetchTickets();
-      if (selectedTicket?.id === editingTicket.id) {
-        setSelectedTicket({ ...selectedTicket, status: data.status, priority: data.priority });
-      }
-    } catch (error) {
-      console.error('Error updating ticket:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update ticket. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleTicketClick = (ticket: SupportTicket) => {
+  const handleTicketClick = async (ticket: SupportTicket) => {
     setSelectedTicket(ticket);
-    setTicketDialogOpen(true);
-    fetchTicketMessages(ticket.id);
-  };
-
-  const handleEditTicket = (ticket: SupportTicket) => {
-    setEditingTicket(ticket);
-    editForm.reset({
-      status: ticket.status,
-      priority: ticket.priority,
-    });
+    await fetchTicketMessages(ticket.id);
+    setShowTicketDialog(true);
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'open':
-        return 'bg-blue-500';
-      case 'in_progress':
-        return 'bg-yellow-500';
-      case 'resolved':
-        return 'bg-green-500';
-      case 'closed':
-        return 'bg-gray-500';
-      default:
-        return 'bg-gray-500';
+    switch (status.toLowerCase()) {
+      case 'open': return 'bg-blue-500';
+      case 'in_progress': return 'bg-yellow-500';
+      case 'resolved': return 'bg-green-500';
+      case 'closed': return 'bg-gray-500';
+      default: return 'bg-gray-500';
     }
   };
 
   const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'low':
-        return 'bg-green-500';
-      case 'medium':
-        return 'bg-yellow-500';
-      case 'high':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
+    switch (priority.toLowerCase()) {
+      case 'low': return 'bg-green-500';
+      case 'medium': return 'bg-yellow-500';
+      case 'high': return 'bg-orange-500';
+      case 'urgent': return 'bg-red-500';
+      default: return 'bg-gray-500';
     }
   };
 
-  const categories = ['all', ...new Set(faqs.map(faq => faq.category))];
-  const filteredFAQs = selectedCategory === 'all' 
+  const categories = ['All', ...new Set(faqs.map(faq => faq.category))];
+  const filteredFAQs = selectedCategory === 'All' 
     ? faqs 
     : faqs.filter(faq => faq.category === selectedCategory);
 
@@ -384,7 +293,7 @@ export default function SupportPreferences() {
               <MessageSquare className="w-5 h-5" />
               Contact Support
             </div>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <Dialog>
               <DialogTrigger asChild>
                 <Button>
                   <Plus className="w-4 h-4 mr-2" />
@@ -456,6 +365,7 @@ export default function SupportPreferences() {
                                 <SelectItem value="low">Low</SelectItem>
                                 <SelectItem value="medium">Medium</SelectItem>
                                 <SelectItem value="high">High</SelectItem>
+                                <SelectItem value="urgent">Urgent</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -483,12 +393,9 @@ export default function SupportPreferences() {
                     />
 
                     <div className="flex justify-end gap-2">
-                      <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={loading}>
+                      <Button type="submit">
                         <Send className="w-4 h-4 mr-2" />
-                        {loading ? 'Creating...' : 'Create Ticket'}
+                        Create Ticket
                       </Button>
                     </div>
                   </form>
@@ -508,256 +415,128 @@ export default function SupportPreferences() {
               <p className="text-sm text-muted-foreground mb-4">
                 Check our FAQ section below or create a support ticket for personalized assistance.
               </p>
-              <Button variant="outline" asChild>
-                <a href="mailto:support@example.com" className="flex items-center gap-2">
-                  <ExternalLink className="w-4 h-4" />
-                  Email Support
-                </a>
-              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Support Tickets */}
-      {tickets.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {isAdmin ? 'All Support Tickets' : 'Your Support Tickets'}
-            </CardTitle>
-            <CardDescription>
-              {isAdmin ? 'Manage and respond to support requests' : 'Track the status of your support requests'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {tickets.map((ticket) => (
-                <div key={ticket.id} className="p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 cursor-pointer" onClick={() => handleTicketClick(ticket)}>
-                      <h4 className="font-medium mb-2">{ticket.subject}</h4>
-                      <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-                        {ticket.description}
-                      </p>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>Created {format(new Date(ticket.created_at), 'MMM dd, yyyy')}</span>
-                        <span>•</span>
-                        <span className="capitalize">{ticket.category}</span>
-                        {isAdmin && ticket.profiles && (
-                          <>
-                            <span>•</span>
-                            <span className="flex items-center gap-1">
-                              <User className="w-3 h-3" />
-                              {ticket.profiles.display_name || ticket.profiles.email}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 ml-4">
-                      {isAdmin && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditTicket(ticket);
-                          }}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      )}
-                      <Badge className={`text-white ${getPriorityColor(ticket.priority)}`}>
-                        {ticket.priority.toUpperCase()}
-                      </Badge>
+      {/* Your Support Tickets */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Your Support Tickets</CardTitle>
+          <CardDescription>
+            View and manage your submitted support requests
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {tickets.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">
+                You haven't submitted any support tickets yet.
+              </p>
+            ) : (
+              tickets.map((ticket) => (
+                <div
+                  key={ticket.id}
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => handleTicketClick(ticket)}
+                >
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <h4 className="font-medium">{ticket.subject}</h4>
                       <Badge className={`text-white ${getStatusColor(ticket.status)}`}>
-                        {ticket.status.replace('_', ' ').toUpperCase()}
+                        {ticket.status.replace('_', ' ')}
+                      </Badge>
+                      <Badge className={`text-white ${getPriorityColor(ticket.priority)}`}>
+                        {ticket.priority}
                       </Badge>
                     </div>
+                    <p className="text-sm text-muted-foreground">
+                      Created: {format(new Date(ticket.created_at), 'MMM dd, yyyy HH:mm')}
+                    </p>
                   </div>
+                  <Eye className="w-5 h-5 text-muted-foreground" />
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Ticket Detail Dialog */}
-      <Dialog open={ticketDialogOpen} onOpenChange={setTicketDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+      <Dialog open={showTicketDialog} onOpenChange={setShowTicketDialog}>
+        <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle className="flex items-center justify-between">
-              <span>{selectedTicket?.subject}</span>
-              <div className="flex items-center gap-2">
-                <Badge className={`text-white ${getPriorityColor(selectedTicket?.priority || '')}`}>
-                  {selectedTicket?.priority?.toUpperCase()}
-                </Badge>
-                <Badge className={`text-white ${getStatusColor(selectedTicket?.status || '')}`}>
-                  {selectedTicket?.status?.replace('_', ' ').toUpperCase()}
-                </Badge>
-              </div>
-            </DialogTitle>
+            <DialogTitle>{selectedTicket?.subject}</DialogTitle>
             <DialogDescription>
-              <div className="flex items-center gap-4 text-sm">
-                <span>Created {selectedTicket && format(new Date(selectedTicket.created_at), 'MMM dd, yyyy HH:mm')}</span>
-                {isAdmin && selectedTicket?.profiles && (
-                  <span className="flex items-center gap-1">
-                    <User className="w-3 h-3" />
-                    {selectedTicket.profiles.display_name || selectedTicket.profiles.email}
-                  </span>
-                )}
-              </div>
+              Your support ticket details
             </DialogDescription>
           </DialogHeader>
+          
+          {selectedTicket && (
+            <div className="flex-1 flex flex-col gap-4 min-h-0">
+              <div className="flex gap-2">
+                <Badge className={`text-white ${getStatusColor(selectedTicket.status)}`}>
+                  {selectedTicket.status.replace('_', ' ')}
+                </Badge>
+                <Badge className={`text-white ${getPriorityColor(selectedTicket.priority)}`}>
+                  {selectedTicket.priority}
+                </Badge>
+                <Badge variant="outline">{selectedTicket.category}</Badge>
+              </div>
+              
+              <div className="bg-muted p-4 rounded-lg">
+                <p className="font-medium mb-2">Original Description:</p>
+                <p className="text-sm">{selectedTicket.description}</p>
+              </div>
 
-          <div className="flex-1 overflow-y-auto space-y-4">
-            {/* Original ticket description */}
-            <div className="p-4 bg-muted rounded-lg">
-              <div className="text-sm font-medium mb-2">Original Request</div>
-              <div className="text-sm">{selectedTicket?.description}</div>
-            </div>
+              <div className="flex-1 min-h-0">
+                <h4 className="font-medium mb-2">Messages</h4>
+                <ScrollArea className="h-64 border rounded-lg p-4">
+                  <div className="space-y-4">
+                    {ticketMessages.map((message) => (
+                      <div key={message.id} className="border-b pb-2">
+                        <div className="flex justify-between items-start mb-2">
+                          <span className="font-medium text-sm">
+                            {message.profiles?.display_name || message.profiles?.email || 'Unknown'}
+                          </span>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(message.created_at), 'MMM dd, HH:mm')}
+                          </span>
+                        </div>
+                        <p className="text-sm">{message.message_text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
 
-            {/* Messages */}
-            <div className="space-y-3">
-              {ticketMessages.map((message) => (
-                <div key={message.id} className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <User className="w-4 h-4" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium">
-                        {message.profiles?.display_name || message.profiles?.email || 'Unknown User'}
-                      </span>
-                      <span className="text-xs text-muted-foreground flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {format(new Date(message.created_at), 'MMM dd, HH:mm')}
-                      </span>
-                      {message.is_internal && (
-                        <Badge variant="secondary" className="text-xs">Internal</Badge>
-                      )}
-                    </div>
-                    <div className="text-sm bg-background border rounded-lg p-3">
-                      {message.message_text}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Message form for admins or ticket owners */}
-          {(isAdmin || selectedTicket?.user_id === user?.id) && selectedTicket?.status !== 'closed' && (
-            <div className="border-t pt-4">
-              <Form {...messageForm}>
-                <form onSubmit={messageForm.handleSubmit(sendMessage)} className="space-y-4">
-                  <FormField
-                    control={messageForm.control}
-                    name="message_text"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Add Response</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Type your response..."
-                            className="min-h-[80px]"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="flex justify-end">
-                    <Button type="submit" disabled={loading}>
-                      <Reply className="w-4 h-4 mr-2" />
-                      {loading ? 'Sending...' : 'Send Response'}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
+              <div className="space-y-2">
+                <Textarea
+                  placeholder="Type your message..."
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  rows={3}
+                />
+                <Button 
+                  onClick={sendMessage} 
+                  disabled={!newMessage.trim() || sendingMessage}
+                  className="w-full"
+                >
+                  {sendingMessage ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <MessageCircle className="w-4 h-4 mr-2" />
+                  )}
+                  Send Message
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Edit Ticket Dialog (Admin Only) */}
-      {isAdmin && (
-        <Dialog open={!!editingTicket} onOpenChange={() => setEditingTicket(null)}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Edit Ticket</DialogTitle>
-              <DialogDescription>
-                Update the ticket status and priority
-              </DialogDescription>
-            </DialogHeader>
-            <Form {...editForm}>
-              <form onSubmit={editForm.handleSubmit(updateTicket)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={editForm.control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Status</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="open">Open</SelectItem>
-                            <SelectItem value="in_progress">In Progress</SelectItem>
-                            <SelectItem value="resolved">Resolved</SelectItem>
-                            <SelectItem value="closed">Closed</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={editForm.control}
-                    name="priority"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Priority</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select priority" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="low">Low</SelectItem>
-                            <SelectItem value="medium">Medium</SelectItem>
-                            <SelectItem value="high">High</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="flex justify-end gap-2">
-                  <Button type="button" variant="outline" onClick={() => setEditingTicket(null)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={loading}>
-                    {loading ? 'Updating...' : 'Update Ticket'}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* FAQ Section */}
+      {/* Frequently Asked Questions */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -778,7 +557,7 @@ export default function SupportPreferences() {
                   size="sm"
                   onClick={() => setSelectedCategory(category)}
                 >
-                  {category === 'all' ? 'All' : category}
+                  {category}
                 </Button>
               ))}
             </div>
