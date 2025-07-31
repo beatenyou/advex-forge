@@ -21,51 +21,66 @@ export const useAIStatus = () => {
     checkAIStatus();
 
     // Set up realtime channel for AI status updates
-    const channel = supabase
+    const statusChannel = supabase
       .channel('ai-status-updates')
       .on('broadcast', { event: 'status-refresh' }, () => {
+        console.log('🔄 AI Status: Received broadcast refresh event');
         checkAIStatus();
       })
       .subscribe();
 
-    // Listen for model changes to update status display immediately
+    // Listen for realtime changes to user_preferences table
+    const preferencesChannel = supabase
+      .channel('user-preferences-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_preferences',
+          filter: 'selected_model_id=neq.null'
+        },
+        (payload) => {
+          console.log('🔄 AI Status: User preferences changed via realtime', payload);
+          
+          // Check if this affects the current user or update globally
+          const { new: newRecord } = payload;
+          if (newRecord?.selected_model_id) {
+            console.log('📡 AI Status: Model selection changed in database, refreshing status');
+            
+            // Update status immediately based on database change
+            setCurrentModelId(newRecord.selected_model_id);
+            
+            // Refresh full status after a brief delay
+            setTimeout(() => {
+              checkAIStatus();
+            }, 100);
+          }
+        }
+      )
+      .subscribe();
+
+    // Keep the local event listener as fallback for immediate updates
     const handleModelChange = (event: CustomEvent) => {
       const { providerId, model, timestamp } = event.detail || {};
       
-      console.log('🔄 AI Status: Model changed event received', { providerId, model, timestamp });
+      console.log('🔄 AI Status: Model changed event received (local)', { providerId, model, timestamp });
       
       if (providerId && model?.provider) {
         setCurrentModelId(providerId);
         
-        // Update status immediately with enhanced model info
         const newStatus = {
           status: 'operational' as AIStatusType,
           message: 'AI System Online',
           details: `Using ${model.provider.name} (${model.provider.type.toUpperCase()})`
         };
         
-        console.log('✅ AI Status: Immediate update', newStatus);
+        console.log('✅ AI Status: Immediate local update', newStatus);
         setStatus(newStatus);
         
-        // Force a re-render by updating loading state briefly
+        // Force a re-render
         setLoading(true);
         setTimeout(() => setLoading(false), 50);
-        
-        // Broadcast status update to other components
-        setTimeout(() => {
-          const channel = supabase.channel('ai-status-sync');
-          channel.send({
-            type: 'broadcast',
-            event: 'status-refresh',
-            payload: { 
-              immediate: true, 
-              model: model,
-              timestamp: Date.now()
-            }
-          }).then(() => {
-            console.log('📡 AI Status: Broadcast sent to sync all indicators');
-          });
-        }, 100);
       }
       
       // Also do full status check as backup
@@ -78,7 +93,8 @@ export const useAIStatus = () => {
     window.addEventListener('modelChanged', handleModelChange as EventListener);
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(statusChannel);
+      supabase.removeChannel(preferencesChannel);
       window.removeEventListener('modelChanged', handleModelChange);
     };
   }, []);
@@ -157,12 +173,14 @@ export const useAIStatus = () => {
   };
 
   const refreshAll = async () => {
+    console.log('🔄 AI Status: Broadcasting refresh to all connected clients');
+    
     // Broadcast refresh event to all instances
-    const channel = supabase.channel('ai-status-updates');
+    const channel = supabase.channel('ai-status-global-refresh');
     await channel.send({
       type: 'broadcast',
       event: 'status-refresh',
-      payload: {}
+      payload: { timestamp: Date.now() }
     });
     
     // Also refresh this instance

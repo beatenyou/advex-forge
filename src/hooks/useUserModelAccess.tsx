@@ -244,13 +244,13 @@ export function useUserModelAccess() {
       // Update state immediately
       setSelectedModelId(providerId);
       
-      console.log('🚀 Model Selection: Dispatching modelChanged event', {
+      console.log('🚀 Model Selection: Model selected, will trigger database update', {
         providerId,
         modelName: model.provider?.name,
         modelType: model.provider?.type
       });
       
-      // Dispatch event immediately for real-time UI updates with detailed model info
+      // Dispatch local event for immediate UI feedback
       const modelChangeEvent = new CustomEvent('modelChanged', { 
         detail: { 
           providerId, 
@@ -269,11 +269,8 @@ export function useUserModelAccess() {
       
       window.dispatchEvent(modelChangeEvent);
       
-      // Additional timeout to ensure all components receive the event
-      setTimeout(() => {
-        console.log('🔄 Model Selection: Dispatching delayed sync event');
-        window.dispatchEvent(modelChangeEvent);
-      }, 100);
+      // Database update will trigger Supabase Realtime for global sync
+      // The trigger will automatically broadcast to all connected clients
       
       console.log('✅ Model selection saved to database:', { providerId, modelName: model.provider?.name });
     } catch (error) {
