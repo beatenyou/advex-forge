@@ -17,6 +17,8 @@ export const useAIStatus = () => {
   const [loading, setLoading] = useState(true);
   const [currentModelId, setCurrentModelId] = useState<string | null>(null);
 
+  console.log('🔧 useAIStatus hook initialized, currentModelId:', currentModelId);
+
   // Fetch user's selected model from database
   const fetchUserSelectedModel = async () => {
     try {
@@ -65,9 +67,12 @@ export const useAIStatus = () => {
           
           if (user && newRecord?.user_id === user.id && newRecord?.selected_model_id) {
             console.log('📡 AI Status: Current user model selection changed, updating status');
+            console.log('📡 AI Status: New model ID:', newRecord.selected_model_id);
             
             // Update status immediately with the new model ID
             checkAIStatus(newRecord.selected_model_id);
+          } else {
+            console.log('📡 AI Status: Ignoring realtime update - not for current user or no model ID');
           }
         }
       )
@@ -162,6 +167,7 @@ export const useAIStatus = () => {
       }
 
       // All configuration checks passed
+      console.log('✅ AI Status: Setting status to operational with provider:', currentProvider.name);
       setStatus({
         status: 'operational',
         message: 'AI System Online', 
