@@ -112,14 +112,16 @@ export function UserModelSelector({ compact = false }: { compact?: boolean }) {
                   selectModel(model.provider_id);
                   setOpen(false);
                   
-                  // Show toast notification
+                  // Show immediate feedback toast
                   import('@/hooks/use-toast').then(({ toast }) => {
                     toast({
-                      title: "Model Switched",
-                      description: `Now using ${model.provider?.name}`,
-                      duration: 2000,
+                      title: "✅ Model Switched",
+                      description: `Now using ${model.provider?.name} for AI responses`,
+                      duration: 3000,
                     });
                   });
+                  
+                  console.log('✅ Model switch UI action complete:', model.provider?.name);
                 }}
               >
                 <div className="flex items-center gap-3">

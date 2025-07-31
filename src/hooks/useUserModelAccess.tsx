@@ -220,28 +220,26 @@ export function useUserModelAccess() {
     if (model) {
       console.log('🎯 Selecting model:', providerId, model.provider?.name);
       
-      // Update localStorage first
+      // Update localStorage first as the source of truth
       localStorage.setItem('selectedModelId', providerId);
       
-      // Force immediate state update using callback to ensure latest state
-      setSelectedModelId(prevId => {
-        console.log('🔄 State change:', prevId, '->', providerId);
-        
-        // Dispatch event with updated model info
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('modelChanged', { 
-            detail: { providerId, model, timestamp: Date.now() } 
-          }));
-        }, 0);
-        
-        return providerId;
-      });
+      // Force immediate state update
+      setSelectedModelId(providerId);
+      
+      // Dispatch event immediately for real-time UI updates
+      window.dispatchEvent(new CustomEvent('modelChanged', { 
+        detail: { providerId, model, timestamp: Date.now() } 
+      }));
+      
+      console.log('✅ Model selection complete:', { providerId, modelName: model.provider?.name });
     }
   }, [userModels]);
 
-  // Get currently selected model
+  // Get currently selected model - use localStorage as source of truth for immediate consistency
   const getSelectedModel = () => {
-    return userModels.find(m => m.provider_id === selectedModelId);
+    const savedModelId = localStorage.getItem('selectedModelId');
+    const modelId = savedModelId || selectedModelId;
+    return userModels.find(m => m.provider_id === modelId);
   };
 
   useEffect(() => {

@@ -14,6 +14,7 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 import { useAIUsage } from '@/hooks/useAIUsage';
 import { useUserModelAccess } from '@/hooks/useUserModelAccess';
 import { UserModelSelector } from '@/components/UserModelSelector';
+import { ModelStatusDisplay } from '@/components/ModelStatusDisplay';
 import { CompactUsageDisplay } from '@/components/CompactUsageDisplay';
 
 interface ChatMessage {
@@ -97,11 +98,18 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       (window as any).__clearChatFunction = clearChatAndResetSession;
     }
 
-    // Listen for model changes and force re-render
+    // Listen for model changes and update UI immediately
     const handleModelChange = (event: CustomEvent) => {
       console.log('🔄 Model changed in ChatSession:', event.detail);
-      // Force a small state update to ensure the latest selectedModel is used
+      const { providerId, model } = event.detail;
+      
+      // Update current provider display immediately
+      setCurrentProvider(model?.provider?.name || '');
+      
+      // Force component re-render to ensure latest model is used
       setIsStreaming(prev => prev);
+      
+      console.log('✅ ChatSession model change handled:', { providerId, modelName: model?.provider?.name });
     };
 
     window.addEventListener('modelChanged', handleModelChange as EventListener);
@@ -423,23 +431,44 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       // Get conversation context (last 20 messages)
       const conversationContext = messages.slice(-19).concat([userMessage as ChatMessage]);
 
-      // Get the most current selected model to avoid stale state
+      // Get the most current selected model from localStorage for immediate consistency
+      const savedModelId = localStorage.getItem('selectedModelId');
       const currentSelectedModel = getSelectedModel();
-      console.log('🤖 Making AI chat router call for user:', user?.id, 'session:', currentSession.id, 'selectedModel:', currentSelectedModel?.provider_id, 'modelName:', currentSelectedModel?.provider?.name);
+      const modelIdToUse = savedModelId || currentSelectedModel?.provider_id;
+      
+      console.log('🤖 Making AI chat router call - User:', user?.id, 'Session:', currentSession.id);
+      console.log('🎯 Model selection details:', { 
+        savedModelId, 
+        currentSelectedModelId: currentSelectedModel?.provider_id,
+        modelIdToUse,
+        modelName: currentSelectedModel?.provider?.name 
+      });
+      
+      // Validate model selection before making request
+      if (!modelIdToUse) {
+        throw new Error('No AI model selected. Please select a model first.');
+      }
+      
       const { data, error } = await supabase.functions.invoke('ai-chat-router', {
         body: {
           message: userQuestion,
           messages: conversationContext,
           sessionId: currentSession.id,
-          selectedModelId: currentSelectedModel?.provider_id
+          selectedModelId: modelIdToUse
         }
       });
       console.log('🤖 AI chat router response received:', { 
         data: data ? { providerName: data.providerName, providerId: data.providerId } : null, 
-        selectedModelSent: currentSelectedModel?.provider_id,
+        selectedModelSent: modelIdToUse,
         actualProviderUsed: data?.providerId,
+        modelMatch: modelIdToUse === data?.providerId,
         error: error?.message 
       });
+      
+      // Verify the correct model was used
+      if (data && modelIdToUse !== data.providerId) {
+        console.warn('⚠️ Model mismatch! Requested:', modelIdToUse, 'Used:', data.providerId);
+      }
 
       // Handle quota exceeded error specifically
       if (error && error.message?.includes('quota exceeded')) {
@@ -672,6 +701,9 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
               <span className="hidden sm:inline">New Chat</span>
             </Button>
           </div>
+        </div>
+        <div className="mt-3 p-2 bg-muted/30 rounded-lg border border-primary/20">
+          <ModelStatusDisplay compact={true} />
         </div>
       </div>
 
