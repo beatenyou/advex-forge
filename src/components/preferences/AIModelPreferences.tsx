@@ -190,16 +190,16 @@ export function AIModelPreferences() {
                       
                       {/* Usage Information */}
                       <div className="mt-3 space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-muted-foreground">Usage</span>
-                          {remainingQuota === Infinity ? (
-                            <span className="text-green-600 font-medium">Unlimited</span>
-                          ) : remainingQuota > 0 ? (
+                        {remainingQuota !== Infinity && remainingQuota > 0 && (
+                          <div className="flex justify-end text-sm mb-1">
                             <span className="text-green-600">{remainingQuota} remaining</span>
-                          ) : (
+                          </div>
+                        )}
+                        {remainingQuota !== Infinity && remainingQuota <= 0 && (
+                          <div className="flex justify-end text-sm mb-1">
                             <span className="text-red-600">Quota exceeded</span>
-                          )}
-                        </div>
+                          </div>
+                        )}
                         
                         {remainingQuota !== Infinity && (
                           <div className="space-y-1">
