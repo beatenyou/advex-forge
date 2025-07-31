@@ -435,13 +435,20 @@ export function UserManager() {
   };
 
   const handleAssignPlan = async () => {
-    if (!selectedUserId || !selectedPlanId) return;
+    if (!selectedUserId || !selectedPlanId || !user) return;
 
     setIsAssigningPlan(true);
     try {
       const selectedPlan = billingPlans.find(plan => plan.id === selectedPlanId);
       if (!selectedPlan) throw new Error('Plan not found');
 
+      // Get current plan info for audit trail
+      const currentBilling = userBilling[selectedUserId];
+      const currentPlanId = currentBilling ? 
+        billingPlans.find(p => p.name === currentBilling.plan_name)?.id : null;
+      const currentPlanName = currentBilling?.plan_name || 'Free';
+
+      // Update user billing with new plan
       const { error } = await supabase
         .from('user_billing')
         .upsert({
@@ -453,6 +460,26 @@ export function UserManager() {
         }, { onConflict: 'user_id' });
 
       if (error) throw error;
+
+      // Log the plan change to audit trail
+      const auditAction = currentPlanId ? 'changed' : 'assigned';
+      const { error: auditError } = await supabase
+        .from('user_plan_audit')
+        .insert({
+          user_id: selectedUserId,
+          admin_user_id: user.id,
+          old_plan_id: currentPlanId,
+          new_plan_id: selectedPlanId,
+          action_type: auditAction,
+          old_plan_name: currentPlanName,
+          new_plan_name: selectedPlan.name,
+          notes: `Plan ${auditAction} by admin via User Manager`
+        });
+
+      if (auditError) {
+        console.error('Failed to log audit entry:', auditError);
+        // Don't fail the main operation if audit logging fails
+      }
 
       toast({
         title: "Success",

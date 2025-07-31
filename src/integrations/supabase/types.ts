@@ -1007,6 +1007,45 @@ export type Database = {
           },
         ]
       }
+      user_plan_audit: {
+        Row: {
+          action_type: string
+          admin_user_id: string
+          created_at: string
+          id: string
+          new_plan_id: string | null
+          new_plan_name: string | null
+          notes: string | null
+          old_plan_id: string | null
+          old_plan_name: string | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          admin_user_id: string
+          created_at?: string
+          id?: string
+          new_plan_id?: string | null
+          new_plan_name?: string | null
+          notes?: string | null
+          old_plan_id?: string | null
+          old_plan_name?: string | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          admin_user_id?: string
+          created_at?: string
+          id?: string
+          new_plan_id?: string | null
+          new_plan_name?: string | null
+          notes?: string | null
+          old_plan_id?: string | null
+          old_plan_name?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           address: string | null
