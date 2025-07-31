@@ -146,14 +146,16 @@ export const useAIStatus = () => {
       // Get currently selected model (prioritize user's preference)
       let currentProvider = null;
       
-      // Use the target model ID (user's selection)
+      // Use the target model ID (user's selection) - this should show what user selected
       if (targetModelId) {
         currentProvider = activeProviders.find(p => p.id === targetModelId);
+        console.log('🎯 Found provider for user selection:', currentProvider?.name, 'ID:', currentProvider?.id);
       }
       
       // Fall back to default provider if no valid selection
       if (!currentProvider) {
         currentProvider = activeProviders.find(p => p.id === configResult.data.default_provider_id);
+        console.log('🔄 Using default provider fallback:', currentProvider?.name);
       }
 
       // Check if we have a valid provider
@@ -170,8 +172,8 @@ export const useAIStatus = () => {
       console.log('✅ AI Status: Setting status to operational with provider:', currentProvider.name);
       setStatus({
         status: 'operational',
-        message: 'AI System Online', 
-        details: `Using ${currentProvider.name} (${currentProvider.type.toUpperCase()})`
+        message: `Using ${currentProvider.name}`, 
+        details: `AI provider: ${currentProvider.name} (${currentProvider.type.toUpperCase()})`
       });
 
     } catch (error) {

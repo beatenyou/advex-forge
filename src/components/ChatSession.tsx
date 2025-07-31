@@ -433,17 +433,16 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
       // Get conversation context (last 20 messages)
       const conversationContext = messages.slice(-19).concat([userMessage as ChatMessage]);
 
-      // Get the most current selected model from localStorage for immediate consistency
-      const savedModelId = localStorage.getItem('selectedModelId');
+      // Get the most current selected model - prioritize the actual selectedModel from hook
       const currentSelectedModel = getSelectedModel();
-      const modelIdToUse = savedModelId || currentSelectedModel?.provider_id;
+      const modelIdToUse = currentSelectedModel?.provider_id;
       
       console.log('🤖 Making AI chat router call - User:', user?.id, 'Session:', currentSession.id);
       console.log('🎯 Model selection details:', { 
-        savedModelId, 
-        currentSelectedModelId: currentSelectedModel?.provider_id,
+        selectedModelObject: currentSelectedModel,
         modelIdToUse,
-        modelName: currentSelectedModel?.provider?.name 
+        modelName: currentSelectedModel?.provider?.name,
+        modelType: currentSelectedModel?.provider?.type
       });
       
       // Validate model selection before making request
