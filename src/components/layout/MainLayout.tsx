@@ -4,6 +4,7 @@ import {
   ResizablePanel, 
   ResizableHandle 
 } from "@/components/ui/resizable";
+import { useLocation } from "react-router-dom";
 import { ChatSidebar } from "./ChatSidebar";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 
@@ -12,8 +13,18 @@ interface MainLayoutProps {
 }
 
 export const MainLayout = ({ children }: MainLayoutProps) => {
+  const location = useLocation();
   const [isChatVisible, setIsChatVisible] = useState(false); // Start hidden
   const [isWideScreen, setIsWideScreen] = useState(false);
+
+  // Check for navigation state to show chat
+  useEffect(() => {
+    if (location.state?.showChat) {
+      setIsChatVisible(true);
+      // Clear the state to avoid it persisting on future navigations
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   // Check screen width but don't auto-show chat
   useEffect(() => {

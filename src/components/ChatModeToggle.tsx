@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Maximize2, Grid3X3 } from "lucide-react";
+import { MessageSquare, Maximize2, PanelRight } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
@@ -16,7 +16,8 @@ export const ChatModeToggle = () => {
     
     setTimeout(() => {
       if (isFullScreenChat) {
-        navigate('/');
+        // Navigate to split-screen mode (dashboard with chat visible)
+        navigate('/', { state: { showChat: true } });
       } else {
         navigate('/chat');
       }
@@ -26,14 +27,14 @@ export const ChatModeToggle = () => {
 
   const getIcon = () => {
     if (isFullScreenChat) {
-      return <Grid3X3 className="h-5 w-5" />;
+      return <PanelRight className="h-5 w-5" />;
     }
     return <Maximize2 className="h-5 w-5" />;
   };
 
   const getTooltipText = () => {
     if (isFullScreenChat) {
-      return "Switch to Dashboard";
+      return "Switch to Split Screen";
     }
     return "Enter Full-Screen Chat";
   };
