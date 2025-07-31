@@ -244,7 +244,8 @@ export const BulkImportManager: React.FC<BulkImportManagerProps> = ({ onTechniqu
             detection: technique.detection ? [technique.detection] : [],
             mitigation: technique.mitigation ? [technique.mitigation] : [],
             when_to_use: technique.whenToUse ? [technique.whenToUse] : [],
-            how_to_use: technique.howToUse ? [technique.howToUse] : []
+            how_to_use: technique.howToUse ? [technique.howToUse] : [],
+            reference_links: technique.referenceLinks || []
           });
           
         if (error) {
