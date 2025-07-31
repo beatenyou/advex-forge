@@ -48,7 +48,7 @@ export const FullScreenChatLayout = ({
               </div>
               <div>
                 <h1 className="font-semibold text-foreground">RT AI Chat</h1>
-                <AIStatusIndicator size="sm" showLabel />
+                <AIStatusIndicator key="fullscreen-status" size="sm" showLabel />
               </div>
             </div>
           </div>

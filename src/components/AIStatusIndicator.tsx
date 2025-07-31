@@ -60,7 +60,7 @@ export const AIStatusIndicator = ({
   const { isAdmin } = useAdminCheck();
   const statusConfig = getStatusConfig(aiStatus.status);
   
-  console.log('🖥️ AIStatusIndicator render - status:', aiStatus.status, 'details:', aiStatus.details);
+  console.log('🖥️ AIStatusIndicator render - status:', aiStatus.status, 'details:', aiStatus.details, 'className:', className);
   const sizeConfig = getSizeConfig(size);
   const StatusIcon = statusConfig.icon;
 

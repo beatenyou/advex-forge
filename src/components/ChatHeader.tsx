@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Plus, ChevronDown, ChevronUp } from 'lucide-react';
-import { UserModelSelector } from '@/components/UserModelSelector';
 import { CompactUsageDisplay } from '@/components/CompactUsageDisplay';
 
 interface ChatHeaderProps {
@@ -27,12 +26,13 @@ export function ChatHeader({
 
   return (
     <div className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur-sm">
-      {/* Top Row - Model Selector and Usage */}
+      {/* Top Row - Usage and Controls */}
       <div className="p-3 pb-2">
         <div className="flex items-center justify-between gap-4">
-          {/* Model Selector - Primary element */}
-          <div className="flex-1 max-w-xs">
-            <UserModelSelector compact />
+          {/* Title */}
+          <div className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-primary" />
+            <h2 className="font-semibold text-foreground">Chat</h2>
           </div>
           
           <div className="flex items-center gap-2 flex-shrink-0">
