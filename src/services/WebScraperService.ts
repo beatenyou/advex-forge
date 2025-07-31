@@ -265,7 +265,7 @@ export class WebScraperService {
   }
 
   static getDefaultExtractionTemplate(): string {
-    return `You are a cybersecurity expert tasked with extracting attack techniques from web content and converting them into a structured markdown format for a security dashboard.
+    return `You are a cybersecurity expert tasked with extracting attack techniques from web content and converting them into structured JSON format for a security dashboard.
 
 **EXTRACTION GUIDELINES:**
 1. Only extract content that clearly describes cybersecurity attack techniques, tools, or procedures
@@ -274,62 +274,69 @@ export class WebScraperService {
 4. Keep all code snippets and commands exactly as written in the source
 5. Extract reference links from the source content
 
+**CRITICAL: You MUST respond with ONLY valid JSON. Do not include any markdown formatting, explanations, or text outside the JSON.**
+
 **OUTPUT FORMAT:**
-For each technique found, use this exact markdown structure:
+Return a JSON array of technique objects. Each technique object must have this exact structure:
 
-\`\`\`markdown
-**Name:** [Exact technique name from source]
-**MITRE ID:** [T####.### if mentioned, otherwise "TODO"]
-**Phase:** [One of: Reconnaissance, Enumeration, Initial Access, Privilege Escalation, Persistence, Credential Access, Lateral Movement, Collection, Command and Control]
-**Description:** [1-2 sentence description from source]
-**When to use:** [Conditions/scenarios when technique applies]
-**Prerequisites:** [Requirements before using technique]
-**How to use:**
-
-1. [Step-by-step instructions from source]
-2. [Keep original formatting and details]
-
-### Tools
-
-1. **[Tool Name]:** \`[basic command/syntax from source]\` | [Tool description]
-2. **[Additional tools if present]:** \`[commands]\` | [descriptions]
-
-### Command Templates
-
-1. **[Tool Name]:** \`[full command with <parameter> placeholders]\` | [Command description and purpose]
-2. **[Tool Name 2]:** \`[full command with <parameter> placeholders]\` | [Command description and purpose]
-
-### Reference Links
-
-1. [Link Title](URL) - Description
-2. [Additional Link Title](URL) - Optional description
-
-**Detection:** [Blue team detection methods if mentioned]
-**Mitigation:** [Defense/prevention methods if mentioned]
+\`\`\`json
+{
+  "techniques": [
+    {
+      "title": "Exact technique name from source",
+      "mitreId": "T####.### if mentioned, otherwise TODO",
+      "phase": "One of: Reconnaissance, Enumeration, Initial Access, Privilege Escalation, Persistence, Credential Access, Lateral Movement, Collection, Command and Control",
+      "description": "1-2 sentence description from source",
+      "whenToUse": "Conditions/scenarios when technique applies",
+      "howToUse": "Step-by-step instructions from source, keep original formatting and details",
+      "tools": [
+        "Tool Name: basic command/syntax from source | Tool description"
+      ],
+      "commands": [
+        {
+          "tool": "Tool Name",
+          "command": "full command with <parameter> placeholders",
+          "description": "Command description and purpose"
+        }
+      ],
+      "referenceLinks": [
+        {
+          "title": "Link Title",
+          "url": "URL",
+          "description": "Description"
+        }
+      ],
+      "detection": "Blue team detection methods if mentioned",
+      "mitigation": "Defense/prevention methods if mentioned",
+      "tags": ["tag1", "tag2"],
+      "category": "General"
+    }
+  ],
+  "scenarios": [
+    {
+      "title": "Scenario Title",
+      "description": "Brief summary",
+      "tags": ["tag1", "tag2"],
+      "linkedTechniques": ["Technique names or IDs"]
+    }
+  ]
+}
 \`\`\`
 
 **COMMAND TEMPLATE GUIDELINES:**
 - Use <parameter> syntax for placeholders (e.g., <target>, <username>, <password>)
 - Include full command syntax with all necessary flags
 - Each command should be ready-to-use after parameter substitution
-- Focus on practical, executable commands
 
-**MULTIPLE TECHNIQUES:**
-If multiple techniques are found, separate each with "---"
-
-**SCENARIOS:**
-If attack workflows/scenarios are found, format as:
-\`\`\`markdown
-## Scenario: [Title]
-**Description:** [Brief summary]
-**Tags:** [comma-separated tags]
-### Linked Techniques
-- [Technique names or IDs]
-\`\`\`
+**VALIDATION REQUIREMENTS:**
+- Response must be valid JSON only
+- All string fields must be properly escaped
+- Arrays must contain valid elements
+- Do not include any text before or after the JSON
 
 Source URL: {sourceUrl}
 
-Now analyze the following content and extract cybersecurity techniques:
+Now analyze the following content and extract cybersecurity techniques as JSON:
 
 {content}`;
   }

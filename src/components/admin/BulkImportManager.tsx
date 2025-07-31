@@ -134,7 +134,41 @@ export const BulkImportManager: React.FC<BulkImportManagerProps> = ({ onTechniqu
 
   const parseContent = (content: string) => {
     try {
-      const parsed = parseMultipleMarkdownTechniques(content);
+      console.log('📝 Parsing content:', content.substring(0, 200) + '...');
+      
+      let parsed: any[] = [];
+      
+      // Try parsing as JSON first
+      try {
+        const jsonData = JSON.parse(content);
+        console.log('📊 Successfully parsed as JSON:', jsonData);
+        
+        if (jsonData.techniques && Array.isArray(jsonData.techniques)) {
+          parsed = jsonData.techniques.map((technique: any, index: number) => ({
+            id: `json-${index}`,
+            title: technique.title || 'Untitled Technique',
+            description: technique.description || '',
+            phase: technique.phase || 'Reconnaissance',
+            category: technique.category || 'General',
+            mitreId: technique.mitreId || null,
+            tags: Array.isArray(technique.tags) ? technique.tags : [],
+            tools: Array.isArray(technique.tools) ? technique.tools : [],
+            commands: Array.isArray(technique.commands) ? technique.commands : [],
+            referenceLinks: Array.isArray(technique.referenceLinks) ? technique.referenceLinks : [],
+            detection: technique.detection || '',
+            mitigation: technique.mitigation || '',
+            whenToUse: technique.whenToUse || '',
+            howToUse: technique.howToUse || ''
+          }));
+          console.log('✅ Parsed', parsed.length, 'techniques from JSON');
+        }
+      } catch (jsonError) {
+        console.log('⚠️ Not valid JSON, falling back to markdown parsing');
+        // Fallback to markdown parsing
+        parsed = parseMultipleMarkdownTechniques(content);
+        console.log('🔍 Parsed', parsed.length, 'techniques from markdown');
+      }
+      
       setParsedTechniques(parsed);
       
       const validationErrors = validateTechniqueFormat(content);
@@ -145,6 +179,7 @@ export const BulkImportManager: React.FC<BulkImportManagerProps> = ({ onTechniqu
       
       return parsed;
     } catch (error) {
+      console.error('❌ Error parsing content:', error);
       setFormatValidationErrors([{
         line: 1,
         message: `Parsing error: ${error instanceof Error ? error.message : 'Unknown error'}`,
