@@ -3,8 +3,7 @@ import { Button } from '@/components/ui/button';
 import { MessageSquare, Plus, ChevronDown, ChevronUp, History } from 'lucide-react';
 import { UserModelSelector } from '@/components/UserModelSelector';
 import { CompactUsageDisplay } from '@/components/CompactUsageDisplay';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { SessionHistory } from '@/components/SessionHistory';
+import { HistoryManager } from '@/components/HistoryManager';
 
 interface ChatHeaderProps {
   currentUsage: number;
@@ -81,9 +80,12 @@ export function ChatHeader({
                 <span className="hidden sm:inline">New Chat</span>
               </Button>
               
-              {/* Chat History Dropdown */}
-              <Popover>
-                <PopoverTrigger asChild>
+              {/* Chat History Manager */}
+              <HistoryManager
+                currentSessionId={currentSessionId}
+                onSessionSelect={onSessionSelect}
+                onNewSession={onNewChat}
+                trigger={
                   <Button
                     variant="outline"
                     size="sm"
@@ -92,17 +94,8 @@ export function ChatHeader({
                     <History className="h-4 w-4" />
                     <span className="hidden sm:inline">History</span>
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80 p-0" align="start">
-                  <div className="max-h-96">
-                    <SessionHistory
-                      currentSessionId={currentSessionId}
-                      onSessionSelect={onSessionSelect}
-                      onNewSession={onNewChat}
-                    />
-                  </div>
-                </PopoverContent>
-              </Popover>
+                }
+              />
             </div>
             
             {/* Usage on mobile when expanded - smaller and right-aligned */}

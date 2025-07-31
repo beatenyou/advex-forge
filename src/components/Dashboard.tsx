@@ -17,6 +17,7 @@ import { QuickReference } from "./QuickReference";
 import { AdminDashboard } from "./AdminDashboard";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
 import { ChatModeToggle } from "./ChatModeToggle";
+import { HistoryQuickAccess } from "./HistoryQuickAccess";
 import { useResponsiveGrid } from "@/hooks/useResponsiveGrid";
 import { sampleMarkdownTechniques, parseMultipleMarkdownTechniques, ParsedTechnique } from "@/lib/markdownParser";
 
@@ -52,6 +53,15 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
   const { containerRef, columnCount, gridStyle } = useResponsiveGrid({ 
     isChatVisible 
   });
+
+  const handleSessionSelect = (sessionId: string) => {
+    navigate(`/chat/${sessionId}`);
+  };
+
+  const handleNewSession = () => {
+    navigate('/chat');
+  };
+
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -276,8 +286,14 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
               </Card>}
           </div>
 
-          {/* Quick Reference Section */}
-          <QuickReference />
+          {/* Quick Reference and History Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+            <QuickReference />
+            <HistoryQuickAccess 
+              onSessionSelect={handleSessionSelect}
+              onNewSession={handleNewSession}
+            />
+          </div>
           </div>
         </main>
       </div>
