@@ -291,19 +291,10 @@ export const ChatSidebar = ({
                 <TabsTrigger value="links" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">Links</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="chat" className="mt-0 flex-1 flex flex-col overflow-hidden min-h-0 space-y-3">
+              <TabsContent value="chat" className="mt-0 flex-1 flex flex-col overflow-hidden min-h-0">
                 {/* Chat session */}
                 <div className="flex-1 overflow-hidden">
                   <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} />
-                </div>
-                
-                {/* Session History at bottom */}
-                <div className="flex-shrink-0 border-t border-border pt-3">
-                  <SessionHistory 
-                    currentSessionId={currentSessionId}
-                    onSessionSelect={handleSessionSelect}
-                    onNewSession={handleNewSession}
-                  />
                 </div>
               </TabsContent>
               
@@ -341,19 +332,10 @@ export const ChatSidebar = ({
               </TabsContent>
             </Tabs>
           ) : (
-            <div className="h-full flex flex-col min-h-0 space-y-3">
+            <div className="h-full flex flex-col min-h-0">
               {/* Chat session */}
               <div className="flex-1 overflow-hidden">
                 <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} />
-              </div>
-              
-              {/* Session History at bottom */}
-              <div className="flex-shrink-0 border-t border-border pt-3">
-                <SessionHistory 
-                  currentSessionId={currentSessionId}
-                  onSessionSelect={handleSessionSelect}
-                  onNewSession={handleNewSession}
-                />
               </div>
             </div>
           )}
