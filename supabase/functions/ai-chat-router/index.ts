@@ -153,25 +153,42 @@ serve(async (req) => {
       console.log('⚠️ No selectedModelId provided, proceeding with fallback logic');
     }
 
-    // Fallback to user's available models or admin defaults
+    // Fallback to user's available models or admin defaults ONLY if no valid selection was made
     if (!targetProviderId) {
-      console.log('🔄 No target provider found, using fallback logic');
+      console.log('🔄 No target provider found from selection, using fallback logic');
       isUsingFallback = true;
       
       if (isAdmin) {
-        // Admin fallback to primary provider
+        // Admin fallback hierarchy: providerId param -> primary -> default -> first active
         targetProviderId = providerId || config.primary_provider_id || config.default_provider_id;
-        console.log('🔧 Admin fallback attempt 1:', targetProviderId);
+        console.log('🔧 Admin fallback attempt 1 (from params/config):', targetProviderId);
+        
+        // Verify the fallback provider is actually active
+        if (targetProviderId) {
+          const { data: fallbackProvider } = await supabase
+            .from('ai_providers')
+            .select('id, name, is_active')
+            .eq('id', targetProviderId)
+            .eq('is_active', true)
+            .single();
+            
+          if (!fallbackProvider) {
+            console.log('🔧 Admin fallback provider not active, trying first available');
+            targetProviderId = null;
+          } else {
+            console.log('🔧 Admin fallback provider verified:', fallbackProvider.name);
+          }
+        }
         
         if (!targetProviderId) {
           const { data: firstProvider } = await supabase
             .from('ai_providers')
-            .select('id')
+            .select('id, name')
             .eq('is_active', true)
             .limit(1)
             .single();
           targetProviderId = firstProvider?.id;
-          console.log('🔧 Admin fallback attempt 2 (first active):', targetProviderId);
+          console.log('🔧 Admin fallback attempt 2 (first active):', firstProvider?.name, firstProvider?.id);
         }
       } else {
         // Regular user - get first available model
