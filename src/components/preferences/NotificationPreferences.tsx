@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdminCheck } from '@/hooks/useAdminCheck';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +12,7 @@ import { Save, Bell, Mail, Globe, Clock } from 'lucide-react';
 
 export default function NotificationPreferences() {
   const { user } = useAuth();
+  const { isAdmin } = useAdminCheck();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [preferences, setPreferences] = useState({
@@ -145,21 +147,24 @@ export default function NotificationPreferences() {
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label className="flex items-center gap-2">
-                <Bell className="w-4 h-4" />
-                In-App Notifications
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Show notifications within the application
-              </p>
+          {/* Only show in-app notifications toggle for admins */}
+          {isAdmin && (
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="flex items-center gap-2">
+                  <Bell className="w-4 h-4" />
+                  In-App Notifications
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  Show notifications within the application (Admin setting)
+                </p>
+              </div>
+              <Switch
+                checked={preferences.app_notifications}
+                onCheckedChange={(checked) => updatePreference('app_notifications', checked)}
+              />
             </div>
-            <Switch
-              checked={preferences.app_notifications}
-              onCheckedChange={(checked) => updatePreference('app_notifications', checked)}
-            />
-          </div>
+          )}
 
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">

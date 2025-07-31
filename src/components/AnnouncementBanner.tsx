@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useAdminCheck } from '@/hooks/useAdminCheck';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { X, Info, AlertTriangle, CheckCircle, AlertCircle } from 'lucide-react';
@@ -16,50 +17,38 @@ interface Announcement {
 
 export default function AnnouncementBanner() {
   const { user } = useAuth();
+  const { isAdmin } = useAdminCheck();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [dismissedBanners, setDismissedBanners] = useState<Set<string>>(new Set());
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [hasShownForSession, setHasShownForSession] = useState(false);
+  const [userPreferences, setUserPreferences] = useState<{ app_notifications: boolean } | null>(null);
 
   useEffect(() => {
-    console.log('🔔 AnnouncementBanner useEffect triggered, user:', user?.id);
-    if (user && !hasShownForSession) {
-      // Check if announcements have been shown for this login session
-      const sessionKey = `announcements_shown_${user.id}`;
-      const shownThisSession = sessionStorage.getItem(sessionKey);
-      
-      if (!shownThisSession) {
-        checkAdminStatus();
-        loadDismissedBanners();
-        // Mark that we've shown announcements for this session
-        sessionStorage.setItem(sessionKey, 'true');
-        setHasShownForSession(true);
-      } else {
-        setHasShownForSession(true);
-      }
-    }
-  }, [user, hasShownForSession]);
-
-  // Separate effect to fetch announcements after isAdmin is determined
-  useEffect(() => {
-    if (user && !hasShownForSession) {
+    if (user) {
+      loadDismissedBanners();
+      fetchUserPreferences();
       fetchAnnouncements();
     }
-  }, [user, isAdmin, hasShownForSession]);
+  }, [user, isAdmin]);
 
-  const checkAdminStatus = async () => {
+  const fetchUserPreferences = async () => {
     if (!user) return;
 
     try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
+      const { data, error } = await supabase
+        .from('user_preferences')
+        .select('app_notifications')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      setIsAdmin(profile?.role === 'admin');
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching user preferences:', error);
+        return;
+      }
+
+      setUserPreferences(data || { app_notifications: true });
     } catch (error) {
-      console.error('Error checking admin status:', error);
+      console.error('Error fetching user preferences:', error);
+      setUserPreferences({ app_notifications: true });
     }
   };
 
@@ -178,12 +167,16 @@ export default function AnnouncementBanner() {
     visibleAnnouncements: visibleAnnouncements.length,
     user: user?.id,
     isAdmin,
-    hasShownForSession
+    userPreferences
   });
 
-  // Don't show announcements if we've already shown them for this session
-  if (hasShownForSession || visibleAnnouncements.length === 0) {
-    console.log('🔔 No visible announcements or already shown for session, returning null');
+  // Don't show announcements if user has disabled them (unless they're an admin)
+  if (!isAdmin && userPreferences && !userPreferences.app_notifications) {
+    return null;
+  }
+
+  // Don't show if no visible announcements
+  if (visibleAnnouncements.length === 0) {
     return null;
   }
 
