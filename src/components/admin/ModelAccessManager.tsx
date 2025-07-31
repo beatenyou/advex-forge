@@ -325,9 +325,8 @@ export default function ModelAccessManager() {
     if (type === 'openai' || name.includes('openai') || name.includes('gpt')) {
       return {
         icon: Bot,
-        bgClass: 'bg-blue-500/10',
-        textClass: 'text-blue-700',
-        borderClass: 'border-blue-200'
+        variant: 'default' as const,
+        className: 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20'
       };
     }
     
@@ -335,9 +334,8 @@ export default function ModelAccessManager() {
     if (type === 'mistral' || name.includes('mistral')) {
       return {
         icon: Brain,
-        bgClass: 'bg-orange-500/10', 
-        textClass: 'text-orange-700',
-        borderClass: 'border-orange-200'
+        variant: 'secondary' as const,
+        className: 'bg-secondary/60 text-secondary-foreground border-secondary hover:bg-secondary/80'
       };
     }
     
@@ -345,9 +343,8 @@ export default function ModelAccessManager() {
     if (name.includes('claude') || name.includes('anthropic')) {
       return {
         icon: Sparkles,
-        bgClass: 'bg-purple-500/10',
-        textClass: 'text-purple-700', 
-        borderClass: 'border-purple-200'
+        variant: 'outline' as const,
+        className: 'bg-accent/20 text-accent-foreground border-accent hover:bg-accent/30'
       };
     }
     
@@ -355,18 +352,16 @@ export default function ModelAccessManager() {
     if (name.includes('gemini') || name.includes('google')) {
       return {
         icon: Cpu,
-        bgClass: 'bg-green-500/10',
-        textClass: 'text-green-700',
-        borderClass: 'border-green-200'
+        variant: 'outline' as const,
+        className: 'bg-muted/60 text-muted-foreground border-muted-foreground/20 hover:bg-muted/80'
       };
     }
     
     // Default for unknown models
     return {
       icon: Activity,
-      bgClass: 'bg-gray-500/10',
-      textClass: 'text-gray-700',
-      borderClass: 'border-gray-200'
+      variant: 'outline' as const,
+      className: 'bg-muted/40 text-muted-foreground border-border hover:bg-muted/60'
     };
   };
 
@@ -555,8 +550,8 @@ export default function ModelAccessManager() {
                                 return (
                                   <Badge 
                                     key={access.id} 
-                                    variant="outline" 
-                                    className={`text-xs flex items-center gap-1 ${iconStyle.bgClass} ${iconStyle.textClass} ${iconStyle.borderClass}`}
+                                    variant={iconStyle.variant}
+                                    className={`text-xs flex items-center gap-1 ${iconStyle.className}`}
                                   >
                                     <IconComponent className="h-3 w-3" />
                                     {access.provider.name}
