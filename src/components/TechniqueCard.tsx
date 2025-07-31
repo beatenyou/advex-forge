@@ -8,6 +8,7 @@ import { CommandGenerator } from "./CommandGenerator";
 
 interface Technique {
   id: string;
+  mitre_id?: string;
   title: string;
   description: string;
   phase: string;
@@ -68,7 +69,7 @@ export const TechniqueCard = ({ technique, onToggleFavorite }: TechniqueCardProp
                 </Button>
               </div>
               <Badge variant="outline" className={`text-xs ${getPhaseColor(technique.phase)}`}>
-                {technique.id}
+                {technique.mitre_id || technique.id}
               </Badge>
             </div>
             <div className="flex items-center gap-2">

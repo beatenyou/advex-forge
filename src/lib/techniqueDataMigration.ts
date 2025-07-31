@@ -3,6 +3,7 @@ import { sampleMarkdownTechniques, parseMultipleMarkdownTechniques } from "./mar
 
 export interface DatabaseTechnique {
   id?: string;
+  mitre_id?: string;
   title: string;
   description: string;
   phase: string;
@@ -26,20 +27,16 @@ export async function migrateTechniquesToDatabase(): Promise<boolean> {
   try {
     console.log('Starting technique migration to database...');
     
-    // Check if techniques already exist
-    const { data: existingTechniques, error: checkError } = await supabase
+    // Clear existing techniques to populate MITRE IDs
+    console.log('Clearing existing techniques to populate MITRE IDs...');
+    const { error: deleteError } = await supabase
       .from('techniques')
-      .select('id')
-      .limit(1);
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
     
-    if (checkError) {
-      console.error('Error checking existing techniques:', checkError);
+    if (deleteError) {
+      console.error('Error clearing existing techniques:', deleteError);
       return false;
-    }
-    
-    if (existingTechniques && existingTechniques.length > 0) {
-      console.log('Techniques already exist in database, skipping migration');
-      return true;
     }
     
     // Parse all sample techniques
@@ -47,6 +44,7 @@ export async function migrateTechniquesToDatabase(): Promise<boolean> {
     
     // Convert to database format
     const dbTechniques: DatabaseTechnique[] = parsedTechniques.map(technique => ({
+      mitre_id: technique.id, // Map the MITRE ID from parsed technique.id
       title: technique.title,
       description: technique.description,
       phase: technique.phase,

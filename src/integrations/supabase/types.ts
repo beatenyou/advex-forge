@@ -817,6 +817,7 @@ export type Database = {
           id: string
           is_active: boolean
           mitigation: string[]
+          mitre_id: string | null
           phase: string
           reference_links: Json
           tags: string[]
@@ -836,6 +837,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           mitigation?: string[]
+          mitre_id?: string | null
           phase?: string
           reference_links?: Json
           tags?: string[]
@@ -855,6 +857,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           mitigation?: string[]
+          mitre_id?: string | null
           phase?: string
           reference_links?: Json
           tags?: string[]

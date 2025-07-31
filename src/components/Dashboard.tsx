@@ -90,6 +90,7 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
       const data = await fetchTechniquesFromDatabase();
       const formattedTechniques = data.map(technique => ({
         ...technique,
+        mitre_id: technique.mitre_id,
         tags: technique.tags || [],
         tools: technique.tools || [],
         starred: userFavorites.includes(technique.id),
@@ -165,6 +166,7 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
       filtered = filtered.filter(technique => 
         technique.title.toLowerCase().includes(query) ||
         technique.description.toLowerCase().includes(query) ||
+        (technique.mitre_id && technique.mitre_id.toLowerCase().includes(query)) ||
         technique.id.toLowerCase().includes(query) ||
         technique.phase.toLowerCase().includes(query) ||
         technique.category.toLowerCase().includes(query) ||
