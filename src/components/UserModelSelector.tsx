@@ -63,7 +63,7 @@ export function UserModelSelector({ compact = false }: { compact?: boolean }) {
           variant="outline" 
           className={`justify-between relative ${
             compact 
-              ? 'h-7 min-w-[120px] px-2' 
+              ? 'h-8 min-w-[120px] px-3' 
               : 'h-9 min-w-[160px]'
           }`}
           size={compact ? "sm" : "sm"}
