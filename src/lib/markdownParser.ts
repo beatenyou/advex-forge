@@ -18,6 +18,11 @@ export interface ParsedTechnique {
   detection?: string;
   mitigation?: string;
   mitreMapping?: string;
+  referenceLinks?: Array<{
+    title: string;
+    url: string;
+    description?: string;
+  }>;
 }
 
 export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
@@ -34,10 +39,12 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
   let mitigation = '';
   const commands: Array<{ tool: string; command: string; description: string }> = [];
   const tools: string[] = [];
+  const referenceLinks: Array<{ title: string; url: string; description?: string }> = [];
   
   let currentSection = '';
   let isToolsSection = false;
   let isCommandsSection = false;
+  let isReferenceLinksSection = false;
   
   for (const line of lines) {
     const trimmedLine = line.trim();
@@ -66,18 +73,27 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
       currentSection = 'howToUse';
       isToolsSection = false;
       isCommandsSection = false;
+      isReferenceLinksSection = false;
     } else if (trimmedLine.startsWith('### Tools') || trimmedLine.startsWith('### Tools and Commands')) {
       currentSection = 'tools';
       isToolsSection = true;
       isCommandsSection = false;
+      isReferenceLinksSection = false;
     } else if (trimmedLine.startsWith('### Commands') || trimmedLine.startsWith('### Command Templates')) {
       currentSection = 'commands';
       isToolsSection = false;
       isCommandsSection = true;
+      isReferenceLinksSection = false;
+    } else if (trimmedLine.startsWith('### Reference Links') || trimmedLine.startsWith('**Reference Links:**') || trimmedLine.startsWith('**References:**')) {
+      currentSection = 'referenceLinks';
+      isToolsSection = false;
+      isCommandsSection = false;
+      isReferenceLinksSection = true;
     } else if (trimmedLine.startsWith('##') || trimmedLine.startsWith('###')) {
       currentSection = '';
       isToolsSection = false;
       isCommandsSection = false;
+      isReferenceLinksSection = false;
     }
     
     // Collect content for sections
@@ -141,6 +157,22 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
         }
       }
     }
+    
+    if (isReferenceLinksSection && trimmedLine && !trimmedLine.startsWith('### Reference Links') && !trimmedLine.startsWith('**Reference Links:**') && !trimmedLine.startsWith('**References:**')) {
+      // Parse reference link entries in multiple formats:
+      // Format 1: - [Title](URL) - Description
+      // Format 2: - [Title](URL): Description  
+      // Format 3: 1. [Title](URL) - Description
+      const linkMatch = trimmedLine.match(/^(?:\d+\.\s*|\-\s*)\[([^\]]+)\]\(([^)]+)\)(?:\s*[-:]\s*(.+))?$/);
+      if (linkMatch) {
+        const [, title, url, description] = linkMatch;
+        referenceLinks.push({
+          title: title.trim(),
+          url: url.trim(),
+          description: description ? description.trim() : undefined
+        });
+      }
+    }
   }
   
   // Generate category from phase
@@ -179,7 +211,8 @@ export function parseMarkdownTechnique(markdownText: string): ParsedTechnique {
     commands,
     detection,
     mitigation,
-    mitreMapping: mitreId
+    mitreMapping: mitreId,
+    referenceLinks
   };
 }
 

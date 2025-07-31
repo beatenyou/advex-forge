@@ -435,7 +435,7 @@ export const BulkImportManager: React.FC<BulkImportManagerProps> = ({ onTechniqu
             tools: technique.tools,
             category: technique.category,
             commands: technique.commands || [],
-            reference_links: []
+            reference_links: technique.referenceLinks || []
           });
           
         if (error) {
