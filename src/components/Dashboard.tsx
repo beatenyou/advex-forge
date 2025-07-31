@@ -63,6 +63,14 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
     }
   }, [user]);
 
+  // Sync techniques starred state with userFavorites
+  useEffect(() => {
+    setTechniques(prev => prev.map(technique => ({
+      ...technique,
+      starred: userFavorites.includes(technique.id)
+    })));
+  }, [userFavorites]);
+
   // Set up realtime subscriptions
   useEffect(() => {
     const techniquesChannel = supabase
