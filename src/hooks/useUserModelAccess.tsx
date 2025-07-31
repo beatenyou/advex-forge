@@ -280,6 +280,7 @@ export function useUserModelAccess() {
         } 
       });
       
+      console.log('🚀 Model Selection: Dispatching modelChanged event with detail:', modelChangeEvent.detail);
       window.dispatchEvent(modelChangeEvent);
       
       // Also trigger a global refresh to ensure all status indicators update

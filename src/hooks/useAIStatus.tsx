@@ -55,29 +55,27 @@ export const useAIStatus = () => {
     // Listen for DOM events from model selection (critical for side panel)
     const handleModelChange = async (event: any) => {
       console.log('🎯 AI Status: Received modelChanged event in useAIStatus', event.detail);
-      const { modelId, modelName, modelType } = event.detail;
+      const { modelId, providerId, modelName, modelType } = event.detail;
       
-      if (modelId) {
-        console.log('🔄 AI Status: Updating status immediately for model change:', modelName, modelId);
+      // Use modelId first, fallback to providerId for compatibility
+      const targetModelId = modelId || providerId;
+      
+      if (targetModelId) {
+        console.log('🔄 AI Status: Updating status immediately for model change:', modelName, targetModelId);
         // Force immediate state update
-        setCurrentModelId(modelId);
+        setCurrentModelId(targetModelId);
         setLoading(true);
         
         // Trigger immediate status check with new model
-        await checkAIStatus(modelId);
+        await checkAIStatus(targetModelId);
         
-        // Dispatch a force refresh event to ensure all components update
-        window.dispatchEvent(new CustomEvent('forceStatusRefresh', { 
-          detail: { modelId, timestamp: Date.now() } 
-        }));
+        console.log('✅ AI Status: Model change status check completed for:', targetModelId);
+      } else {
+        console.warn('⚠️ AI Status: No valid modelId or providerId in event:', event.detail);
       }
     };
 
-    // Listen to the DOM event dispatched by model selection
-    console.log('🎯 AI Status: Setting up modelChanged event listener');
-    window.addEventListener('modelChanged', handleModelChange);
-
-    // Listen for global refresh events to ensure all instances update
+    // Define event handlers before using them
     const handleGlobalRefresh = async (event: any) => {
       console.log('🌐 AI Status: Received global refresh event', event.detail);
       const { modelId } = event.detail;
@@ -85,20 +83,24 @@ export const useAIStatus = () => {
         setCurrentModelId(modelId);
         setLoading(true);
         await checkAIStatus(modelId);
+      } else {
+        // Refresh with current model
+        await checkAIStatus(currentModelId);
       }
     };
-    window.addEventListener('globalStatusRefresh', handleGlobalRefresh);
-    
-    // Listen for force refresh events (ensures React components re-render)
+
     const handleForceRefresh = async (event: any) => {
-      console.log('🔥 AI Status: Received force refresh event', event.detail);
+      console.log('🔄 AI Status: Received force refresh event', event.detail);
       const { modelId } = event.detail;
-      if (modelId) {
-        setCurrentModelId(modelId);
-        setLoading(true);
-        await checkAIStatus(modelId);
-      }
+      setCurrentModelId(modelId || currentModelId);
+      setLoading(true);
+      await checkAIStatus(modelId || currentModelId);
     };
+
+    // Set up event listeners
+    console.log('🎯 AI Status: Setting up event listeners');
+    window.addEventListener('modelChanged', handleModelChange);
+    window.addEventListener('globalStatusRefresh', handleGlobalRefresh);
     window.addEventListener('forceStatusRefresh', handleForceRefresh);
 
     // Listen for realtime changes to user_preferences table (user-specific)
