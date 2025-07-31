@@ -14,6 +14,7 @@ import { useAnalytics } from '@/hooks/useAnalytics';
 import { useAIUsage } from '@/hooks/useAIUsage';
 import { useUserModelAccess } from '@/hooks/useUserModelAccess';
 import { ChatHeader } from '@/components/ChatHeader';
+import { EnhancedHistoryTab } from '@/components/EnhancedHistoryTab';
 
 interface ChatMessage {
   id: string;
@@ -64,6 +65,7 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
   const [showPromptSuggestions, setShowPromptSuggestions] = useState(false);
   const [filteredPrompts, setFilteredPrompts] = useState<SavedPrompt[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -298,6 +300,16 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
 
   const handleSessionSelect = async (sessionId: string) => {
     await loadSpecificSession(sessionId);
+    setShowHistory(false); // Close history when session is selected
+  };
+
+  const handleToggleHistory = () => {
+    setShowHistory(!showHistory);
+  };
+
+  const handleHistoryNewSession = () => {
+    createNewSession();
+    setShowHistory(false);
   };
 
   const createNewSession = async () => {
@@ -690,154 +702,167 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
         onNewChat={createNewSession}
         currentSessionId={currentSession?.id}
         onSessionSelect={handleSessionSelect}
+        showHistory={showHistory}
+        onToggleHistory={handleToggleHistory}
       />
 
       <div className="flex-1 overflow-hidden min-h-0">
-        <ScrollArea 
-          ref={scrollAreaRef} 
-          className="h-full max-h-full p-4"
-        >
-          {messages.length === 0 ? (
-            <div className="text-center text-muted-foreground py-8">
-              <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Start a conversation by asking a question below</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
+        {showHistory ? (
+          <div className="h-full p-4">
+            <EnhancedHistoryTab
+              currentSessionId={currentSession?.id}
+              onSessionSelect={handleSessionSelect}
+              onNewSession={handleHistoryNewSession}
+            />
+          </div>
+        ) : (
+          <ScrollArea 
+            ref={scrollAreaRef} 
+            className="h-full max-h-full p-4"
+          >
+            {messages.length === 0 ? (
+              <div className="text-center text-muted-foreground py-8">
+                <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>Start a conversation by asking a question below</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {messages.map((message) => (
                   <div
-                    className={`max-w-[80%] rounded-lg p-3 ${
-                      message.role === 'user'
-                        ? 'bg-red-950 text-red-100 ml-12'
-                        : message.role === 'system'
-                        ? 'bg-primary/10 text-primary-foreground mx-4 text-center border border-primary/20'
-                        : 'bg-muted mr-12'
-                    }`}
+                    key={message.id}
+                    className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
-                    {message.role === 'assistant' ? (
-                      <div className="space-y-2">
-                        <MarkdownRenderer content={message.content} />
-                        <div className="flex items-center justify-between pt-2 border-t border-border/50">
-                          <span className="text-xs text-muted-foreground">
-                            {message.provider_name && `${message.provider_name} • `}
-                            {new Date(message.created_at).toLocaleTimeString()}
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyMessage(message.content)}
-                            className="h-6 w-6 p-0"
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ) : message.role === 'system' ? (
-                      <div className="text-xs font-medium">
-                        {message.content}
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <p className="text-sm">{message.content}</p>
-                        <div className="flex items-center justify-between text-xs opacity-70">
-                          <span>{new Date(message.created_at).toLocaleTimeString()}</span>
-                          <div className="flex items-center gap-2">
+                    <div
+                      className={`max-w-[80%] rounded-lg p-3 ${
+                        message.role === 'user'
+                          ? 'bg-red-950 text-red-100 ml-12'
+                          : message.role === 'system'
+                          ? 'bg-primary/10 text-primary-foreground mx-4 text-center border border-primary/20'
+                          : 'bg-muted mr-12'
+                      }`}
+                    >
+                      {message.role === 'assistant' ? (
+                        <div className="space-y-2">
+                          <MarkdownRenderer content={message.content} />
+                          <div className="flex items-center justify-between pt-2 border-t border-border/50">
+                            <span className="text-xs text-muted-foreground">
+                              {message.provider_name && `${message.provider_name} • `}
+                              {new Date(message.created_at).toLocaleTimeString()}
+                            </span>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => copyMessage(message.content)}
-                              className="h-5 w-5 p-0 opacity-60 hover:opacity-100"
+                              className="h-6 w-6 p-0"
                             >
                               <Copy className="h-3 w-3" />
                             </Button>
-                            <Check className="h-3 w-3 text-green-400" />
                           </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-              {isSending && (
-                <div className="flex justify-end">
-                  <div className="bg-red-950 text-red-100 rounded-lg p-3 ml-12 max-w-[80%]">
-                    <div className="space-y-2">
-                      <p className="text-sm">{question || "Sending message..."}</p>
-                      <div className="flex items-center justify-between text-xs opacity-70">
-                        <span>Sending...</span>
-                        <div className="flex items-center gap-1">
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                          <Send className="h-3 w-3" />
+                      ) : message.role === 'system' ? (
+                        <div className="text-xs font-medium">
+                          {message.content}
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {isStreaming && streamingMessage && (
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-lg p-3 mr-12">
-                    <div className="space-y-2">
-                      <MarkdownRenderer content={streamingMessage} />
-                      <div className="flex items-center gap-2 pt-2 border-t border-border/50">
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                        <span className="text-xs text-muted-foreground">Streaming...</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {isLoading && !isStreaming && (
-                <div className="flex justify-start">
-                  <div className="bg-muted rounded-lg p-3 mr-12">
-                    <div className="flex items-center justify-center space-x-3">
-                      <div className="relative flex items-center justify-center">
-                        <div className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-mono font-bold animate-pulse border border-red-400 shadow-lg shadow-red-500/20">
-                          RT
+                      ) : (
+                        <div className="space-y-2">
+                          <p className="text-sm">{message.content}</p>
+                          <div className="flex items-center justify-between text-xs opacity-70">
+                            <span>{new Date(message.created_at).toLocaleTimeString()}</span>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => copyMessage(message.content)}
+                                className="h-5 w-5 p-0 opacity-60 hover:opacity-100"
+                              >
+                                <Copy className="h-3 w-3" />
+                              </Button>
+                              <Check className="h-3 w-3 text-green-400" />
+                            </div>
+                          </div>
                         </div>
-                        <div className="absolute inset-0 bg-red-500/30 rounded-lg animate-ping"></div>
-                        <div className="absolute inset-0 bg-red-400/10 rounded-lg animate-pulse"></div>
-                      </div>
-                      <span className="text-sm text-muted-foreground animate-pulse">Processing...</span>
-                      {currentProvider && (
-                        <span className="text-xs text-muted-foreground/60 ml-2">
-                          via {currentProvider}
-                        </span>
                       )}
                     </div>
                   </div>
-                </div>
-              )}
+                ))}
+                {isSending && (
+                  <div className="flex justify-end">
+                    <div className="bg-red-950 text-red-100 rounded-lg p-3 ml-12 max-w-[80%]">
+                      <div className="space-y-2">
+                        <p className="text-sm">{question || "Sending message..."}</p>
+                        <div className="flex items-center justify-between text-xs opacity-70">
+                          <span>Sending...</span>
+                          <div className="flex items-center gap-1">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            <Send className="h-3 w-3" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {isStreaming && streamingMessage && (
+                  <div className="flex justify-start">
+                    <div className="bg-muted rounded-lg p-3 mr-12">
+                      <div className="space-y-2">
+                        <MarkdownRenderer content={streamingMessage} />
+                        <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <span className="text-xs text-muted-foreground">Streaming...</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {isLoading && !isStreaming && (
+                  <div className="flex justify-start">
+                    <div className="bg-muted rounded-lg p-3 mr-12">
+                      <div className="flex items-center justify-center space-x-3">
+                        <div className="relative flex items-center justify-center">
+                          <div className="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-mono font-bold animate-pulse border border-red-400 shadow-lg shadow-red-500/20">
+                            RT
+                          </div>
+                          <div className="absolute inset-0 bg-red-500/30 rounded-lg animate-ping"></div>
+                          <div className="absolute inset-0 bg-red-400/10 rounded-lg animate-pulse"></div>
+                        </div>
+                        <span className="text-sm text-muted-foreground animate-pulse">Processing...</span>
+                        {currentProvider && (
+                          <span className="text-xs text-muted-foreground/60 ml-2">
+                            via {currentProvider}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-              {(isStreaming && !isSending) || showStopButton ? (
-                <div className="flex justify-center p-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={stopStreaming}
-                    className="bg-background/50 backdrop-blur-sm border-red-500/20 hover:bg-red-500/10"
-                  >
-                    <Square className="h-4 w-4 mr-2" />
-                    {showStopButton ? 'Stop Request' : 'Stop'}
-                  </Button>
-                  {showStopButton && (
-                    <span className="text-xs text-muted-foreground ml-2 flex items-center">
-                      Request taking longer than expected
-                    </span>
-                  )}
-                </div>
-              ) : null}
-            </div>
-          )}
-        </ScrollArea>
+                {(isStreaming && !isSending) || showStopButton ? (
+                  <div className="flex justify-center p-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={stopStreaming}
+                      className="bg-background/50 backdrop-blur-sm border-red-500/20 hover:bg-red-500/10"
+                    >
+                      <Square className="h-4 w-4 mr-2" />
+                      {showStopButton ? 'Stop Request' : 'Stop'}
+                    </Button>
+                    {showStopButton && (
+                      <span className="text-xs text-muted-foreground ml-2 flex items-center">
+                        Request taking longer than expected
+                      </span>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </ScrollArea>
+        )}
       </div>
 
-      {/* Input section - absolutely positioned within container */}
-      <div className="border-t border-border bg-background/95 backdrop-blur-sm shrink-0 relative">
+      {/* Input section - hidden when showing history */}
+      {!showHistory && (
+        <div className="border-t border-border bg-background/95 backdrop-blur-sm shrink-0 relative">
         <form onSubmit={handleSubmit} className="p-3">
           <div className="flex gap-2 items-end">
             <div className="flex-1 relative">
@@ -933,7 +958,8 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
             )}
           </div>
         </form>
-      </div>
+        </div>
+      )}
     </div>
   );
 };

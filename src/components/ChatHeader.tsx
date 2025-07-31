@@ -3,9 +3,6 @@ import { Button } from '@/components/ui/button';
 import { MessageSquare, Plus, ChevronDown, ChevronUp, History } from 'lucide-react';
 import { CompactUsageDisplay } from '@/components/CompactUsageDisplay';
 import { UserModelSelector } from '@/components/UserModelSelector';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { EnhancedHistoryTab } from '@/components/EnhancedHistoryTab';
-import { useNavigate } from 'react-router-dom';
 
 interface ChatHeaderProps {
   currentUsage: number;
@@ -15,6 +12,8 @@ interface ChatHeaderProps {
   onNewChat: () => void;
   currentSessionId?: string;
   onSessionSelect: (sessionId: string) => void;
+  showHistory: boolean;
+  onToggleHistory: () => void;
 }
 
 export function ChatHeader({
@@ -24,21 +23,11 @@ export function ChatHeader({
   canUseAI,
   onNewChat,
   currentSessionId,
-  onSessionSelect
+  onSessionSelect,
+  showHistory,
+  onToggleHistory
 }: ChatHeaderProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
-  const navigate = useNavigate();
-
-  const handleSessionSelect = (selectedSessionId: string) => {
-    setHistoryDialogOpen(false);
-    navigate(`/fullscreen-chat/${selectedSessionId}`);
-  };
-
-  const handleNewSession = () => {
-    setHistoryDialogOpen(false);
-    navigate('/fullscreen-chat');
-  };
 
   return (
     <div className="flex-shrink-0 border-b border-border bg-background/95 backdrop-blur-sm">
@@ -95,31 +84,16 @@ export function ChatHeader({
                 <span className="hidden sm:inline">New Chat</span>
               </Button>
               
-              {/* History Button */}
-              <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="flex items-center gap-2 px-3"
-                  >
-                    <History className="h-4 w-4" />
-                    <span className="hidden sm:inline">History</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
-                  <DialogHeader>
-                    <DialogTitle>Chat History</DialogTitle>
-                  </DialogHeader>
-                  <div className="overflow-y-auto">
-                    <EnhancedHistoryTab
-                      currentSessionId={currentSessionId}
-                      onSessionSelect={handleSessionSelect}
-                      onNewSession={handleNewSession}
-                    />
-                  </div>
-                </DialogContent>
-              </Dialog>
+              {/* History Toggle Button */}
+              <Button 
+                variant={showHistory ? "default" : "outline"}
+                size="sm" 
+                onClick={onToggleHistory}
+                className="flex items-center gap-2 px-3"
+              >
+                <History className="h-4 w-4" />
+                <span className="hidden sm:inline">{showHistory ? 'Back to Chat' : 'History'}</span>
+              </Button>
               
               {/* AI Model Selector */}
               <UserModelSelector compact />
