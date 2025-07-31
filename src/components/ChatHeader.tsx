@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { MessageSquare, Plus, ChevronDown, ChevronUp, History } from 'lucide-react';
+import { MessageSquare, Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import { UserModelSelector } from '@/components/UserModelSelector';
 import { CompactUsageDisplay } from '@/components/CompactUsageDisplay';
-import { HistoryManager } from '@/components/HistoryManager';
 
 interface ChatHeaderProps {
   currentUsage: number;
@@ -80,22 +79,6 @@ export function ChatHeader({
                 <span className="hidden sm:inline">New Chat</span>
               </Button>
               
-              {/* Chat History Manager */}
-              <HistoryManager
-                currentSessionId={currentSessionId}
-                onSessionSelect={onSessionSelect}
-                onNewSession={onNewChat}
-                trigger={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2 px-3"
-                  >
-                    <History className="h-4 w-4" />
-                    <span className="hidden sm:inline">History</span>
-                  </Button>
-                }
-              />
             </div>
             
             {/* Usage on mobile when expanded - smaller and right-aligned */}
