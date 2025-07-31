@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronRight, Star, Hash, X } from "lucide-react";
+import { ChevronRight, Star, Hash, X, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,17 @@ interface Scenario {
   is_active: boolean;
 }
 
+interface LinkTab {
+  id: string;
+  title: string;
+  url: string;
+  description?: string;
+  category: string;
+  icon: string;
+  order_index: number;
+  is_active: boolean;
+}
+
 interface SidebarProps {
   techniques: Technique[];
   onTechniqueClick: (technique: Technique) => void;
@@ -52,11 +63,13 @@ export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSe
   console.log('First technique:', techniques[0]);
   const [selectedScenario, setSelectedScenario] = useState("Select your situation...");
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
+  const [linkTabs, setLinkTabs] = useState<LinkTab[]>([]);
   
   const favoriteItems = techniques.filter(technique => technique.starred);
 
   useEffect(() => {
     fetchScenarios();
+    fetchLinkTabs();
   }, []);
 
   const fetchScenarios = async () => {
@@ -71,6 +84,21 @@ export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSe
       setScenarios(data || []);
     } catch (error) {
       console.error('Error fetching scenarios:', error);
+    }
+  };
+
+  const fetchLinkTabs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ai_link_tabs')
+        .select('*')
+        .eq('is_active', true)
+        .order('order_index');
+      
+      if (error) throw error;
+      setLinkTabs(data || []);
+    } catch (error) {
+      console.error('Error fetching link tabs:', error);
     }
   };
 
@@ -248,6 +276,59 @@ export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSe
           )}
         </CardContent>
       </Card>
+
+      {/* Quick Links */}
+      {linkTabs.length > 0 && (
+        <Card className="bg-muted/20 border-border/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg text-foreground">Quick Links</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {linkTabs.reduce((acc, tab) => {
+              if (!acc[tab.category]) acc[tab.category] = [];
+              acc[tab.category].push(tab);
+              return acc;
+            }, {} as Record<string, LinkTab[]>) && 
+              Object.entries(
+                linkTabs.reduce((acc, tab) => {
+                  if (!acc[tab.category]) acc[tab.category] = [];
+                  acc[tab.category].push(tab);
+                  return acc;
+                }, {} as Record<string, LinkTab[]>)
+              ).map(([category, tabs]) => (
+                <div key={category}>
+                  <h4 className="text-xs font-medium text-primary mb-2 uppercase tracking-wide">
+                    {category}
+                  </h4>
+                  <div className="space-y-1">
+                    {tabs.map(tab => (
+                      <a
+                        key={tab.id}
+                        href={tab.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-start gap-2 p-2 bg-card/60 rounded-md border border-border hover:border-primary/50 hover:bg-primary/10 transition-all duration-200 group text-sm"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                        <div className="flex-1 min-w-0">
+                          <span className="font-medium text-foreground group-hover:text-primary transition-colors block truncate text-xs">
+                            {tab.title}
+                          </span>
+                          {tab.description && (
+                            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                              {tab.description}
+                            </p>
+                          )}
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ))
+            }
+          </CardContent>
+        </Card>
+      )}
     </aside>
   );
 };

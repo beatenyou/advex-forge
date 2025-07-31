@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Bot, ExternalLink, Download, Trash2, X, ChevronUp, ChevronDown } from "lucide-react";
+import { useState } from "react";
+import { Bot, Download, Trash2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChatSession } from "@/components/ChatSession";
@@ -12,23 +12,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAIUsage } from '@/hooks/useAIUsage';
 
-interface LinkTab {
-  id: string;
-  title: string;
-  url: string;
-  description?: string;
-  category: string;
-  icon: string;
-  order_index: number;
-  is_active: boolean;
-}
 interface ChatSidebarProps {
   onClose?: () => void;
 }
 export const ChatSidebar = ({
   onClose
 }: ChatSidebarProps) => {
-  const [linkTabs, setLinkTabs] = useState<LinkTab[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
   const [showUsage, setShowUsage] = useState(false);
   const { user } = useAuth();
@@ -40,21 +29,6 @@ export const ChatSidebar = ({
     // This will be called by the global function if available
     if ((window as any).__clearChatFunction) {
       await (window as any).__clearChatFunction();
-    }
-  };
-  useEffect(() => {
-    fetchLinkTabs();
-  }, []);
-  const fetchLinkTabs = async () => {
-    try {
-      const {
-        data,
-        error
-      } = await supabase.from('ai_link_tabs').select('*').eq('is_active', true).order('order_index');
-      if (error) throw error;
-      setLinkTabs(data || []);
-    } catch (error) {
-      console.error('Error fetching link tabs:', error);
     }
   };
   const handleSessionSelect = (sessionId: string) => {
@@ -224,12 +198,6 @@ export const ChatSidebar = ({
       });
     }
   };
-  const groupedTabs = linkTabs.reduce((acc, tab) => {
-    if (!acc[tab.category]) acc[tab.category] = [];
-    acc[tab.category].push(tab);
-    return acc;
-  }, {} as Record<string, LinkTab[]>);
-  const hasLinkTabs = linkTabs.length > 0;
   return <TooltipProvider>
       <div className="h-full flex flex-col border-r border-border bg-background overflow-hidden">{/* Use h-full to respect parent constraints */}
         {/* Header */}
@@ -283,62 +251,27 @@ export const ChatSidebar = ({
 
         {/* Content */}
         <div className="flex-1 p-4 bg-background overflow-hidden min-h-0">
-          {hasLinkTabs ? (
-            <Tabs defaultValue="chat" className="w-full h-full flex flex-col min-h-0">
-              <TabsList className="grid w-full grid-cols-3 mb-4 bg-muted/50">
-                <TabsTrigger value="chat" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">Chat</TabsTrigger>
-                <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">History</TabsTrigger>
-                <TabsTrigger value="links" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">Links</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="chat" className="mt-0 flex-1 flex flex-col overflow-hidden min-h-0">
-                {/* Chat session */}
-                <div className="flex-1 overflow-hidden">
-                  <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} />
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="history" className="mt-0 flex-1 overflow-hidden">
-                <EnhancedHistoryTab 
-                  currentSessionId={currentSessionId}
-                  onSessionSelect={handleSessionSelect}
-                  onNewSession={handleNewSession}
-                />
-              </TabsContent>
-              <TabsContent value="links" className="mt-0 flex-1 overflow-y-auto">
-                <div className="space-y-3">
-                  {Object.entries(groupedTabs).map(([category, tabs]) => <div key={category}>
-                      <h4 className="text-xs font-medium text-primary mb-2 uppercase tracking-wide">
-                        {category}
-                      </h4>
-                      <div className="space-y-2">
-                        {tabs.map(tab => <a key={tab.id} href={tab.url} target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 p-3 bg-card/60 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/10 transition-all duration-300 group hover:shadow-glow animate-fade-in">
-                            <ExternalLink className="w-4 h-4 text-primary mt-1 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                            <div className="flex-1 min-w-0">
-                              <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors block truncate">
-                                {tab.title}
-                              </span>
-                              {tab.description && <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                                  {tab.description}
-                                </p>}
-                              <Badge variant="secondary" className="text-xs mt-2 bg-primary/10 text-primary border-primary/20">
-                                {tab.category}
-                              </Badge>
-                            </div>
-                          </a>)}
-                      </div>
-                    </div>)}
-                </div>
-              </TabsContent>
-            </Tabs>
-          ) : (
-            <div className="h-full flex flex-col min-h-0">
+          <Tabs defaultValue="chat" className="w-full h-full flex flex-col min-h-0">
+            <TabsList className="grid w-full grid-cols-2 mb-4 bg-muted/50">
+              <TabsTrigger value="chat" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">Chat</TabsTrigger>
+              <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground text-xs">History</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="chat" className="mt-0 flex-1 flex flex-col overflow-hidden min-h-0">
               {/* Chat session */}
               <div className="flex-1 overflow-hidden">
                 <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} />
               </div>
-            </div>
-          )}
+            </TabsContent>
+            
+            <TabsContent value="history" className="mt-0 flex-1 overflow-hidden">
+              <EnhancedHistoryTab 
+                currentSessionId={currentSessionId}
+                onSessionSelect={handleSessionSelect}
+                onNewSession={handleNewSession}
+              />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </TooltipProvider>;
