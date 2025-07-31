@@ -8,10 +8,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Edit, Trash2, Upload, Download, RefreshCw } from "lucide-react";
+import { Plus, Edit, Trash2, Upload, Download, RefreshCw, Search, Calendar, User, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { migrateTechniquesToDatabase, fetchTechniquesFromDatabase, DatabaseTechnique } from "@/lib/techniqueDataMigration";
+import { format, formatDistanceToNow, isAfter, isBefore, subDays, subWeeks, subMonths } from "date-fns";
 
 const PHASES = [
   'Reconnaissance',
@@ -27,9 +28,14 @@ const PHASES = [
 
 const TechniqueManager = () => {
   const [techniques, setTechniques] = useState<any[]>([]);
+  const [filteredTechniques, setFilteredTechniques] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingTechnique, setEditingTechnique] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('created_desc');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -49,11 +55,30 @@ const TechniqueManager = () => {
     loadTechniques();
   }, []);
 
+  useEffect(() => {
+    filterAndSortTechniques();
+  }, [techniques, searchTerm, dateFilter, sortBy]);
+
   const loadTechniques = async () => {
     setLoading(true);
     try {
       const data = await fetchTechniquesFromDatabase();
       setTechniques(data);
+      
+      // Load profiles for created_by users
+      const userIds = [...new Set(data.map(t => t.created_by).filter(Boolean))];
+      if (userIds.length > 0) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('user_id, display_name, email')
+          .in('user_id', userIds);
+        
+        const profileMap = {};
+        profileData?.forEach(profile => {
+          profileMap[profile.user_id] = profile;
+        });
+        setProfiles(profileMap);
+      }
     } catch (error) {
       console.error('Error loading techniques:', error);
       toast({
@@ -64,6 +89,65 @@ const TechniqueManager = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const filterAndSortTechniques = () => {
+    let filtered = [...techniques];
+
+    // Text search
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(technique => 
+        technique.title?.toLowerCase().includes(term) ||
+        technique.description?.toLowerCase().includes(term) ||
+        technique.tags?.some(tag => tag.toLowerCase().includes(term))
+      );
+    }
+
+    // Date filter
+    const now = new Date();
+    if (dateFilter !== 'all') {
+      let cutoffDate;
+      switch (dateFilter) {
+        case 'today':
+          cutoffDate = subDays(now, 1);
+          break;
+        case 'week':
+          cutoffDate = subWeeks(now, 1);
+          break;
+        case 'month':
+          cutoffDate = subMonths(now, 1);
+          break;
+      }
+      
+      if (cutoffDate) {
+        filtered = filtered.filter(technique => 
+          isAfter(new Date(technique.created_at), cutoffDate)
+        );
+      }
+    }
+
+    // Sort
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'created_desc':
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        case 'created_asc':
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        case 'updated_desc':
+          return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+        case 'updated_asc':
+          return new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime();
+        case 'title_asc':
+          return (a.title || '').localeCompare(b.title || '');
+        case 'title_desc':
+          return (b.title || '').localeCompare(a.title || '');
+        default:
+          return 0;
+      }
+    });
+
+    setFilteredTechniques(filtered);
   };
 
   const handleMigration = async () => {
@@ -162,9 +246,10 @@ const TechniqueManager = () => {
           description: "Technique updated successfully",
         });
       } else {
+        const { data: { user } } = await supabase.auth.getUser();
         const { error } = await supabase
           .from('techniques')
-          .insert([techniqueData]);
+          .insert([{ ...techniqueData, created_by: user?.id }]);
         
         if (error) throw error;
         
@@ -228,7 +313,9 @@ const TechniqueManager = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Technique Management</h2>
-          <p className="text-muted-foreground">Manage cybersecurity techniques and their details</p>
+          <p className="text-muted-foreground">
+            Manage cybersecurity techniques and their details • {filteredTechniques.length} of {techniques.length} techniques
+          </p>
         </div>
         <div className="flex gap-2">
           <Button onClick={handleMigration} variant="outline">
@@ -334,8 +421,53 @@ const TechniqueManager = () => {
         </div>
       </div>
 
+      {/* Search and Filter Controls */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="relative">
+              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search techniques..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8"
+              />
+            </div>
+            
+            <Select value={dateFilter} onValueChange={setDateFilter}>
+              <SelectTrigger>
+                <Calendar className="h-4 w-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="week">This Week</SelectItem>
+                <SelectItem value="month">This Month</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger>
+                <Clock className="h-4 w-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="created_desc">Newest First</SelectItem>
+                <SelectItem value="created_asc">Oldest First</SelectItem>
+                <SelectItem value="updated_desc">Recently Updated</SelectItem>
+                <SelectItem value="updated_asc">Least Recently Updated</SelectItem>
+                <SelectItem value="title_asc">Title A-Z</SelectItem>
+                <SelectItem value="title_desc">Title Z-A</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4">
-        {techniques.map((technique) => (
+        {filteredTechniques.map((technique) => (
           <Card key={technique.id}>
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -362,11 +494,12 @@ const TechniqueManager = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex gap-2">
                   <Badge variant="secondary">{technique.phase}</Badge>
                   <Badge variant="outline">{technique.category}</Badge>
                 </div>
+                
                 {technique.tags && technique.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1">
                     {technique.tags.map((tag: string, idx: number) => (
@@ -376,16 +509,61 @@ const TechniqueManager = () => {
                     ))}
                   </div>
                 )}
-                {technique.reference_links && technique.reference_links.length > 0 && (
-                  <div className="text-sm text-muted-foreground">
-                    {technique.reference_links.length} reference link(s)
+                
+                <Separator />
+                
+                {/* Date and Creator Information */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-3 w-3" />
+                    <span>
+                      Created {formatDistanceToNow(new Date(technique.created_at), { addSuffix: true })}
+                    </span>
                   </div>
-                )}
+                  
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-3 w-3" />
+                    <span>
+                      Updated {formatDistanceToNow(new Date(technique.updated_at), { addSuffix: true })}
+                    </span>
+                  </div>
+                  
+                  {technique.created_by && profiles[technique.created_by] && (
+                    <div className="flex items-center gap-2">
+                      <User className="h-3 w-3" />
+                      <span>
+                        by {profiles[technique.created_by].display_name || profiles[technique.created_by].email}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {technique.reference_links && technique.reference_links.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <span>{technique.reference_links.length} reference link(s)</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Exact dates on hover */}
+                <div className="text-xs text-muted-foreground/70">
+                  <div>Created: {format(new Date(technique.created_at), 'PPp')}</div>
+                  <div>Updated: {format(new Date(technique.updated_at), 'PPp')}</div>
+                </div>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+      
+      {filteredTechniques.length === 0 && techniques.length > 0 && (
+        <Card>
+          <CardContent className="text-center py-8">
+            <p className="text-muted-foreground">
+              No techniques found matching your search criteria.
+            </p>
+          </CardContent>
+        </Card>
+      )}
       
       {techniques.length === 0 && (
         <Card>
