@@ -37,7 +37,7 @@ export default function FullScreenChat() {
         </div>
       </FullScreenChatLayout>
       
-      <ChatModeToggle />
+      <ChatModeToggle isChatSidebarVisible={false} />
     </>
   );
 }

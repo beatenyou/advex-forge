@@ -8,6 +8,7 @@ import { useLocation } from "react-router-dom";
 import { ChatSidebar } from "./ChatSidebar";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { useChatContext } from '@/contexts/ChatContext';
+import { ChatModeToggle } from "@/components/ChatModeToggle";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -85,6 +86,9 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
 
   return (
     <div className="min-h-screen w-full bg-background">
+      {/* Chat Mode Toggle - positioned dynamically based on layout */}
+      <ChatModeToggle isChatSidebarVisible={isChatVisible} />
+      
       <ResizablePanelGroup direction="horizontal" className="min-h-screen h-screen">
         <ResizablePanel 
           defaultSize={getMainPanelSize()} 

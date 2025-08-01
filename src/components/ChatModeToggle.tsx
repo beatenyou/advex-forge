@@ -5,7 +5,11 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { useChatContext } from "@/contexts/ChatContext";
 
-export const ChatModeToggle = () => {
+interface ChatModeToggleProps {
+  isChatSidebarVisible?: boolean;
+}
+
+export const ChatModeToggle = ({ isChatSidebarVisible = false }: ChatModeToggleProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isAnimating, setIsAnimating] = useState(false);
@@ -46,6 +50,19 @@ export const ChatModeToggle = () => {
     return "Enter Full-Screen Chat";
   };
 
+  const getPositionClasses = () => {
+    // In full-screen chat mode, position on the right
+    if (isFullScreenChat) {
+      return "top-6 right-6";
+    }
+    // In split-screen mode with chat sidebar visible, position on the left
+    if (isChatSidebarVisible) {
+      return "top-6 left-6";
+    }
+    // Default position when no chat sidebar
+    return "top-6 right-6";
+  };
+
   return (
     <TooltipProvider>
       <Tooltip>
@@ -53,7 +70,7 @@ export const ChatModeToggle = () => {
           <Button
             onClick={handleToggleMode}
             className={`
-              fixed top-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg
+              fixed ${getPositionClasses()} z-50 h-14 w-14 rounded-full shadow-lg
               bg-primary hover:bg-primary/90 text-primary-foreground
               hover:scale-110 transition-all duration-300 ease-out
               hover:shadow-glow border-2 border-primary/20
