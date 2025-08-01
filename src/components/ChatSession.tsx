@@ -516,6 +516,15 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
     e.preventDefault();
     if (!currentQuestion.trim() || isLoading || isSending || !currentSession) return;
 
+    // Reset all states at the beginning to ensure clean start
+    setShowStopButton(false);
+    setStreamingState({
+      streamingMessage: '',
+      isStreaming: false,
+      currentProvider: '',
+      abortController: null
+    });
+
     // Check AI quota before sending
     if (!canUseAI) {
       toast({
@@ -530,11 +539,6 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
     const startTime = performance.now();
     setQuestion('');
     setIsSending(true);
-    setStreamingState({
-      streamingMessage: '',
-      isStreaming: false,
-      currentProvider: ''
-    });
 
     // Track chat activity
     await trackActivity('chat_message_sent', `Sent message: ${userQuestion.substring(0, 50)}...`);
@@ -1075,7 +1079,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
                   </div>
                 )}
 
-                {(isStreaming && !isSending) || showStopButton ? (
+                {showStopButton ? (
                   <div className="flex justify-center p-4">
                     <Button
                       variant="outline"
@@ -1084,13 +1088,11 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
                       className="bg-background/50 backdrop-blur-sm border-red-500/20 hover:bg-red-500/10"
                     >
                       <Square className="h-4 w-4 mr-2" />
-                      {showStopButton ? 'Stop Request' : 'Stop'}
+                      Stop Request
                     </Button>
-                    {showStopButton && (
-                      <span className="text-xs text-muted-foreground ml-2 flex items-center">
-                        Request taking longer than expected
-                      </span>
-                    )}
+                    <span className="text-xs text-muted-foreground ml-2 flex items-center">
+                      Request taking longer than expected
+                    </span>
                   </div>
                 ) : null}
               </div>
@@ -1170,7 +1172,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
                 )}
               </Popover>
             </div>
-             {isStreaming ? (
+             {showStopButton ? (
               <Button 
                 type="button" 
                 variant="destructive" 
