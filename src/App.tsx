@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { usePerformanceMonitoring } from "@/hooks/usePerformanceMonitoring";
+import { ChatProvider } from "@/contexts/ChatContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AdminStats from "./pages/AdminStats";
@@ -25,8 +26,9 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <AnalyticsProvider>
-        <TooltipProvider>
+      <ChatProvider>
+        <AnalyticsProvider>
+          <TooltipProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
@@ -41,8 +43,9 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-        </TooltipProvider>
-      </AnalyticsProvider>
+          </TooltipProvider>
+        </AnalyticsProvider>
+      </ChatProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

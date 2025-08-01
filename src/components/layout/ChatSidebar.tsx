@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAIUsage } from '@/hooks/useAIUsage';
+import { useChatContext } from '@/contexts/ChatContext';
 
 interface ChatSidebarProps {
   onClose?: () => void;
@@ -23,6 +24,7 @@ export const ChatSidebar = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const { canUseAI, currentUsage, quotaLimit, planName } = useAIUsage();
+  const { currentSession } = useChatContext();
 
   // Function to clear chat that can be passed to ChatSession
   const clearChatAndResetSession = async () => {

@@ -15,6 +15,8 @@ import { useAIUsage } from '@/hooks/useAIUsage';
 import { useUserModelAccess } from '@/hooks/useUserModelAccess';
 import { ChatHeader } from '@/components/ChatHeader';
 import { EnhancedHistoryTab } from '@/components/EnhancedHistoryTab';
+import { useChatContext } from '@/contexts/ChatContext';
+import { useLocation } from 'react-router-dom';
 
 interface ChatMessage {
   id: string;
@@ -51,17 +53,22 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
   const { trackActivity, trackPerformance } = useAnalytics();
   const { canUseAI, currentUsage, quotaLimit, planName, refreshQuota } = useAIUsage();
   const { selectedModel, selectedModelId, getSelectedModel, refreshModels } = useUserModelAccess();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
-  const [question, setQuestion] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSending, setIsSending] = useState(false);
-  const [streamingMessage, setStreamingMessage] = useState('');
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const location = useLocation();
+  
+  // Use global chat context for state management
+  const {
+    messages, setMessages,
+    currentSession, setCurrentSession,
+    streamingState, setStreamingState,
+    currentQuestion, setCurrentQuestion,
+    isLoading, setIsLoading,
+    isSending, setIsSending,
+    restoreStateFromModeSwitch
+  } = useChatContext();
+  
+  // Local state for UI-specific concerns
   const [requestTimeout, setRequestTimeout] = useState<NodeJS.Timeout | null>(null);
   const [showStopButton, setShowStopButton] = useState(false);
-  const [currentProvider, setCurrentProvider] = useState<string>('');
   const [savedPrompts, setSavedPrompts] = useState<SavedPrompt[]>([]);
   const [showPromptSuggestions, setShowPromptSuggestions] = useState(false);
   const [filteredPrompts, setFilteredPrompts] = useState<SavedPrompt[]>([]);
@@ -69,19 +76,61 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
   const [showHistory, setShowHistory] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [hasRestoredState, setHasRestoredState] = useState(false);
+
+  // Destructure streaming state for easier access
+  const { isStreaming, streamingMessage, abortController, currentProvider } = streamingState;
+  
+  // Helper to set question locally and in context
+  const setQuestion = (value: string) => {
+    setCurrentQuestion(value);
+  };
 
   // Function to clear all messages and create new session
   const clearChatAndResetSession = async () => {
     setMessages([]);
     setCurrentSession(null);
+    setStreamingState({
+      isStreaming: false,
+      streamingMessage: '',
+      abortController: null,
+      currentProvider: ''
+    });
     await loadOrCreateSession();
     // Scroll to top after clearing messages
     setTimeout(scrollToTop, 100);
   };
 
+  // Handle state restoration on mount or navigation
+  useEffect(() => {
+    const shouldRestoreState = location.state?.preserveChat && !hasRestoredState;
+    
+    if (shouldRestoreState) {
+      const restored = restoreStateFromModeSwitch();
+      setHasRestoredState(true);
+      
+      if (!restored) {
+        // If restoration failed, load normally
+        if (sessionId) {
+          loadSpecificSession(sessionId);
+        } else {
+          loadOrCreateSession();
+        }
+      }
+    } else if (!hasRestoredState) {
+      // Normal loading path
+      if (sessionId) {
+        loadSpecificSession(sessionId);
+      } else {
+        loadOrCreateSession();
+      }
+      setHasRestoredState(true);
+    }
+  }, [sessionId, location.state, hasRestoredState]);
+
   // Handle initial prompt when component mounts or initialPrompt changes
   useEffect(() => {
-    if (initialPrompt && initialPrompt.trim() && !question) {
+    if (initialPrompt && initialPrompt.trim() && !currentQuestion && hasRestoredState) {
       setQuestion(initialPrompt);
       // Auto-focus the textarea after setting the prompt
       setTimeout(() => {
@@ -91,17 +140,13 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
         }
       }, 100);
     }
-  }, [initialPrompt]);
+  }, [initialPrompt, currentQuestion, hasRestoredState]);
 
+  // Fetch saved prompts and check admin status when component mounts
   useEffect(() => {
-    if (sessionId) {
-      loadSpecificSession(sessionId);
-    } else {
-      loadOrCreateSession();
-    }
     fetchSavedPrompts();
     checkAdminStatus();
-  }, [sessionId]);
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
@@ -119,7 +164,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
       const { providerId, model } = event.detail;
       
       // Update current provider display immediately
-      setCurrentProvider(model?.provider?.name || '');
+      setStreamingState({ currentProvider: model?.provider?.name || '' });
       
       // Refresh the model access hook to get latest state
       refreshModels();
@@ -414,21 +459,23 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
   const stopStreaming = () => {
     if (abortController) {
       abortController.abort();
-      setAbortController(null);
+      setStreamingState({ abortController: null });
     }
     if (requestTimeout) {
       clearTimeout(requestTimeout);
       setRequestTimeout(null);
     }
-    setIsStreaming(false);
-    setStreamingMessage('');
+    setStreamingState({
+      isStreaming: false,
+      streamingMessage: ''
+    });
     setIsLoading(false);
     setShowStopButton(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!question.trim() || isLoading || isSending || !currentSession) return;
+    if (!currentQuestion.trim() || isLoading || isSending || !currentSession) return;
 
     // Check AI quota before sending
     if (!canUseAI) {
@@ -440,20 +487,22 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
       return;
     }
 
-    const userQuestion = question.trim();
+    const userQuestion = currentQuestion.trim();
     const startTime = performance.now();
     setQuestion('');
     setIsSending(true);
-    setStreamingMessage('');
-    setIsStreaming(false);
-    setCurrentProvider('');
+    setStreamingState({
+      streamingMessage: '',
+      isStreaming: false,
+      currentProvider: ''
+    });
 
     // Track chat activity
     await trackActivity('chat_message_sent', `Sent message: ${userQuestion.substring(0, 50)}...`);
 
     // Create abort controller for cancellation
     const controller = new AbortController();
-    setAbortController(controller);
+    setStreamingState({ abortController: controller });
 
     // Set timeout to show stop button after 30 seconds
     const timeout = setTimeout(() => {
@@ -464,7 +513,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
     try {
       // Save user message
       const userMessage = await saveMessage(currentSession.id, 'user', userQuestion);
-      setMessages(prev => [...prev, userMessage as ChatMessage]);
+      setMessages([...messages, userMessage as ChatMessage]);
       setIsSending(false);
       setIsLoading(true);
 
@@ -585,7 +634,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
 
       // Set provider information and log usage
       if (data.providerName) {
-        setCurrentProvider(data.providerName);
+        setStreamingState({ currentProvider: data.providerName });
         console.log('✅ AI response from provider:', data.providerName, 'Provider ID:', data.providerId);
       }
 
@@ -596,11 +645,13 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
 
       // Now switch to streaming state after receiving API response
       setIsLoading(false);
-      setIsStreaming(true);
+      setStreamingState({
+        isStreaming: true,
+        streamingMessage: ''
+      });
 
       // Simulate streaming effect
       const fullMessage = data.message;
-      setStreamingMessage('');
       
       // Stream the message with optimized speed
       const words = fullMessage.split(' ');
@@ -613,7 +664,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
         }
         
         currentText += (i > 0 ? ' ' : '') + words[i];
-        setStreamingMessage(currentText);
+        setStreamingState({ streamingMessage: currentText });
         
         // Faster streaming with word-by-word display
         await new Promise(resolve => setTimeout(resolve, 50));
@@ -625,8 +676,10 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
       // Only save if not cancelled
       if (!controller.signal.aborted) {
         // Streaming complete - save the full message
-        setIsStreaming(false);
-        setStreamingMessage('');
+        setStreamingState({
+          isStreaming: false,
+          streamingMessage: ''
+        });
 
         // Save AI response
         const aiMessage = await saveMessage(
@@ -637,7 +690,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
           data.tokensUsed
         );
         
-        setMessages(prev => [...prev, aiMessage as ChatMessage]);
+        setMessages([...messages, aiMessage as ChatMessage]);
 
         // Track successful AI response
         await trackActivity('ai_response_received', `Received response from ${data.providerName || 'unknown'}`);
@@ -698,9 +751,11 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
     } finally {
       setIsLoading(false);
       setIsSending(false);
-      setIsStreaming(false);
-      setStreamingMessage('');
-      setAbortController(null);
+      setStreamingState({
+        isStreaming: false,
+        streamingMessage: '',
+        abortController: null
+      });
     }
   };
 
@@ -813,7 +868,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
                   <div className="flex justify-end">
                     <div className="bg-red-950 text-red-100 rounded-lg p-3 ml-12 max-w-[80%]">
                       <div className="space-y-2">
-                        <p className="text-sm">{question || "Sending message..."}</p>
+                        <p className="text-sm">{currentQuestion || "Sending message..."}</p>
                         <div className="flex items-center justify-between text-xs opacity-70">
                           <span>Sending...</span>
                           <div className="flex items-center gap-1">
@@ -896,13 +951,13 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
                     <TextareaAutosize
                       ref={textareaRef}
                       placeholder="Type your message... (Use / for saved prompts)"
-                      value={question}
+                      value={currentQuestion}
                       onChange={(e) => {
                         setQuestion(e.target.value);
                         handlePromptSearch(e.target.value);
                       }}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey && !isLoading && !isSending && question.trim()) {
+                        if (e.key === 'Enter' && !e.shiftKey && !isLoading && !isSending && currentQuestion.trim()) {
                           e.preventDefault();
                           handleSubmit(e as any);
                         }
@@ -969,7 +1024,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
             ) : (
               <Button 
                 type="submit" 
-                disabled={isLoading || isSending || !question.trim()}
+                disabled={isLoading || isSending || !currentQuestion.trim()}
                 size="sm"
                 className="px-4 py-2 shrink-0"
               >

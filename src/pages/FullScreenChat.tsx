@@ -1,12 +1,25 @@
-import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, useLocation } from "react-router-dom";
 import { FullScreenChatLayout } from "@/components/layouts/FullScreenChatLayout";
 import { ChatSession } from "@/components/ChatSession";
 import { ChatModeToggle } from "@/components/ChatModeToggle";
+import { useChatContext } from "@/contexts/ChatContext";
 
 export default function FullScreenChat() {
   const { sessionId } = useParams();
+  const location = useLocation();
   const [isMinimized, setIsMinimized] = useState(false);
+  const { restoreStateFromModeSwitch } = useChatContext();
+
+  // Handle state restoration on navigation
+  useEffect(() => {
+    if (location.state?.preserveChat) {
+      const restored = restoreStateFromModeSwitch();
+      if (restored) {
+        console.log('Chat state restored in full screen mode');
+      }
+    }
+  }, [location.state, restoreStateFromModeSwitch]);
 
   const handleToggleMinimize = () => {
     setIsMinimized(prev => !prev);

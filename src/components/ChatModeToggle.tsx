@@ -3,23 +3,30 @@ import { Button } from "@/components/ui/button";
 import { MessageSquare, Maximize2, PanelRight } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { useChatContext } from "@/contexts/ChatContext";
 
 export const ChatModeToggle = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isAnimating, setIsAnimating] = useState(false);
+  const { preserveStateForModeSwitch, currentSession } = useChatContext();
 
   const isFullScreenChat = location.pathname.startsWith('/chat');
 
   const handleToggleMode = () => {
     setIsAnimating(true);
     
+    // Preserve chat state before switching modes
+    preserveStateForModeSwitch();
+    
     setTimeout(() => {
       if (isFullScreenChat) {
         // Navigate to split-screen mode (dashboard with chat visible)
-        navigate('/', { state: { showChat: true } });
+        navigate('/', { state: { showChat: true, preserveChat: true } });
       } else {
-        navigate('/chat');
+        // Navigate to fullscreen with current session if available
+        const targetPath = currentSession ? `/chat/${currentSession.id}` : '/chat';
+        navigate(targetPath, { state: { preserveChat: true } });
       }
       setIsAnimating(false);
     }, 200);

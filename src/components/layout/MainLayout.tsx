@@ -7,6 +7,7 @@ import {
 import { useLocation } from "react-router-dom";
 import { ChatSidebar } from "./ChatSidebar";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
+import { useChatContext } from '@/contexts/ChatContext';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -14,18 +15,28 @@ interface MainLayoutProps {
 
 export const MainLayout = ({ children }: MainLayoutProps) => {
   const location = useLocation();
+  const { restoreStateFromModeSwitch } = useChatContext();
   const [isChatVisible, setIsChatVisible] = useState(false); // Start hidden
   const [isWideScreen, setIsWideScreen] = useState(false);
   const [initialChatPrompt, setInitialChatPrompt] = useState<string | undefined>();
 
-  // Check for navigation state to show chat
+  // Check for navigation state to show chat and restore state
   useEffect(() => {
     if (location.state?.showChat) {
       setIsChatVisible(true);
+      
+      // If this is a mode switch, restore the chat state
+      if (location.state?.preserveChat) {
+        const restored = restoreStateFromModeSwitch();
+        if (restored) {
+          console.log('Chat state restored in split screen mode');
+        }
+      }
+      
       // Clear the state to avoid it persisting on future navigations
       window.history.replaceState({}, document.title);
     }
-  }, [location.state]);
+  }, [location.state, restoreStateFromModeSwitch]);
 
   // Check screen width but don't auto-show chat
   useEffect(() => {
