@@ -259,39 +259,42 @@ export function useUserModelAccess() {
       // Wait a small moment for the database trigger to fire
       await new Promise(resolve => setTimeout(resolve, 50));
       
-      // Dispatch enhanced event with complete model data for immediate UI sync
-      const modelChangeEvent = new CustomEvent('modelChanged', { 
-        detail: { 
-          modelId: providerId,
-          modelName: model.provider?.name,
-          modelType: model.provider?.type,
-          providerId, 
-          model: { 
-            provider: {
-              id: model.provider?.id,
-              name: model.provider?.name,
-              type: model.provider?.type,
-              model_name: model.provider?.model_name
-            },
-            provider_id: model.provider_id
-          },
-          selectedModelId: providerId,
-          timestamp: Date.now() 
-        } 
-      });
+      // Wait a moment for any UI updates to complete
+      await new Promise(resolve => setTimeout(resolve, 100));
       
-      console.log('🚀 Model Selection: Dispatching modelChanged event with detail:', modelChangeEvent.detail);
+      // Dispatch enhanced event with complete model data for immediate UI sync
+      const eventDetail = { 
+        selectedModelId: providerId,  // Primary field for AI status
+        modelId: providerId,         // Backup field 
+        providerId,                  // Compatibility field
+        modelName: model.provider?.name,
+        modelType: model.provider?.type,
+        model: { 
+          provider: {
+            id: model.provider?.id,
+            name: model.provider?.name,
+            type: model.provider?.type,
+            model_name: model.provider?.model_name
+          },
+          provider_id: model.provider_id
+        },
+        timestamp: Date.now() 
+      };
+      
+      console.log('🚀 Model Selection: Dispatching modelChanged event with detail:', eventDetail);
+      
+      const modelChangeEvent = new CustomEvent('modelChanged', { detail: eventDetail });
       window.dispatchEvent(modelChangeEvent);
       
       // Also trigger a global refresh to ensure all status indicators update
       const globalRefreshEvent = new CustomEvent('globalStatusRefresh', {
-        detail: { modelId: providerId, timestamp: Date.now() }
+        detail: { modelId: providerId, selectedModelId: providerId, timestamp: Date.now() }
       });
       window.dispatchEvent(globalRefreshEvent);
       
       // Force immediate refresh of all connected components
       const forceRefreshEvent = new CustomEvent('forceStatusRefresh', {
-        detail: { modelId: providerId, timestamp: Date.now() }
+        detail: { modelId: providerId, selectedModelId: providerId, timestamp: Date.now() }
       });
       window.dispatchEvent(forceRefreshEvent);
       

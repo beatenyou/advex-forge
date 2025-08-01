@@ -55,21 +55,32 @@ export const useAIStatus = () => {
     // Listen for DOM events from model selection (critical for side panel)
     const handleModelChange = async (event: any) => {
       console.log('🎯 AI Status: Received modelChanged event in useAIStatus', event.detail);
-      const { modelId, providerId, modelName, modelType } = event.detail;
+      const { modelId, providerId, selectedModelId, modelName, modelType } = event.detail;
       
-      // Use modelId first, fallback to providerId for compatibility
-      const targetModelId = modelId || providerId;
+      // Use the most specific ID available
+      const targetModelId = selectedModelId || modelId || providerId;
       
       if (targetModelId) {
-        console.log('🔄 AI Status: Updating status immediately for model change:', modelName, targetModelId);
-        // Force immediate state update
-        setCurrentModelId(targetModelId);
-        setLoading(true);
+        console.log('🔄 AI Status: Updating status immediately for model change:', {
+          modelName,
+          targetModelId,
+          currentModelId,
+          needsUpdate: targetModelId !== currentModelId
+        });
         
-        // Trigger immediate status check with new model
-        await checkAIStatus(targetModelId);
-        
-        console.log('✅ AI Status: Model change status check completed for:', targetModelId);
+        // Only update if the model actually changed
+        if (targetModelId !== currentModelId) {
+          // Force immediate state update
+          setCurrentModelId(targetModelId);
+          setLoading(true);
+          
+          // Trigger immediate status check with new model
+          await checkAIStatus(targetModelId);
+          
+          console.log('✅ AI Status: Model change status check completed for:', targetModelId);
+        } else {
+          console.log('🔄 AI Status: Model unchanged, skipping status update');
+        }
       } else {
         console.warn('⚠️ AI Status: No valid modelId or providerId in event:', event.detail);
       }
@@ -207,6 +218,7 @@ export const useAIStatus = () => {
       
       // Update current model ID state if we have a new one
       if (targetModelId !== currentModelId) {
+        console.log('🎯 AI Status: Updating current model ID from', currentModelId, 'to', targetModelId);
         setCurrentModelId(targetModelId);
       }
       
@@ -240,17 +252,29 @@ export const useAIStatus = () => {
       
       // Get currently selected model (prioritize user's preference)
       let currentProvider = null;
+      let statusLabel = '';
       
       // Use the target model ID (user's selection) - this should show what user selected
       if (targetModelId) {
         currentProvider = activeProviders.find(p => p.id === targetModelId);
-        console.log('🎯 Found provider for user selection:', currentProvider?.name, 'ID:', currentProvider?.id);
+        if (currentProvider) {
+          // Display the exact selected model name
+          statusLabel = `${currentProvider.name}`;
+          console.log('🎯 Found provider for user selection:', currentProvider.name, 'ID:', currentProvider.id);
+        }
       }
       
       // Fall back to default provider if no valid selection
       if (!currentProvider) {
-        currentProvider = activeProviders.find(p => p.id === configResult.data.default_provider_id);
-        console.log('🔄 Using default provider fallback:', currentProvider?.name);
+        currentProvider = activeProviders.find(p => 
+          p.id === configResult.data.default_user_primary_model_id || 
+          p.id === configResult.data.default_user_secondary_model_id ||
+          p.id === configResult.data.default_provider_id
+        );
+        if (currentProvider) {
+          statusLabel = `${currentProvider.name} (Default)`;
+          console.log('🔄 Using default provider fallback:', currentProvider.name);
+        }
       }
 
       // Check if we have a valid provider
@@ -263,12 +287,12 @@ export const useAIStatus = () => {
         return;
       }
 
-      // All configuration checks passed
-      console.log('✅ AI Status: Setting status to operational with provider:', currentProvider.name);
+      // All configuration checks passed - show the exact model that's selected
+      console.log('✅ AI Status: Setting status to operational with provider:', currentProvider.name, 'type:', currentProvider.type);
       setStatus({
         status: 'operational',
-        message: `Using ${currentProvider.name}`, 
-        details: `AI provider: ${currentProvider.name} (${currentProvider.type.toUpperCase()})`
+        message: statusLabel,
+        details: `${currentProvider.type.toUpperCase()} provider ready`
       });
 
     } catch (error) {
