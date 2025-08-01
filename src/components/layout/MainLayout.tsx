@@ -9,6 +9,7 @@ import { ChatSidebar } from "./ChatSidebar";
 import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { useChatContext } from '@/contexts/ChatContext';
 import { ChatModeToggle } from "@/components/ChatModeToggle";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -20,6 +21,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   const [isChatVisible, setIsChatVisible] = useState(false); // Start hidden
   const [isWideScreen, setIsWideScreen] = useState(false);
   const [initialChatPrompt, setInitialChatPrompt] = useState<string | undefined>();
+  const isMobile = useIsMobile();
 
   // Check for navigation state to show chat and restore state
   useEffect(() => {
@@ -69,6 +71,9 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
 
   // Dynamic sizing based on screen width
   const getChatPanelSize = () => {
+    if (isMobile) {
+      return { default: 95, min: 90, max: 100 }; // Almost full screen on mobile
+    }
     if (isWideScreen) {
       return { default: 30, min: 25, max: 45 }; // Smaller on very wide screens
     }
@@ -76,6 +81,9 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   };
 
   const getMainPanelSize = () => {
+    if (isMobile && isChatVisible) {
+      return 5; // Minimal space on mobile when chat is open
+    }
     if (isWideScreen && isChatVisible) {
       return 70; // Larger main area on wide screens
     }
@@ -89,46 +97,71 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
       {/* Chat Mode Toggle - positioned dynamically based on layout */}
       <ChatModeToggle isChatSidebarVisible={isChatVisible} />
       
-      <ResizablePanelGroup direction="horizontal" className="min-h-screen h-screen">
-        <ResizablePanel 
-          defaultSize={getMainPanelSize()} 
-          minSize={isWideScreen ? 55 : 40} // Larger minimum on wide screens
-          className="bg-background"
-        >
-          <div className="flex-1 flex flex-col min-w-0 h-full">
-            <div className="flex-shrink-0">
-              <AnnouncementBanner />
-            </div>
-            <div className="flex-1 min-h-0">
-              {React.cloneElement(children as React.ReactElement, { 
-                onToggleChat: handleToggleChat, 
-                onOpenChatWithPrompt: handleOpenChatWithPrompt,
-                isChatVisible: isChatVisible,
-                isWideScreen: isWideScreen 
-              })}
-            </div>
+      {isMobile ? (
+        // Mobile: Full screen layout with overlay chat
+        <div className="min-h-screen h-screen bg-background relative">
+          <div className="flex-shrink-0">
+            <AnnouncementBanner />
           </div>
-        </ResizablePanel>
-        
-        {isChatVisible && (
-          <>
-            <ResizableHandle 
-              withHandle 
-              className="bg-border hover:bg-primary/20 transition-colors duration-200 w-1 group"
-            />
-            
-            <ResizablePanel 
-              defaultSize={chatPanelConfig.default} 
-              minSize={chatPanelConfig.min} 
-              maxSize={chatPanelConfig.max}
-              className="bg-background h-full overflow-hidden"
-              style={{ contain: 'layout', isolation: 'isolate' }}
-            >
+          <div className="flex-1 min-h-0">
+            {React.cloneElement(children as React.ReactElement, { 
+              onToggleChat: handleToggleChat, 
+              onOpenChatWithPrompt: handleOpenChatWithPrompt,
+              isChatVisible: isChatVisible,
+              isWideScreen: isWideScreen 
+            })}
+          </div>
+          
+          {/* Mobile Chat Overlay */}
+          {isChatVisible && (
+            <div className="fixed inset-0 z-50 bg-background">
               <ChatSidebar onClose={handleCloseChat} initialPrompt={initialChatPrompt} />
-            </ResizablePanel>
-          </>
-        )}
-      </ResizablePanelGroup>
+            </div>
+          )}
+        </div>
+      ) : (
+        // Desktop/Tablet: Resizable panels
+        <ResizablePanelGroup direction="horizontal" className="min-h-screen h-screen">
+          <ResizablePanel 
+            defaultSize={getMainPanelSize()} 
+            minSize={isWideScreen ? 55 : 40} // Larger minimum on wide screens
+            className="bg-background"
+          >
+            <div className="flex-1 flex flex-col min-w-0 h-full">
+              <div className="flex-shrink-0">
+                <AnnouncementBanner />
+              </div>
+              <div className="flex-1 min-h-0">
+                {React.cloneElement(children as React.ReactElement, { 
+                  onToggleChat: handleToggleChat, 
+                  onOpenChatWithPrompt: handleOpenChatWithPrompt,
+                  isChatVisible: isChatVisible,
+                  isWideScreen: isWideScreen 
+                })}
+              </div>
+            </div>
+          </ResizablePanel>
+          
+          {isChatVisible && (
+            <>
+              <ResizableHandle 
+                withHandle 
+                className="bg-border hover:bg-primary/20 transition-colors duration-200 w-1 group"
+              />
+              
+              <ResizablePanel 
+                defaultSize={chatPanelConfig.default} 
+                minSize={chatPanelConfig.min} 
+                maxSize={chatPanelConfig.max}
+                className="bg-background h-full overflow-hidden"
+                style={{ contain: 'layout', isolation: 'isolate' }}
+              >
+                <ChatSidebar onClose={handleCloseChat} initialPrompt={initialChatPrompt} />
+              </ResizablePanel>
+            </>
+          )}
+        </ResizablePanelGroup>
+      )}
     </div>
   );
 };

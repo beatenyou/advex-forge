@@ -28,17 +28,26 @@ export const useResponsiveGrid = ({
       isChatVisible
     });
     
-    // Define breakpoints based on chat visibility
+    // Mobile-first breakpoints
+    if (containerWidth < 480) {
+      return 1; // Mobile: always 1 column
+    }
+    
+    if (containerWidth < 768) {
+      return Math.min(2, maxPossibleColumns); // Small tablet: max 2 columns
+    }
+    
+    // Define breakpoints based on chat visibility for larger screens
     if (isChatVisible) {
       // More conservative when chat is open
-      if (containerWidth < 700) return 1;
-      if (containerWidth < 1100) return Math.min(2, maxPossibleColumns);
+      if (containerWidth < 900) return Math.min(2, maxPossibleColumns);
+      if (containerWidth < 1200) return Math.min(2, maxPossibleColumns);
       if (containerWidth < 1600) return Math.min(3, maxPossibleColumns);
       return Math.min(3, maxPossibleColumns); // Max 3 when chat open
     } else {
       // More aggressive when chat is closed
-      if (containerWidth < 700) return 1;
-      if (containerWidth < 1100) return Math.min(2, maxPossibleColumns);
+      if (containerWidth < 900) return Math.min(2, maxPossibleColumns);
+      if (containerWidth < 1200) return Math.min(3, maxPossibleColumns);
       if (containerWidth < 1500) return Math.min(3, maxPossibleColumns);
       if (containerWidth < 1900) return Math.min(4, maxPossibleColumns);
       if (containerWidth < 2400) return Math.min(5, maxPossibleColumns);

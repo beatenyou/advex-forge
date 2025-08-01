@@ -128,7 +128,39 @@
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground;
+body {
+  @apply bg-background text-foreground;
+}
+
+/* Mobile optimizations */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Touch-friendly sizes */
+@media (max-width: 768px) {
+  .btn-touch {
+    min-height: 44px;
+    min-width: 44px;
   }
+  
+  .input-touch {
+    min-height: 44px;
+  }
+  
+  /* Optimize mobile layout */
+  .mobile-layout .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .mobile-layout h1 {
+    font-size: 1.5rem;
+  }
+}
 }

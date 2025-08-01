@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, Shield, Users, Settings, Star, Hash, Filter, LogOut, UserCog, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useNavigationPhases } from "@/hooks/useNavigationPhases";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +15,8 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/comp
 import { TechniqueCard } from "./TechniqueCard";
 import { TechniqueModal } from "./TechniqueModal";
 import { Sidebar } from "./Sidebar";
+import { MobileSidebar } from './MobileSidebar';
+import { MobileNavigation } from './MobileNavigation';
 import { QuickReference } from "./QuickReference";
 import { AdminDashboard } from "./AdminDashboard";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
@@ -55,6 +58,7 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, onOpenChatWithPromp
     toast
   } = useToast();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [techniques, setTechniques] = useState<any[]>([]);
   const [userFavorites, setUserFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -420,52 +424,90 @@ Can you help me understand this scenario and provide guidance on the techniques,
             </div>
           </div>
 
-          {/* Search and Filters */}
-          <div className="flex flex-col lg:flex-row gap-4 mt-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input placeholder="Search attacks, tools, commands..." className="pl-10 bg-muted/50 border-border/50 focus:border-primary" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-              </div>
+          {/* Mobile Navigation */}
+          {isMobile && (
+            <div className="mb-4">
+              <MobileNavigation
+                selectedPhase={selectedPhase}
+                onPhaseSelect={setSelectedPhase}
+              />
             </div>
-            <Select value={selectedPhase} onValueChange={setSelectedPhase}>
-              <SelectTrigger className="w-48 bg-muted/50 border-border/50">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {navigationPhases.map(phase => <SelectItem key={phase.name} value={phase.label}>{phase.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
+          )}
+          
+          {/* Search and Filters */}
+          <div className="flex flex-col gap-4 mt-4">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input 
+                    placeholder="Search attacks, tools, commands..." 
+                    className="pl-10 bg-muted/50 border-border/50 focus:border-primary btn-touch" 
+                    value={searchQuery} 
+                    onChange={e => setSearchQuery(e.target.value)} 
+                  />
+                </div>
+              </div>
+              
+              {/* Desktop Phase Selector */}
+              {!isMobile && (
+                <Select value={selectedPhase} onValueChange={setSelectedPhase}>
+                  <SelectTrigger className="w-48 bg-muted/50 border-border/50">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {navigationPhases.map(phase => <SelectItem key={phase.name} value={phase.label}>{phase.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
 
-          {/* Tag Filters */}
-          <div className="mt-4">
-            <TagSelector
-              allTags={allTags}
-              selectedTags={selectedTags}
-              onToggleTag={toggleTag}
-              maxVisibleTags={5}
-            />
+            {/* Tag Filters */}
+            <div className="mt-2">
+              <TagSelector
+                allTags={allTags}
+                selectedTags={selectedTags}
+                onToggleTag={toggleTag}
+                maxVisibleTags={isMobile ? 3 : 5}
+              />
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="flex">
-        {/* Sidebar */}
-        <Sidebar 
-          techniques={techniques} 
-          onTechniqueClick={openTechniqueModal}
-          selectedPhase={selectedPhase}
-          onPhaseSelect={setSelectedPhase}
-          onClearAllFavorites={clearAllFavorites}
-          selectedScenario={selectedScenario}
-          onScenarioSelect={handleScenarioSelect}
-          onOpenChatWithScenario={handleOpenChatWithScenario}
-        />
+      <div className="flex relative">
+        {/* Mobile Sidebar */}
+        {isMobile && (
+          <MobileSidebar
+            techniques={techniques}
+            onTechniqueSelect={openTechniqueModal}
+            onStarTechnique={toggleFavorite}
+            selectedPhase={selectedPhase}
+            onPhaseSelect={setSelectedPhase}
+            selectedScenario={selectedScenario}
+            onScenarioSelect={handleScenarioSelect}
+            onOpenChat={handleOpenChatWithScenario}
+            onOpenChatWithPrompt={onOpenChatWithPrompt || (() => {})}
+          />
+        )}
+        
+        {/* Desktop Sidebar */}
+        {!isMobile && (
+          <Sidebar 
+            techniques={techniques} 
+            onTechniqueClick={openTechniqueModal}
+            selectedPhase={selectedPhase}
+            onPhaseSelect={setSelectedPhase}
+            onClearAllFavorites={clearAllFavorites}
+            selectedScenario={selectedScenario}
+            onScenarioSelect={handleScenarioSelect}
+            onOpenChatWithScenario={handleOpenChatWithScenario}
+          />
+        )}
 
         {/* Main Content - Better container structure for responsive grid */}
         <main className="flex-1 max-w-none w-full">
-          <div className="p-8 lg:p-12 max-w-full mx-auto">
+          <div className={`${isMobile ? 'p-4' : 'p-8 lg:p-12'} max-w-full mx-auto`}>
           {/* Phase Section */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-6">
