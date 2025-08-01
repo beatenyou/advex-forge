@@ -79,7 +79,7 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
   const handleAIChatClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (onOpenAIChat) {
-      const prompt = `Tell me more about the ${technique.title} attack technique${technique.mitre_id && isValidMitreId(technique.mitre_id) ? ` (${extractCleanMitreId(technique.mitre_id)})` : ''}. Please provide additional details about its usage, detection methods, and mitigation strategies.`;
+      const prompt = `Tell me more about the ${technique.title} attack technique${technique.mitre_id && isValidMitreId(technique.mitre_id) ? ` (${extractCleanMitreId(technique.mitre_id)})` : ''}. Please provide additional details about its usage, tools, and methods to employ this strategy.`;
       onOpenAIChat(prompt);
     }
   };
@@ -253,6 +253,7 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)}
         onToggleFavorite={onToggleFavorite}
+        onOpenAIChat={onOpenAIChat}
       />
       
       <CommandGenerator

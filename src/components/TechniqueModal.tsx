@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { X, Copy, Star, Zap, Shield, AlertTriangle, Eye, Settings, Bolt, ExternalLink, Loader2 } from "lucide-react";
+import { X, Copy, Star, Zap, Shield, AlertTriangle, Eye, Settings, Bolt, ExternalLink, Loader2, MessageSquare } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -59,6 +59,7 @@ interface TechniqueModalProps {
   isOpen: boolean;
   onClose: () => void;
   onToggleFavorite: (techniqueId: string) => Promise<void>;
+  onOpenAIChat?: (prompt: string) => void;
 }
 
 // Enhanced function to get detailed technique data
@@ -119,7 +120,7 @@ const extractParamsFromCommand = (command: string) => {
   return params;
 };
 
-export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite }: TechniqueModalProps) => {
+export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, onOpenAIChat }: TechniqueModalProps) => {
   const [selectedCommand, setSelectedCommand] = useState(0);
   const [generatedCommand, setGeneratedCommand] = useState("");
   const [commandParams, setCommandParams] = useState<Record<string, string>>({});
@@ -176,6 +177,14 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite }:
     }
   };
 
+  const handleAIChatClick = () => {
+    if (onOpenAIChat) {
+      const prompt = `Tell me more about the ${technique.title} attack technique${technique.mitre_id ? ` (${extractCleanMitreId(technique.mitre_id)})` : ''}. Please provide additional details about its usage, tools, and methods to employ this strategy.`;
+      onOpenAIChat(prompt);
+      onClose(); // Close modal after opening chat
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden bg-card border-border">
@@ -187,6 +196,15 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite }:
             </Badge>
           </div>
           <div className="flex items-center gap-1">
+            <Button
+              variant="ghost" 
+              size="sm"
+              onClick={handleAIChatClick}
+              className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
+              title="Ask AI about this technique"
+            >
+              <MessageSquare className="h-4 w-4 text-cyber-purple" />
+            </Button>
             <Button
               variant="ghost" 
               size="sm"
