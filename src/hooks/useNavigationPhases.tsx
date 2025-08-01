@@ -143,6 +143,17 @@ export const useNavigationPhases = () => {
 
   useEffect(() => {
     fetchPhases();
+    
+    // Listen for global refresh events
+    const handleGlobalRefresh = () => {
+      fetchPhases();
+    };
+    
+    window.addEventListener('refreshNavigation', handleGlobalRefresh);
+    
+    return () => {
+      window.removeEventListener('refreshNavigation', handleGlobalRefresh);
+    };
   }, []);
 
   return {

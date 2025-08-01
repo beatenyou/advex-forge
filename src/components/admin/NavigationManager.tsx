@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 import { useNavigationPhases } from '@/hooks/useNavigationPhases';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Edit, Trash2, GripVertical, Search, Grid3X3, Zap, Send, Target, Download, Radio, Flag, Navigation } from 'lucide-react';
+import { Plus, Edit, Trash2, GripVertical, Search, Grid3X3, Zap, Send, Target, Download, Radio, Flag, Navigation, RefreshCw } from 'lucide-react';
 
 const iconOptions = [
   { value: 'Grid3X3', label: 'Grid', icon: Grid3X3 },
@@ -32,9 +33,11 @@ interface PhaseFormData {
 }
 
 export const NavigationManager = () => {
-  const { phases, loading, createPhase, updatePhase, deletePhase, reorderPhases } = useNavigationPhases();
+  const { phases, loading, createPhase, updatePhase, deletePhase, reorderPhases, refetch } = useNavigationPhases();
+  const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPhase, setEditingPhase] = useState<any>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [formData, setFormData] = useState<PhaseFormData>({
     name: '',
     label: '',
@@ -76,6 +79,30 @@ export const NavigationManager = () => {
     await deletePhase(phaseId);
   };
 
+  const handleRefreshNavigation = async () => {
+    setIsRefreshing(true);
+    try {
+      // Trigger refresh in current hook
+      await refetch();
+      
+      // Dispatch global event to refresh all navigation instances
+      window.dispatchEvent(new CustomEvent('refreshNavigation'));
+      
+      toast({
+        title: "Success",
+        description: "Navigation synchronized successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Error", 
+        description: "Failed to refresh navigation",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   const getIconComponent = (iconName: string) => {
     const iconOption = iconOptions.find(opt => opt.value === iconName);
     return iconOption ? iconOption.icon : Navigation;
@@ -92,7 +119,16 @@ export const NavigationManager = () => {
           <h2 className="text-2xl font-bold">Navigation Management</h2>
           <p className="text-muted-foreground">Manage navigation phases and their configurations</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={handleRefreshNavigation}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh Navigation
+          </Button>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => {
               setEditingPhase(null);
@@ -168,7 +204,8 @@ export const NavigationManager = () => {
               </div>
             </form>
           </DialogContent>
-        </Dialog>
+          </Dialog>
+        </div>
       </div>
 
       <Card>
