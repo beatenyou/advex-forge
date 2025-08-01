@@ -18,6 +18,7 @@ import { ChatHeader } from '@/components/ChatHeader';
 import { EnhancedHistoryTab } from '@/components/EnhancedHistoryTab';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useLocation } from 'react-router-dom';
+import { AIStatusRecovery } from '@/components/AIStatusRecovery';
 
 interface ChatMessage {
   id: string;
@@ -549,16 +550,16 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
     const controller = new AbortController();
     setStreamingState({ abortController: controller });
 
-    // Set timeout to show stop button after 30 seconds with race condition protection
+    // Set timeout to show stop button after 45 seconds with race condition protection
     const timeout = setTimeout(() => {
       // Only show stop button if request is still active
       if (isRequestActiveRef.current) {
-        console.log('⏰ 30-second timeout reached - showing stop button');
+        console.log('⏰ 45-second timeout reached - showing stop button');
         setShowStopButton(true);
       } else {
-        console.log('⏰ 30-second timeout reached but request is no longer active - not showing stop button');
+        console.log('⏰ 45-second timeout reached but request is no longer active - not showing stop button');
       }
-    }, 30000);
+    }, 45000);
     setRequestTimeout(timeout);
 
     try {
@@ -628,9 +629,9 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
             'X-Session-Id': requestPayload.sessionId || ''
           }
         }),
-        // Reduced timeout to 30 seconds for better UX
+        // Increased timeout to 60 seconds to handle slower responses
         new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Request timeout after 30 seconds - please try again')), 30000)
+          setTimeout(() => reject(new Error('Request timeout after 60 seconds - please try again')), 60000)
         )
       ]) as { data: any; error: any };
       
@@ -673,8 +674,8 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
         if (error.message?.includes('quota exceeded')) {
           errorMessage = `AI usage quota exceeded. You've used ${currentUsage}/${quotaLimit} AI interactions this month.`;
           retryable = false;
-        } else if (error.message?.includes('timeout') || error.message?.includes('30 seconds')) {
-          errorMessage = 'Request timed out after 30 seconds. Please try again with a shorter message.';
+        } else if (error.message?.includes('timeout') || error.message?.includes('60 seconds')) {
+          errorMessage = 'Request timed out after 60 seconds. Please try again with a shorter message.';
         } else if (error.message?.includes('Empty request body') || error.message?.includes('Request body is empty') || error.message?.includes('deployment') || error.message?.includes('configuration issue')) {
           errorMessage = 'Edge function deployment issue detected. The AI chat router is not receiving request bodies properly. Please contact support to resolve this configuration issue.';
           retryable = false;
@@ -1110,6 +1111,15 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
                     </span>
                   </div>
                 ) : null}
+
+                {/* AI Status Recovery - Show when there are sync issues */}
+                {!selectedModel && user && (
+                  <div className="flex justify-center p-4">
+                    <AIStatusRecovery onRecoveryComplete={() => {
+                      console.log('🔧 AI status recovery completed');
+                    }} />
+                  </div>
+                )}
               </div>
             )}
           </ScrollArea>

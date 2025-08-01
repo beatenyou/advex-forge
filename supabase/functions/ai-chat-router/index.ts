@@ -81,14 +81,19 @@ serve(async (req) => {
     if (contentLength !== '0' && contentLength !== null) {
       try {
         const bodyText = await req.text();
+        console.log('Raw body length:', bodyText.length);
         if (bodyText && bodyText.trim().length > 0) {
           requestBody = JSON.parse(bodyText);
           bodyParsingSuccess = true;
           console.log('✅ Body parsing successful');
+        } else {
+          console.log('⚠️ Empty body detected, using header fallback');
         }
       } catch (parseError) {
-        console.log('⚠️ Body parsing failed, trying fallback methods');
+        console.log('⚠️ Body parsing failed, trying fallback methods:', parseError.message);
       }
+    } else {
+      console.log('⚠️ Empty body detected, using header fallback');
     }
     
     // Extract data from body if available
