@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Trash2, Edit, Plus, Upload, GripVertical } from "lucide-react";
+import { Trash2, Edit, Plus, Upload, GripVertical, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { parseMultipleScenarios, sampleScenarioMarkdown } from "@/lib/scenarioMarkdownParser";
@@ -238,6 +238,16 @@ export const ScenarioManager = () => {
     updateEditingScenario('linked_techniques', newTechniques);
   };
 
+  const handleRefreshScenarios = () => {
+    // Trigger refresh in Sidebar via custom event
+    window.dispatchEvent(new CustomEvent('refresh-scenarios'));
+    
+    toast({
+      title: "Refreshed",
+      description: "Scenarios have been refreshed in the sidebar",
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -245,10 +255,16 @@ export const ScenarioManager = () => {
           <h2 className="text-2xl font-bold">Scenario Management</h2>
           <p className="text-muted-foreground">Manage attack scenarios and link them to techniques</p>
         </div>
-        <Button onClick={handleAddNew}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add New Scenario
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={handleRefreshScenarios} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh Scenarios
+          </Button>
+          <Button onClick={handleAddNew}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add New Scenario
+          </Button>
+        </div>
       </div>
 
       {/* Markdown Upload Section */}

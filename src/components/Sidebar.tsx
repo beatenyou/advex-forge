@@ -63,6 +63,35 @@ export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSe
   useEffect(() => {
     fetchScenarios();
     fetchLinkTabs();
+
+    // Set up real-time subscription for scenarios
+    const scenariosChannel = supabase
+      .channel('scenarios-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'scenarios'
+        },
+        () => {
+          console.log('Scenarios table changed, refreshing...');
+          fetchScenarios();
+        }
+      )
+      .subscribe();
+
+    // Listen for manual refresh events
+    const handleRefreshScenarios = () => {
+      fetchScenarios();
+    };
+
+    window.addEventListener('refresh-scenarios', handleRefreshScenarios);
+
+    return () => {
+      supabase.removeChannel(scenariosChannel);
+      window.removeEventListener('refresh-scenarios', handleRefreshScenarios);
+    };
   }, []);
 
   const fetchScenarios = async () => {
