@@ -262,41 +262,8 @@ export function useUserModelAccess() {
       // Wait a moment for any UI updates to complete
       await new Promise(resolve => setTimeout(resolve, 100));
       
-      // Dispatch enhanced event with complete model data for immediate UI sync
-      const eventDetail = { 
-        selectedModelId: providerId,  // Primary field for AI status
-        modelId: providerId,         // Backup field 
-        providerId,                  // Compatibility field
-        modelName: model.provider?.name,
-        modelType: model.provider?.type,
-        model: { 
-          provider: {
-            id: model.provider?.id,
-            name: model.provider?.name,
-            type: model.provider?.type,
-            model_name: model.provider?.model_name
-          },
-          provider_id: model.provider_id
-        },
-        timestamp: Date.now() 
-      };
-      
-      console.log('🚀 Model Selection: Dispatching modelChanged event with detail:', eventDetail);
-      
-      const modelChangeEvent = new CustomEvent('modelChanged', { detail: eventDetail });
-      window.dispatchEvent(modelChangeEvent);
-      
-      // Also trigger a global refresh to ensure all status indicators update
-      const globalRefreshEvent = new CustomEvent('globalStatusRefresh', {
-        detail: { modelId: providerId, selectedModelId: providerId, timestamp: Date.now() }
-      });
-      window.dispatchEvent(globalRefreshEvent);
-      
-      // Force immediate refresh of all connected components
-      const forceRefreshEvent = new CustomEvent('forceStatusRefresh', {
-        detail: { modelId: providerId, selectedModelId: providerId, timestamp: Date.now() }
-      });
-      window.dispatchEvent(forceRefreshEvent);
+      // Trigger simplified AI system refresh - this will be handled by UserModelSelector
+      // No need to dispatch events here as UserModelSelector will handle it after model selection
       
       console.log('🎉 Model selection complete:', { 
         savedProviderId: providerId, 
@@ -327,19 +294,19 @@ export function useUserModelAccess() {
     }
   }, [user]);
 
-  // Listen for model changes from other components and refresh state
+  // Listen for AI system refresh events to update local state
   useEffect(() => {
-    const handleModelChange = (event: CustomEvent) => {
-      const { selectedModelId: newSelectedModelId } = event.detail;
-      if (newSelectedModelId && newSelectedModelId !== selectedModelId) {
-        console.log('🔄 useUserModelAccess: Refreshing state for model change:', newSelectedModelId);
-        setSelectedModelId(newSelectedModelId);
+    const handleAISystemRefresh = (event: CustomEvent) => {
+      const { modelId } = event.detail;
+      if (modelId && modelId !== selectedModelId) {
+        console.log('🔄 useUserModelAccess: Refreshing state for AI system refresh:', modelId);
+        setSelectedModelId(modelId);
       }
     };
 
-    window.addEventListener('modelChanged', handleModelChange as EventListener);
+    window.addEventListener('aiSystemRefresh', handleAISystemRefresh as EventListener);
     return () => {
-      window.removeEventListener('modelChanged', handleModelChange as EventListener);
+      window.removeEventListener('aiSystemRefresh', handleAISystemRefresh as EventListener);
     };
   }, [selectedModelId]);
 

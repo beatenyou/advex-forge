@@ -223,7 +223,7 @@ export const ChatSidebar = ({
               <div className="flex-1">
                 <h3 className="font-semibold text-foreground text-sm">RT AI</h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <AIStatusIndicator key="sidebar-status" size="sm" showLabel />
+                  <AIStatusIndicator key="sidebar-status" size="sm" showLabel readOnly={true} />
                 </div>
               </div>
             </div>

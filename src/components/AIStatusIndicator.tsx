@@ -9,6 +9,7 @@ interface AIStatusIndicatorProps {
   showLabel?: boolean;
   size?: 'sm' | 'md' | 'lg';
   className?: string;
+  readOnly?: boolean;
 }
 
 const getStatusConfig = (status: AIStatusType) => {
@@ -54,7 +55,8 @@ const getSizeConfig = (size: 'sm' | 'md' | 'lg') => {
 export const AIStatusIndicator = ({ 
   showLabel = false, 
   size = 'md', 
-  className 
+  className,
+  readOnly = false 
 }: AIStatusIndicatorProps) => {
   const { status: aiStatus, loading, refresh } = useAIStatus();
   const { isAdmin } = useAdminCheck();
@@ -118,7 +120,7 @@ export const AIStatusIndicator = ({
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          {isAdmin ? (
+          {!readOnly && isAdmin ? (
             <Button
               variant="ghost"
               size="sm"
@@ -140,8 +142,10 @@ export const AIStatusIndicator = ({
             {aiStatus.details && (
               <p className="text-xs text-muted-foreground">{aiStatus.details}</p>
             )}
-            {isAdmin ? (
+            {!readOnly && isAdmin ? (
               <p className="text-xs text-muted-foreground">Click to refresh status</p>
+            ) : readOnly ? (
+              <p className="text-xs text-muted-foreground">Use the model selector to refresh status</p>
             ) : (
               <p className="text-xs text-muted-foreground">System status</p>
             )}

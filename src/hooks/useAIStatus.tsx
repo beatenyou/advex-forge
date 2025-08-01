@@ -52,67 +52,36 @@ export const useAIStatus = () => {
 
     initializeStatus();
 
-    // Listen for DOM events from model selection (critical for side panel)
-    const handleModelChange = async (event: any) => {
-      console.log('🎯 AI Status: Received modelChanged event in useAIStatus', event.detail);
-      const { modelId, providerId, selectedModelId, modelName, modelType } = event.detail;
+    // Consolidated event handler for all AI system updates
+    const handleAISystemRefresh = async (event: any) => {
+      console.log('🎯 AI Status: Received aiSystemRefresh event', event.detail);
+      const { modelId, source } = event.detail;
       
-      // Use the most specific ID available
-      const targetModelId = selectedModelId || modelId || providerId;
-      
-      if (targetModelId) {
-        console.log('🔄 AI Status: Updating status immediately for model change:', {
-          modelName,
-          targetModelId,
-          currentModelId,
-          needsUpdate: targetModelId !== currentModelId
-        });
+      if (modelId) {
+        console.log('🔄 AI Status: Updating status for new model:', modelId, 'from:', source);
         
         // Only update if the model actually changed
-        if (targetModelId !== currentModelId) {
-          // Force immediate state update
-          setCurrentModelId(targetModelId);
+        if (modelId !== currentModelId) {
+          setCurrentModelId(modelId);
           setLoading(true);
-          
-          // Trigger immediate status check with new model
-          await checkAIStatus(targetModelId);
-          
-          console.log('✅ AI Status: Model change status check completed for:', targetModelId);
+          await checkAIStatus(modelId);
+          console.log('✅ AI Status: Model change status check completed for:', modelId);
         } else {
-          console.log('🔄 AI Status: Model unchanged, skipping status update');
+          console.log('🔄 AI Status: Same model, refreshing status anyway');
+          setLoading(true);
+          await checkAIStatus(modelId);
         }
       } else {
-        console.warn('⚠️ AI Status: No valid modelId or providerId in event:', event.detail);
-      }
-    };
-
-    // Define event handlers before using them
-    const handleGlobalRefresh = async (event: any) => {
-      console.log('🌐 AI Status: Received global refresh event', event.detail);
-      const { modelId } = event.detail;
-      if (modelId) {
-        setCurrentModelId(modelId);
-        setLoading(true);
-        await checkAIStatus(modelId);
-      } else {
         // Refresh with current model
+        console.log('🔄 AI Status: Refreshing status with current model');
+        setLoading(true);
         await checkAIStatus(currentModelId);
       }
     };
 
-    const handleForceRefresh = async (event: any) => {
-      console.log('🔄 AI Status: Received force refresh event', event.detail);
-      const { modelId } = event.detail;
-      setCurrentModelId(modelId || currentModelId);
-      setLoading(true);
-      await checkAIStatus(modelId || currentModelId);
-    };
-
-    // Set up event listeners
-    console.log('🎯 AI Status: Setting up event listeners');
-    window.addEventListener('modelChanged', handleModelChange);
-    window.addEventListener('globalStatusRefresh', handleGlobalRefresh);
-    window.addEventListener('forceStatusRefresh', handleForceRefresh);
+    // Set up simplified event listener
+    console.log('🎯 AI Status: Setting up aiSystemRefresh event listener');
+    window.addEventListener('aiSystemRefresh', handleAISystemRefresh);
 
     // Listen for realtime changes to user_preferences table (user-specific)
     const preferencesChannel = supabase
@@ -195,9 +164,7 @@ export const useAIStatus = () => {
       .subscribe();
 
     return () => {
-      window.removeEventListener('modelChanged', handleModelChange);
-      window.removeEventListener('globalStatusRefresh', handleGlobalRefresh);
-      window.removeEventListener('forceStatusRefresh', handleForceRefresh);
+      window.removeEventListener('aiSystemRefresh', handleAISystemRefresh);
       supabase.removeChannel(preferencesChannel);
       notificationChannelPromise.then(channel => {
         if (channel) supabase.removeChannel(channel);
@@ -308,18 +275,16 @@ export const useAIStatus = () => {
   };
 
   const refreshAll = async () => {
-    console.log('🔄 AI Status: Broadcasting refresh to all connected clients');
+    console.log('🔄 AI Status: Triggering global AI system refresh');
     
-    // Broadcast refresh event to all instances
-    const channel = supabase.channel('ai-status-global-refresh');
-    await channel.send({
-      type: 'broadcast',
-      event: 'status-refresh',
-      payload: { timestamp: Date.now() }
+    // Trigger the consolidated refresh event
+    const refreshEvent = new CustomEvent('aiSystemRefresh', { 
+      detail: { 
+        timestamp: Date.now(),
+        source: 'useAIStatus.refreshAll'
+      } 
     });
-    
-    // Also refresh this instance
-    checkAIStatus();
+    window.dispatchEvent(refreshEvent);
   };
 
   return { status, loading, refresh: refreshAll };

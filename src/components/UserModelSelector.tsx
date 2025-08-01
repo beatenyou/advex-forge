@@ -1,15 +1,18 @@
 import { useState } from 'react';
-import { ChevronDown, Bot, Zap, Sparkles } from 'lucide-react';
+import { ChevronDown, Bot, Zap, Sparkles, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { useUserModelAccess } from '@/hooks/useUserModelAccess';
 import { useModelQuotas } from '@/hooks/useModelQuotas';
+import { useToast } from '@/hooks/use-toast';
 
 export function UserModelSelector({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
-  const { userModels, selectedModel, selectModel, loading } = useUserModelAccess();
+  const [refreshing, setRefreshing] = useState(false);
+  const { userModels, selectedModel, selectModel, loading, refreshModels } = useUserModelAccess();
   const { getUsagePercentage, getRemainingQuota } = useModelQuotas();
+  const { toast } = useToast();
 
   if (loading) {
     return (
@@ -56,6 +59,40 @@ export function UserModelSelector({ compact = false }: { compact?: boolean }) {
     return { status: 'online', responseTime: Math.floor(Math.random() * 200) + 100 };
   };
 
+  const handleRefresh = async () => {
+    if (refreshing) return;
+    
+    setRefreshing(true);
+    
+    try {
+      // Refresh models data
+      await refreshModels();
+      
+      // Trigger global AI system refresh
+      const refreshEvent = new CustomEvent('aiSystemRefresh', { 
+        detail: { 
+          timestamp: Date.now(),
+          source: 'UserModelSelector'
+        } 
+      });
+      window.dispatchEvent(refreshEvent);
+      
+      toast({
+        title: "System Refreshed",
+        description: "AI models and status have been updated",
+      });
+    } catch (error) {
+      console.error('Error refreshing AI system:', error);
+      toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh AI system status",
+        variant: "destructive",
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -87,10 +124,24 @@ export function UserModelSelector({ compact = false }: { compact?: boolean }) {
       </PopoverTrigger>
       <PopoverContent className="w-96 p-0 z-50 bg-background border shadow-lg" align="start">
         <div className="p-4 border-b">
-          <h4 className="font-semibold text-sm">Available AI Models</h4>
-          <p className="text-xs text-muted-foreground mt-1">
-            Choose your preferred AI model. Switch anytime during conversation.
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h4 className="font-semibold text-sm">Available AI Models</h4>
+              <p className="text-xs text-muted-foreground mt-1">
+                Choose your preferred AI model. Switch anytime during conversation.
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="h-7 w-7 p-0 hover:bg-primary/10"
+              title="Refresh AI models and status"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </div>
         <div className="p-2 max-h-80 overflow-y-auto">
           {userModels.map((model) => {
@@ -107,26 +158,34 @@ export function UserModelSelector({ compact = false }: { compact?: boolean }) {
                     ? 'bg-primary/10 border border-primary/20'
                     : 'hover:bg-muted/50'
                 }`}
-                onClick={async () => {
-                  console.log('🔄 User switching to model:', model.provider?.name, model.provider_id);
-                  
-                  // Immediate UI feedback
-                  setOpen(false);
-                  
-                  // Show immediate feedback toast
-                  import('@/hooks/use-toast').then(({ toast }) => {
+                  onClick={async () => {
+                    console.log('🔄 User switching to model:', model.provider?.name, model.provider_id);
+                    
+                    // Immediate UI feedback
+                    setOpen(false);
+                    
+                    // Show immediate feedback toast
                     toast({
                       title: "✅ Model Switched",
                       description: `Now using ${model.provider?.name} for AI responses`,
                       duration: 3000,
                     });
-                  });
-                  
-                  // Perform model selection with enhanced event handling
-                  await selectModel(model.provider_id);
-                  
-                  console.log('✅ Model switch UI action complete:', model.provider?.name);
-                }}
+                    
+                    // Perform model selection
+                    await selectModel(model.provider_id);
+                    
+                    // Trigger comprehensive AI system refresh after model change
+                    const refreshEvent = new CustomEvent('aiSystemRefresh', { 
+                      detail: { 
+                        modelId: model.provider_id,
+                        timestamp: Date.now(),
+                        source: 'ModelSelection'
+                      } 
+                    });
+                    window.dispatchEvent(refreshEvent);
+                    
+                    console.log('✅ Model switch UI action complete:', model.provider?.name);
+                  }}
               >
                 <div className="flex items-center gap-3">
                   {getModelIcon(model.provider?.type || '')}
@@ -187,7 +246,7 @@ export function UserModelSelector({ compact = false }: { compact?: boolean }) {
         )}
         <div className="p-3 border-t bg-muted/30">
           <p className="text-xs text-muted-foreground">
-            💡 Tip: You can switch models during a conversation to try different approaches
+            💡 Tip: Use the refresh button above to update AI status. Switch models anytime during conversation.
           </p>
         </div>
       </PopoverContent>

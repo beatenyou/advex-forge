@@ -369,7 +369,7 @@ Can you help me understand this scenario and provide guidance on the techniques,
               </div>
             </div>
             <div className="ml-auto flex items-center gap-4">
-              <AIStatusIndicator size="sm" />
+              <AIStatusIndicator size="sm" readOnly={true} />
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>

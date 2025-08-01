@@ -135,7 +135,7 @@ For cybersecurity questions, you can:
               <p className="text-xs text-muted-foreground">Get instant answers about AD security</p>
             </div>
           </div>
-          <AIStatusIndicator size="md" />
+          <AIStatusIndicator size="md" readOnly={true} />
         </div>
 
         {hasLinkTabs && (
