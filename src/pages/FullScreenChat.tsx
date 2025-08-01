@@ -8,7 +8,6 @@ import { useChatContext } from "@/contexts/ChatContext";
 export default function FullScreenChat() {
   const { sessionId } = useParams();
   const location = useLocation();
-  const [isMinimized, setIsMinimized] = useState(false);
   const { restoreStateFromModeSwitch } = useChatContext();
 
   // Handle state restoration on navigation
@@ -21,10 +20,6 @@ export default function FullScreenChat() {
     }
   }, [location.state, restoreStateFromModeSwitch]);
 
-  const handleToggleMinimize = () => {
-    setIsMinimized(prev => !prev);
-  };
-
   const handleClearChat = async () => {
     if ((window as any).__clearChatFunction) {
       await (window as any).__clearChatFunction();
@@ -33,13 +28,8 @@ export default function FullScreenChat() {
 
   return (
     <>
-      <FullScreenChatLayout 
-        isMinimized={isMinimized}
-        onToggleMinimize={handleToggleMinimize}
-      >
-        <div className={`h-full transition-all duration-300 ${
-          isMinimized ? 'opacity-50 scale-95' : 'opacity-100 scale-100'
-        }`}>
+      <FullScreenChatLayout>
+        <div className="h-full">
           <ChatSession 
             onClear={handleClearChat} 
             sessionId={sessionId}

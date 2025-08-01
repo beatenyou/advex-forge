@@ -1,19 +1,15 @@
 import React, { ReactNode, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Bot, Maximize2, Minimize2 } from "lucide-react";
+import { ArrowLeft, Bot } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
 
 interface FullScreenChatLayoutProps {
   children: ReactNode;
-  isMinimized?: boolean;
-  onToggleMinimize?: () => void;
 }
 
 export const FullScreenChatLayout = ({ 
-  children, 
-  isMinimized = false,
-  onToggleMinimize 
+  children
 }: FullScreenChatLayoutProps) => {
   const navigate = useNavigate();
   const [statusKey, setStatusKey] = useState(0);
@@ -77,20 +73,6 @@ export const FullScreenChatLayout = ({
 
           {/* Right section */}
           <div className="flex items-center gap-2">
-            {onToggleMinimize && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onToggleMinimize}
-                className="hover:bg-primary/10"
-              >
-                {isMinimized ? (
-                  <Maximize2 className="h-4 w-4" />
-                ) : (
-                  <Minimize2 className="h-4 w-4" />
-                )}
-              </Button>
-            )}
           </div>
         </div>
       </div>
