@@ -130,7 +130,7 @@ Submitted via Quick Support Ticket`;
         </Tooltip>
       </TooltipProvider>
       
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>Suggest Improvement</DialogTitle>
           <DialogDescription>
