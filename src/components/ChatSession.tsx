@@ -43,9 +43,10 @@ interface SavedPrompt {
 interface ChatSessionProps {
   onClear?: () => void;
   sessionId?: string;
+  initialPrompt?: string;
 }
 
-export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
+export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionProps) => {
   const { user } = useAuth();
   const { trackActivity, trackPerformance } = useAnalytics();
   const { canUseAI, currentUsage, quotaLimit, planName, refreshQuota } = useAIUsage();
@@ -77,6 +78,20 @@ export const ChatSession = ({ onClear, sessionId }: ChatSessionProps) => {
     // Scroll to top after clearing messages
     setTimeout(scrollToTop, 100);
   };
+
+  // Handle initial prompt when component mounts or initialPrompt changes
+  useEffect(() => {
+    if (initialPrompt && initialPrompt.trim() && !question) {
+      setQuestion(initialPrompt);
+      // Auto-focus the textarea after setting the prompt
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.setSelectionRange(initialPrompt.length, initialPrompt.length);
+        }
+      }, 100);
+    }
+  }, [initialPrompt]);
 
   useEffect(() => {
     if (sessionId) {

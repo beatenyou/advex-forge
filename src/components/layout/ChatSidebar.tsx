@@ -12,9 +12,11 @@ import { useAIUsage } from '@/hooks/useAIUsage';
 
 interface ChatSidebarProps {
   onClose?: () => void;
+  initialPrompt?: string;
 }
 export const ChatSidebar = ({
-  onClose
+  onClose,
+  initialPrompt
 }: ChatSidebarProps) => {
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
   const [showUsage, setShowUsage] = useState(false);
@@ -252,7 +254,7 @@ export const ChatSidebar = ({
           <div className="w-full h-full flex flex-col min-h-0">
             {/* Chat session */}
             <div className="flex-1 overflow-hidden">
-              <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} />
+              <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} initialPrompt={initialPrompt} />
             </div>
           </div>
         </div>

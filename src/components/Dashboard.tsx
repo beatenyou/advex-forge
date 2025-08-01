@@ -28,11 +28,12 @@ import { fetchTechniquesFromDatabase, fetchUserFavorites, toggleTechniqueFavorit
 interface DashboardProps {
   onTechniqueSelect?: (technique: ParsedTechnique) => void;
   onToggleChat?: () => void;
+  onOpenChatWithPrompt?: (prompt: string) => void;
   isChatVisible?: boolean;
   isWideScreen?: boolean;
 }
 
-export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = true, isWideScreen = false }: DashboardProps) => {
+export const Dashboard = ({ onTechniqueSelect, onToggleChat, onOpenChatWithPrompt, isChatVisible = true, isWideScreen = false }: DashboardProps) => {
   const {
     user,
     signOut
@@ -445,6 +446,7 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
                   key={technique.id} 
                   technique={technique} 
                   onToggleFavorite={toggleFavorite}
+                  onOpenAIChat={onOpenChatWithPrompt}
                 />
               ))}
             </div>

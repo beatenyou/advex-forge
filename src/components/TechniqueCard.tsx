@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Star, Zap, Eye, Copy, ExternalLink, Bolt, Loader2 } from "lucide-react";
+import { Star, Zap, Eye, Copy, ExternalLink, Bolt, Loader2, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { TechniqueModal } from "./TechniqueModal";
 import { CommandGenerator } from "./CommandGenerator";
 import { useAuth } from "@/hooks/useAuth";
@@ -41,9 +42,10 @@ const isValidMitreId = (id: string): boolean => {
 interface TechniqueCardProps {
   technique: Technique;
   onToggleFavorite: (techniqueId: string) => Promise<void>;
+  onOpenAIChat?: (prompt: string) => void;
 }
 
-export const TechniqueCard = ({ technique, onToggleFavorite }: TechniqueCardProps) => {
+export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: TechniqueCardProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCommandGenOpen, setIsCommandGenOpen] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
@@ -71,6 +73,14 @@ export const TechniqueCard = ({ technique, onToggleFavorite }: TechniqueCardProp
       console.error('Error toggling favorite:', error);
     } finally {
       setIsToggling(false);
+    }
+  };
+
+  const handleAIChatClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onOpenAIChat) {
+      const prompt = `Tell me more about the ${technique.title} attack technique${technique.mitre_id && isValidMitreId(technique.mitre_id) ? ` (${extractCleanMitreId(technique.mitre_id)})` : ''}. Please provide additional details about its usage, detection methods, and mitigation strategies.`;
+      onOpenAIChat(prompt);
     }
   };
 
@@ -123,17 +133,43 @@ export const TechniqueCard = ({ technique, onToggleFavorite }: TechniqueCardProp
               )}
             </div>
             <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsCommandGenOpen(true);
-                }}
-              >
-                <Bolt className="w-4 h-4 text-cyber-blue" />
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
+                      onClick={handleAIChatClick}
+                    >
+                      <MessageSquare className="w-4 h-4 text-cyber-purple" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Ask AI about this technique</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsCommandGenOpen(true);
+                      }}
+                    >
+                      <Bolt className="w-4 h-4 text-cyber-blue" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Generate commands for this technique</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <div className="flex items-center gap-1">
                 <Zap className="w-4 h-4 text-cyber-orange" />
                 <span className="text-xs text-muted-foreground">{technique.tools.length} tools</span>

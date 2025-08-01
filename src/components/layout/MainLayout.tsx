@@ -16,6 +16,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   const location = useLocation();
   const [isChatVisible, setIsChatVisible] = useState(false); // Start hidden
   const [isWideScreen, setIsWideScreen] = useState(false);
+  const [initialChatPrompt, setInitialChatPrompt] = useState<string | undefined>();
 
   // Check for navigation state to show chat
   useEffect(() => {
@@ -45,6 +46,13 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
 
   const handleToggleChat = () => {
     setIsChatVisible(prev => !prev);
+  };
+
+  const handleOpenChatWithPrompt = (prompt: string) => {
+    setInitialChatPrompt(prompt);
+    setIsChatVisible(true);
+    // Clear the prompt after a short delay to allow the ChatSession to pick it up
+    setTimeout(() => setInitialChatPrompt(undefined), 1000);
   };
 
   // Dynamic sizing based on screen width
@@ -79,6 +87,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
             <div className="flex-1 min-h-0">
               {React.cloneElement(children as React.ReactElement, { 
                 onToggleChat: handleToggleChat, 
+                onOpenChatWithPrompt: handleOpenChatWithPrompt,
                 isChatVisible: isChatVisible,
                 isWideScreen: isWideScreen 
               })}
@@ -100,7 +109,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
               className="bg-background h-full overflow-hidden"
               style={{ contain: 'layout', isolation: 'isolate' }}
             >
-              <ChatSidebar onClose={handleCloseChat} />
+              <ChatSidebar onClose={handleCloseChat} initialPrompt={initialChatPrompt} />
             </ResizablePanel>
           </>
         )}
