@@ -569,17 +569,25 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
         throw new Error('No AI model selected. Please select a model first.');
       }
       
-      const { data, error } = await supabase.functions.invoke('ai-chat-router', {
-        body: {
-          message: userQuestion,
-          messages: conversationContext,
-          sessionId: currentSession.id,
-          selectedModelId: modelIdToUse
-        },
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+      const result = await Promise.race([
+        supabase.functions.invoke('ai-chat-router', {
+          body: {
+            message: userQuestion,
+            messages: conversationContext,
+            sessionId: currentSession.id,
+            selectedModelId: modelIdToUse
+          },
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }),
+        // Add timeout after 60 seconds
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout - please try again')), 60000)
+        )
+      ]) as { data: any; error: any };
+      
+      const { data, error } = result;
       console.log('🤖 AI chat router response received:', { 
         data: data ? { providerName: data.providerName, providerId: data.providerId } : null, 
         selectedModelSent: modelIdToUse,

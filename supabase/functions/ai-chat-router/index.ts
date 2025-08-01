@@ -263,6 +263,9 @@ serve(async (req) => {
           agentId: provider.agent_id,
           conversationId: conversationId,
           baseUrl: provider.base_url
+        },
+        headers: {
+          'Content-Type': 'application/json'
         }
       });
 
@@ -317,6 +320,9 @@ serve(async (req) => {
               agentId: secondaryProvider.agent_id,
               conversationId: conversationId,
               baseUrl: secondaryProvider.base_url
+            },
+            headers: {
+              'Content-Type': 'application/json'
             }
           });
 
