@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
-import { Settings, FileText, Globe, Users, Database, Shield, Target, Rocket, Wrench, BookOpen, Link, Bot, Key, Megaphone, HelpCircle, MessageSquare, Upload, BarChart3 } from "lucide-react";
+import { Settings, FileText, Globe, Users, Database, Shield, Target, Rocket, Wrench, BookOpen, Link, Bot, Key, Megaphone, HelpCircle, MessageSquare, Upload, BarChart3, Navigation } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +18,7 @@ import SupportTicketManager from "@/components/admin/SupportTicketManager";
 import TechniqueManager from "@/components/admin/TechniqueManager";
 import { BulkImportManager } from "@/components/admin/BulkImportManager";
 import { AdminStatistics } from "@/components/admin/AdminStatistics";
+import { NavigationManager } from "@/components/admin/NavigationManager";
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -117,6 +118,13 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                 >
                   <Users className="w-4 h-4" />
                   Users
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="navigation" 
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground min-w-[120px]"
+                >
+                  <Navigation className="w-4 h-4" />
+                  Navigation
                 </TabsTrigger>
               </div>
               
@@ -362,6 +370,28 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                         </Button>
                       </CardContent>
                     </Card>
+
+                    <Card className="bg-card border border-border hover:border-teal-500/50 transition-all duration-200 cursor-pointer group hover:shadow-lg" onClick={() => setActiveTab("navigation")}>
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-teal-500/10 flex items-center justify-center group-hover:bg-teal-500/20 transition-colors duration-200">
+                            <Navigation className="w-5 h-5 text-teal-400" />
+                          </div>
+                          <CardTitle className="text-lg">Navigation</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0 space-y-4">
+                        <p className="text-sm text-muted-foreground leading-relaxed">Customize Quick Navigation phases, labels, icons, and descriptions</p>
+                        <Button 
+                          variant="outline"
+                          size="sm" 
+                          className="w-full border-teal-500/30 text-teal-400 hover:bg-teal-500/10 hover:border-teal-500/50"
+                          onClick={(e) => { e.stopPropagation(); setActiveTab("navigation"); }}
+                        >
+                          Manage Navigation →
+                        </Button>
+                      </CardContent>
+                    </Card>
                   </div>
 
                 </CardContent>
@@ -414,6 +444,10 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
 
             <TabsContent value="statistics" className="space-y-6">
               <AdminStatistics />
+            </TabsContent>
+
+            <TabsContent value="navigation" className="space-y-6">
+              <NavigationManager />
             </TabsContent>
           </Tabs>
         </div>

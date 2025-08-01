@@ -571,6 +571,45 @@ export type Database = {
         }
         Relationships: []
       }
+      navigation_phases: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          icon: string
+          id: string
+          is_active: boolean
+          label: string
+          name: string
+          order_index: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          name: string
+          order_index?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          icon?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          name?: string
+          order_index?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       performance_metrics: {
         Row: {
           id: string

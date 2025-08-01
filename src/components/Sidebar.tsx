@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigationPhases } from "@/hooks/useNavigationPhases";
 
 interface Technique {
   id: string;
@@ -47,20 +48,12 @@ interface SidebarProps {
   onClearAllFavorites: () => void;
 }
 
-const navigationItems = [
-  { label: "All Phases", phase: "All Phases" },
-  { label: "Enumeration", phase: "Enumeration" },
-  { label: "Initial Access", phase: "Initial Access" },
-  { label: "Privilege Escalation", phase: "Privilege Escalation" },
-  { label: "Persistence", phase: "Persistence" },
-  { label: "Credential Access", phase: "Credential Access" },
-  { label: "Lateral Movement", phase: "Lateral Movement" }
-];
-
 export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSelect, onClearAllFavorites }: SidebarProps) => {
   console.log('Sidebar techniques array:', techniques);
   console.log('Techniques count:', techniques.length);
   console.log('First technique:', techniques[0]);
+  
+  const { phases: navigationPhases } = useNavigationPhases();
   const [selectedScenario, setSelectedScenario] = useState("Select your situation...");
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [linkTabs, setLinkTabs] = useState<LinkTab[]>([]);
@@ -125,19 +118,19 @@ export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSe
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="space-y-2">
-            {navigationItems.map((item) => (
+            {navigationPhases.map((phase) => (
               <Button
-                key={item.phase}
-                variant={selectedPhase === item.phase ? "default" : "ghost"}
+                key={phase.name}
+                variant={selectedPhase === phase.label ? "default" : "ghost"}
                 className={`w-full justify-start text-sm h-8 ${
-                  selectedPhase === item.phase 
+                  selectedPhase === phase.label 
                     ? "bg-primary text-primary-foreground" 
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
-                onClick={() => onPhaseSelect(item.phase)}
+                onClick={() => onPhaseSelect(phase.label)}
               >
                 <ChevronRight className="w-4 h-4 mr-2" />
-                {item.label}
+                {phase.label}
               </Button>
             ))}
           </div>

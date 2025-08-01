@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Search, Shield, Users, Settings, Star, Hash, Filter, LogOut, UserCog, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
+import { useNavigationPhases } from "@/hooks/useNavigationPhases";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,7 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
     signOut
   } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdminCheck();
+  const { phases: navigationPhases } = useNavigationPhases();
   const {
     toast
   } = useToast();
@@ -45,7 +47,7 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
   const [userFavorites, setUserFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedPhase, setSelectedPhase] = useState("All Phases");
+  const [selectedPhase, setSelectedPhase] = useState("All Techniques");
   const [filteredTechniques, setFilteredTechniques] = useState(techniques);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedTechnique, setSelectedTechnique] = useState<any>(null);
@@ -186,7 +188,6 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
       });
     }
   };
-  const phases = ["All Phases", "Enumeration", "Initial Access", "Privilege Escalation", "Persistence", "Credential Access", "Lateral Movement"];
   const allTags = [...new Set(techniques.flatMap(t => t.tags.map(tag => tag.toLowerCase().replace(/\s+/g, '-'))))];
   useEffect(() => {
     let filtered = techniques;
@@ -207,7 +208,7 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
     }
     
     // Phase filtering
-    if (selectedPhase !== "All Phases") {
+    if (selectedPhase !== "All Techniques") {
       filtered = filtered.filter(technique => technique.phase === selectedPhase);
     }
     
@@ -392,7 +393,7 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {phases.map(phase => <SelectItem key={phase} value={phase}>{phase}</SelectItem>)}
+                {navigationPhases.map(phase => <SelectItem key={phase.name} value={phase.label}>{phase.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -426,10 +427,10 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, isChatVisible = tru
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-6">
               <h2 className="text-3xl font-bold text-foreground">
-                {selectedPhase === "All Phases" ? "Initial Access" : selectedPhase}
+                {selectedPhase}
               </h2>
               <Badge variant="outline" className="text-primary">
-                Techniques used to gain initial foothold in the network
+                {navigationPhases.find(p => p.label === selectedPhase)?.description || "Browse available techniques and tools"}
               </Badge>
             </div>
 
