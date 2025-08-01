@@ -26,9 +26,10 @@ export class TechniqueImportService {
 2. Never invent or hallucinate information - only use what's explicitly stated
 3. For missing information, use "TODO" placeholder
 4. Keep all code snippets and commands exactly as written in the source
-5. Extract reference links from the source content
+5. Extract reference links from the source content, including official MITRE ATT&CK URLs
 6. **CRITICAL**: Always populate the "tools" array with ALL tools mentioned in the technique description and commands
 7. Extract tool names from command descriptions, tool sections, and inline mentions
+8. For MITRE ATT&CK techniques, always include the official MITRE reference URL in referenceLinks
 
 **CRITICAL: You MUST respond with ONLY valid JSON. Do not include any markdown formatting, explanations, or text outside the JSON.**
 
@@ -58,9 +59,14 @@ Return a JSON object with a techniques array. Each technique object must have th
       ],
       "referenceLinks": [
         {
-          "title": "Link Title",
-          "url": "URL",
-          "description": "Description"
+          "title": "MITRE ATT&CK - [Technique Name]",
+          "url": "https://attack.mitre.org/techniques/T####/### (if sub-technique) or https://attack.mitre.org/techniques/T####/",
+          "description": "Official MITRE ATT&CK technique documentation"
+        },
+        {
+          "title": "Additional Reference Title",
+          "url": "Additional URL if mentioned",
+          "description": "Additional description"
         }
       ],
       "detection": ["Blue team detection methods if mentioned"],

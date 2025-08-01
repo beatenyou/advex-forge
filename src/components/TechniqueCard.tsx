@@ -40,6 +40,22 @@ const isValidMitreId = (id: string): boolean => {
   return mitrePattern.test(extractCleanMitreId(id));
 };
 
+// Helper function to generate MITRE ATT&CK URL
+const generateMitreUrl = (mitreId: string): string => {
+  if (!mitreId || !isValidMitreId(mitreId)) return '';
+  
+  const cleanId = extractCleanMitreId(mitreId);
+  
+  // Handle sub-techniques (e.g., T1110.003 → /T1110/003/)
+  if (cleanId.includes('.')) {
+    const [mainTechnique, subTechnique] = cleanId.split('.');
+    return `https://attack.mitre.org/techniques/${mainTechnique}/${subTechnique}/`;
+  }
+  
+  // Handle main techniques (e.g., T1110 → /T1110/)
+  return `https://attack.mitre.org/techniques/${cleanId}/`;
+};
+
 interface TechniqueCardProps {
   technique: Technique;
   onToggleFavorite: (techniqueId: string) => Promise<void>;
@@ -267,23 +283,31 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                   </Tooltip>
                 </TooltipProvider>
                 <QuickSupportTicket technique={technique} />
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>View MITRE ATT&CK reference</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+{(technique.mitre_id && isValidMitreId(technique.mitre_id)) && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const mitreUrl = generateMitreUrl(technique.mitre_id!);
+                            if (mitreUrl) {
+                              window.open(mitreUrl, '_blank', 'noopener,noreferrer');
+                            }
+                          }}
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>View MITRE ATT&CK reference</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
             </div>
           </div>
