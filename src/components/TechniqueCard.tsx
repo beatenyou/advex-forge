@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { TechniqueModal } from "./TechniqueModal";
 import { CommandGenerator } from "./CommandGenerator";
+import QuickSupportTicket from "./QuickSupportTicket";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 
@@ -265,6 +266,7 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
+                <QuickSupportTicket technique={technique} />
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
