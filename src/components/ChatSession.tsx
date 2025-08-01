@@ -7,6 +7,7 @@ import { Loader2, Copy, MessageSquare, Plus, Square, Send, Check } from 'lucide-
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
+import { CollapsibleMessage } from '@/components/CollapsibleMessage';
 
 import TextareaAutosize from 'react-textarea-autosize';
 import { useAuth } from '@/hooks/useAuth';
@@ -74,6 +75,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
   const [filteredPrompts, setFilteredPrompts] = useState<SavedPrompt[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [collapsedMessages, setCollapsedMessages] = useState<Record<string, boolean>>({});
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [hasRestoredState, setHasRestoredState] = useState(false);
@@ -692,6 +694,21 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
         
         setMessages([...messages, aiMessage as ChatMessage]);
 
+        // Auto-collapse long AI responses
+        const shouldAutoCollapse = (
+          data.message.length > 500 ||
+          data.message.split('\n').length > 8 ||
+          (data.message.match(/```/g) || []).length >= 2 ||
+          (data.message.match(/^[\s]*[-\*\+]\s/gm) || []).length > 5
+        );
+
+        if (shouldAutoCollapse) {
+          setCollapsedMessages(prev => ({
+            ...prev,
+            [aiMessage.id]: true
+          }));
+        }
+
         // Track successful AI response
         await trackActivity('ai_response_received', `Received response from ${data.providerName || 'unknown'}`);
 
@@ -822,7 +839,17 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
                     >
                       {message.role === 'assistant' ? (
                         <div className="space-y-2">
-                          <MarkdownRenderer content={message.content} />
+                          <CollapsibleMessage
+                            content={message.content}
+                            messageId={message.id}
+                            isCollapsed={collapsedMessages[message.id]}
+                            onToggleCollapse={(messageId, collapsed) => {
+                              setCollapsedMessages(prev => ({
+                                ...prev,
+                                [messageId]: collapsed
+                              }));
+                            }}
+                          />
                           <div className="flex items-center justify-between pt-2 border-t border-border/50">
                             <span className="text-xs text-muted-foreground">
                               {message.provider_name && `${message.provider_name} • `}
