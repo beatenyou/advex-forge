@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { FullScreenChatLayout } from "@/components/layouts/FullScreenChatLayout";
 import { ChatSession } from "@/components/ChatSession";
 import { ChatModeToggle } from "@/components/ChatModeToggle";
@@ -8,17 +8,32 @@ import { useChatContext } from "@/contexts/ChatContext";
 export default function FullScreenChat() {
   const { sessionId } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { restoreStateFromModeSwitch } = useChatContext();
 
-  // Handle state restoration on navigation
+  // Handle state restoration and URL synchronization
   useEffect(() => {
+    console.log('🖼️ FullScreenChat: Component mounted', { 
+      sessionId, 
+      locationState: location.state 
+    });
+    
     if (location.state?.preserveChat) {
       const restored = restoreStateFromModeSwitch();
       if (restored) {
-        console.log('Chat state restored in full screen mode');
+        console.log('✅ FullScreenChat: Chat state restored');
       }
     }
   }, [location.state, restoreStateFromModeSwitch]);
+
+  // Update URL when session changes
+  const handleSessionChange = (newSessionId: string) => {
+    console.log('🖼️ FullScreenChat: Session changing', { from: sessionId, to: newSessionId });
+    
+    if (newSessionId !== sessionId) {
+      navigate(`/chat/${newSessionId}`, { replace: true });
+    }
+  };
 
   const handleClearChat = async () => {
     if ((window as any).__clearChatFunction) {
@@ -33,6 +48,7 @@ export default function FullScreenChat() {
           <ChatSession 
             onClear={handleClearChat} 
             sessionId={sessionId}
+            onSessionChange={handleSessionChange}
           />
         </div>
       </FullScreenChatLayout>

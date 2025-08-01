@@ -281,6 +281,34 @@ export const HistoryManager = ({
     setSelectedSessions(newSelected);
   };
 
+  const handleSessionLoad = async (sessionId: string) => {
+    console.log('📚 HistoryManager: Loading session', sessionId);
+    
+    try {
+      // Add loading state and delay closing the dialog
+      setLoading(true);
+      
+      // Call the parent's session select handler
+      await onSessionSelect(sessionId);
+      
+      // Close dialog only after successful load
+      if (mode === 'dialog') {
+        setIsDialogOpen(false);
+      }
+      
+      console.log('✅ HistoryManager: Session loaded successfully', sessionId);
+    } catch (error) {
+      console.error('❌ HistoryManager: Failed to load session', sessionId, error);
+      toast({
+        title: "Error",
+        description: "Failed to load chat session",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   const exportSelectedSessions = async () => {
     if (selectedSessions.size === 0) return;
@@ -397,8 +425,7 @@ export const HistoryManager = ({
                   e.stopPropagation();
                   toggleSessionExpansion(session.id);
                 } else {
-                  onSessionSelect(session.id);
-                  if (mode === 'dialog') setIsDialogOpen(false);
+                  handleSessionLoad(session.id);
                 }
               }}
             >

@@ -48,9 +48,10 @@ interface ChatSessionProps {
   onClear?: () => void;
   sessionId?: string;
   initialPrompt?: string;
+  onSessionChange?: (sessionId: string) => void;
 }
 
-export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionProps) => {
+export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange }: ChatSessionProps) => {
   const { user } = useAuth();
   const { trackActivity, trackPerformance } = useAnalytics();
   const { canUseAI, currentUsage, quotaLimit, planName, refreshQuota } = useAIUsage();
@@ -81,6 +82,8 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [hasRestoredState, setHasRestoredState] = useState(false);
+  const [isLoadingSession, setIsLoadingSession] = useState(false);
+  const [loadingError, setLoadingError] = useState<string | null>(null);
 
   // Destructure streaming state for easier access
   const { isStreaming, streamingMessage, abortController, currentProvider } = streamingState;
@@ -109,21 +112,34 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
   // Handle state restoration on mount or navigation
   useEffect(() => {
     const shouldRestoreState = location.state?.preserveChat && !hasRestoredState;
+    const isManualSessionLoad = sessionId && !location.state?.preserveChat;
+    
+    console.log('🔄 ChatSession: Effect triggered', {
+      sessionId,
+      shouldRestoreState,
+      isManualSessionLoad,
+      hasRestoredState,
+      locationState: location.state
+    });
     
     if (shouldRestoreState) {
+      console.log('🔄 ChatSession: Attempting state restoration');
       const restored = restoreStateFromModeSwitch();
       setHasRestoredState(true);
       
       if (!restored) {
-        // If restoration failed, load normally
+        console.log('🔄 ChatSession: State restoration failed, loading normally');
         if (sessionId) {
           loadSpecificSession(sessionId);
         } else {
           loadOrCreateSession();
         }
+      } else {
+        console.log('✅ ChatSession: State restored successfully');
       }
-    } else if (!hasRestoredState) {
-      // Normal loading path
+    } else if (isManualSessionLoad || (!hasRestoredState && !sessionId)) {
+      // Manual session load or initial load without session
+      console.log('🔄 ChatSession: Manual session load or initial load');
       if (sessionId) {
         loadSpecificSession(sessionId);
       } else {
@@ -282,8 +298,13 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
     }
   };
 
-  const loadSpecificSession = async (sessionId: string) => {
+  const loadSpecificSession = async (sessionId: string, retryCount = 0) => {
+    console.log('📚 ChatSession: Loading specific session', { sessionId, retryCount });
+    
     try {
+      setIsLoadingSession(true);
+      setLoadingError(null);
+      
       // Load specific session
       const { data: session, error: sessionError } = await supabase
         .from('chat_sessions')
@@ -292,17 +313,42 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
         .eq('user_id', user?.id) // Ensure user can only load their own sessions
         .single();
 
-      if (sessionError) throw sessionError;
+      if (sessionError) {
+        if (sessionError.code === 'PGRST116' && retryCount < 2) {
+          // Session not found, retry once
+          console.log('🔄 ChatSession: Session not found, retrying...', retryCount + 1);
+          await new Promise(resolve => setTimeout(resolve, 500));
+          return loadSpecificSession(sessionId, retryCount + 1);
+        }
+        throw sessionError;
+      }
 
+      console.log('✅ ChatSession: Session loaded', session);
       setCurrentSession(session);
       await loadMessages(session.id);
+      
+      // Notify parent component about session change
+      if (onSessionChange && session.id !== sessionId) {
+        onSessionChange(session.id);
+      }
+      
     } catch (error) {
-      console.error('Error loading specific session:', error);
+      console.error('❌ ChatSession: Error loading specific session:', error);
+      setLoadingError(`Failed to load session: ${error.message}`);
+      
       toast({
         title: "Error",
         description: "Failed to load chat session",
         variant: "destructive",
       });
+      
+      // If it's a critical error, fall back to creating a new session
+      if (retryCount >= 2) {
+        console.log('🔄 ChatSession: Max retries reached, creating new session');
+        await loadOrCreateSession();
+      }
+    } finally {
+      setIsLoadingSession(false);
     }
   };
 
@@ -385,8 +431,16 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
   };
 
   const handleSessionSelect = async (sessionId: string) => {
-    await loadSpecificSession(sessionId);
-    setShowHistory(false); // Close history when session is selected
+    console.log('📚 ChatSession: Session selected from history', sessionId);
+    
+    try {
+      await loadSpecificSession(sessionId);
+      setShowHistory(false); // Close history only after successful load
+      console.log('✅ ChatSession: Session selection completed', sessionId);
+    } catch (error) {
+      console.error('❌ ChatSession: Session selection failed', sessionId, error);
+      // Keep history open if session loading failed
+    }
   };
 
   const handleToggleHistory = () => {
