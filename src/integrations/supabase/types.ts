@@ -1431,6 +1431,21 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      get_user_ai_usage_stats: {
+        Args: { start_date_param?: string; end_date_param?: string }
+        Returns: {
+          user_id: string
+          email: string
+          display_name: string
+          daily_interactions: number
+          total_interactions: number
+          success_rate: number
+          avg_response_time: number
+          quota_used: number
+          quota_limit: number
+          plan_name: string
+        }[]
+      }
       increment_ai_usage: {
         Args: { user_id_param: string }
         Returns: boolean

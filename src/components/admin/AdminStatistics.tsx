@@ -75,17 +75,15 @@ interface UserSession {
 
 interface UserAIUsage {
   user_id: string;
-  user_email?: string;
+  email?: string;
+  display_name?: string;
   daily_interactions: number;
-  success_rate: number;
   total_interactions: number;
-  providers_used: string[];
-  last_interaction: string;
-  quota_usage?: {
-    current: number;
-    limit: number;
-    plan: string;
-  };
+  success_rate: number;
+  avg_response_time: number;
+  quota_used: number;
+  quota_limit: number;
+  plan_name: string;
 }
 
 // AI Errors Section Component
@@ -438,6 +436,7 @@ const AIInteractionSection = ({ selectedDateRange }: { selectedDateRange: string
   const [aiUsageOpen, setAiUsageOpen] = useState(false);
   const [userAIUsage, setUserAIUsage] = useState<UserAIUsage[]>([]);
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   const fetchUserAIUsage = async () => {
     try {
@@ -447,66 +446,21 @@ const AIInteractionSection = ({ selectedDateRange }: { selectedDateRange: string
       const days = selectedDateRange === '7days' ? 7 : selectedDateRange === '30days' ? 30 : 90;
       startDate.setDate(endDate.getDate() - days);
 
-      const { data, error } = await supabase
-        .from('ai_interactions')
-        .select(`
-          user_id,
-          success,
-          provider_name,
-          created_at,
-          profiles!inner(email),
-          user_billing(quota_limit, current_usage, plan_name)
-        `)
-        .gte('created_at', startDate.toISOString())
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      const userStats = (data || []).reduce((acc, interaction) => {
-        const userId = interaction.user_id;
-        if (!acc[userId]) {
-          acc[userId] = {
-            user_id: userId,
-            user_email: (interaction.profiles as any)?.email,
-            daily_interactions: 0,
-            success_rate: 0,
-            total_interactions: 0,
-            providers_used: [],
-            last_interaction: interaction.created_at,
-            quota_usage: interaction.user_billing?.[0] ? {
-              current: (interaction.user_billing[0] as any).current_usage,
-              limit: (interaction.user_billing[0] as any).quota_limit,
-              plan: (interaction.user_billing[0] as any).plan_name
-            } : undefined
-          };
-        }
-
-        acc[userId].total_interactions++;
-        if (interaction.success) {
-          acc[userId].success_rate++;
-        }
-        
-        if (interaction.provider_name && !acc[userId].providers_used.includes(interaction.provider_name)) {
-          acc[userId].providers_used.push(interaction.provider_name);
-        }
-
-        const today = new Date().toDateString();
-        if (new Date(interaction.created_at).toDateString() === today) {
-          acc[userId].daily_interactions++;
-        }
-
-        return acc;
-      }, {} as Record<string, UserAIUsage>);
-
-      Object.values(userStats).forEach(user => {
-        user.success_rate = user.total_interactions > 0 
-          ? Math.round((user.success_rate / user.total_interactions) * 100)
-          : 0;
+      const { data, error } = await supabase.rpc('get_user_ai_usage_stats', {
+        start_date_param: startDate.toISOString().split('T')[0],
+        end_date_param: endDate.toISOString().split('T')[0]
       });
 
-      setUserAIUsage(Object.values(userStats));
+      if (error) throw error;
+      
+      setUserAIUsage(data || []);
     } catch (error) {
       console.error('Error fetching user AI usage:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch AI usage data",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -575,25 +529,23 @@ const AIInteractionSection = ({ selectedDateRange }: { selectedDateRange: string
                     {userAIUsage.map((user) => (
                       <TableRow key={user.user_id}>
                         <TableCell className="font-medium">
-                          {user.user_email || 'Unknown'}
+                          {user.email || user.display_name || 'Unknown'}
                         </TableCell>
                         <TableCell>{user.daily_interactions}</TableCell>
                         <TableCell>{user.total_interactions}</TableCell>
                         <TableCell>
                           <Badge variant={user.success_rate >= 90 ? "default" : "secondary"}>
-                            {user.success_rate}%
+                            {Math.round(user.success_rate)}%
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          {user.quota_usage ? (
-                            <span className={user.quota_usage.current / user.quota_usage.limit > 0.8 ? "text-destructive" : ""}>
-                              {user.quota_usage.current}/{user.quota_usage.limit}
-                            </span>
-                          ) : 'N/A'}
+                          <span className={user.quota_used / user.quota_limit > 0.8 ? "text-destructive" : ""}>
+                            {user.quota_used}/{user.quota_limit}
+                          </span>
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">
-                            {user.quota_usage?.plan || 'Unknown'}
+                            {user.plan_name}
                           </Badge>
                         </TableCell>
                       </TableRow>
