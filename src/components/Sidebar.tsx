@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronRight, Star, Hash, X, ExternalLink } from "lucide-react";
+import { ChevronRight, Star, Hash, X, ExternalLink, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +21,7 @@ interface Technique {
 interface Scenario {
   id: string;
   title: string;
-  description?: string;
+  description: string;
   phase: string;
   tags: string[];
   linked_techniques: string[];
@@ -46,15 +46,26 @@ interface SidebarProps {
   selectedPhase: string;
   onPhaseSelect: (phase: string) => void;
   onClearAllFavorites: () => void;
+  selectedScenario?: Scenario | null;
+  onScenarioSelect?: (scenario: Scenario | null) => void;
+  onOpenChatWithScenario?: () => void;
 }
 
-export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSelect, onClearAllFavorites }: SidebarProps) => {
+export const Sidebar = ({ 
+  techniques, 
+  onTechniqueClick, 
+  selectedPhase, 
+  onPhaseSelect, 
+  onClearAllFavorites,
+  selectedScenario,
+  onScenarioSelect,
+  onOpenChatWithScenario
+}: SidebarProps) => {
   console.log('Sidebar techniques array:', techniques);
   console.log('Techniques count:', techniques.length);
   console.log('First technique:', techniques[0]);
   
   const { phases: navigationPhases } = useNavigationPhases();
-  const [selectedScenario, setSelectedScenario] = useState("Select your situation...");
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [linkTabs, setLinkTabs] = useState<LinkTab[]>([]);
   
@@ -124,17 +135,16 @@ export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSe
     }
   };
 
-  const handleScenarioChange = (scenarioId: string) => {
-    setSelectedScenario(scenarioId);
+  const handleScenarioSelect = (value: string) => {
+    const scenario = scenarios.find(s => s.id === value) || null;
     
-    if (scenarioId === "Select your situation...") return;
+    if (onScenarioSelect) {
+      onScenarioSelect(scenario);
+    }
     
-    const scenario = scenarios.find(s => s.id === scenarioId);
     if (scenario) {
-      // Filter techniques to show only those linked to the selected scenario
-      // This could be enhanced to highlight matching techniques in the main view
-      console.log(`Selected scenario: ${scenario.title}`);
-      console.log(`Linked techniques: ${scenario.linked_techniques.join(', ')}`);
+      console.log('Selected scenario:', scenario.title);
+      console.log('Linked techniques:', scenario.linked_techniques);
     }
   };
 
@@ -172,41 +182,53 @@ export const Sidebar = ({ techniques, onTechniqueClick, selectedPhase, onPhaseSe
           <CardTitle className="text-lg text-foreground">Scenario Assistant</CardTitle>
         </CardHeader>
         <CardContent>
-          <Select value={selectedScenario} onValueChange={handleScenarioChange}>
-            <SelectTrigger className="w-full bg-muted/30 border-border/50">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Select your situation...">Select your situation...</SelectItem>
-              {scenarios.map((scenario) => (
-                <SelectItem key={scenario.id} value={scenario.id}>
-                  {scenario.title}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {selectedScenario !== "Select your situation..." && scenarios.find(s => s.id === selectedScenario) && (
+          <div className="flex gap-2">
+            <Select onValueChange={handleScenarioSelect} value={selectedScenario?.id || ""}>
+              <SelectTrigger className="bg-muted/30 border-border/50 flex-1">
+                <SelectValue placeholder="Choose a scenario..." />
+              </SelectTrigger>
+              <SelectContent>
+                {scenarios.map((scenario) => (
+                  <SelectItem key={scenario.id} value={scenario.id}>
+                    {scenario.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {selectedScenario && onOpenChatWithScenario && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onOpenChatWithScenario}
+                className="px-3 border-primary/50 text-primary hover:bg-primary/10"
+                title="Ask AI about this scenario"
+              >
+                <MessageSquare className="w-4 h-4" />
+              </Button>
+            )}
+          </div>
+          {selectedScenario && (
             <div className="mt-3 p-3 bg-muted/30 rounded-lg">
               <p className="text-xs text-muted-foreground mb-2">
-                {scenarios.find(s => s.id === selectedScenario)?.description}
+                {selectedScenario.description}
               </p>
               <div className="flex flex-wrap gap-1 mb-2">
-                {scenarios.find(s => s.id === selectedScenario)?.tags.map((tag, index) => (
+                {selectedScenario.tags.map((tag, index) => (
                   <Badge key={index} variant="secondary" className="text-xs">
                     {tag}
                   </Badge>
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                <strong>Phase:</strong> {scenarios.find(s => s.id === selectedScenario)?.phase}
+                <strong>Phase:</strong> {selectedScenario.phase}
               </p>
-              {scenarios.find(s => s.id === selectedScenario)?.linked_techniques.length > 0 && (
+              {selectedScenario.linked_techniques.length > 0 && (
                 <div className="mt-2">
                   <p className="text-xs font-medium text-muted-foreground mb-1">
                     Linked Techniques:
                   </p>
                   <div className="flex flex-wrap gap-1">
-                    {scenarios.find(s => s.id === selectedScenario)?.linked_techniques.map((techniqueName, index) => {
+                    {selectedScenario.linked_techniques.map((techniqueName, index) => {
                       console.log('=== DEBUG START ===');
                       console.log('Processing technique:', techniqueName);
                       console.log('Total techniques available:', techniques.length);

@@ -33,6 +33,17 @@ interface DashboardProps {
   isWideScreen?: boolean;
 }
 
+interface Scenario {
+  id: string;
+  title: string;
+  description: string;
+  phase: string;
+  tags: string[];
+  linked_techniques: string[];
+  order_index: number;
+  is_active: boolean;
+}
+
 export const Dashboard = ({ onTechniqueSelect, onToggleChat, onOpenChatWithPrompt, isChatVisible = true, isWideScreen = false }: DashboardProps) => {
   const {
     user,
@@ -54,6 +65,7 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, onOpenChatWithPromp
   const [selectedTechnique, setSelectedTechnique] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
+  const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
   
   const { containerRef, columnCount, gridStyle } = useResponsiveGrid({ 
     isChatVisible 
@@ -309,6 +321,33 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, onOpenChatWithPromp
     setSelectedTechnique(technique);
     setIsModalOpen(true);
   };
+
+  const handleScenarioSelect = (scenario: Scenario | null) => {
+    setSelectedScenario(scenario);
+  };
+
+  const generateScenarioPrompt = (scenario: Scenario): string => {
+    const linkedTechniquesText = scenario.linked_techniques.length > 0 
+      ? `\n\nLinked techniques: ${scenario.linked_techniques.join(', ')}`
+      : '';
+    
+    return `I'm working on a scenario: "${scenario.title}"
+
+Description: ${scenario.description}
+Phase: ${scenario.phase}
+Tags: ${scenario.tags.join(', ')}${linkedTechniquesText}
+
+Can you help me understand this scenario and provide guidance on the techniques, tools, and methodologies involved?`;
+  };
+
+  const handleOpenChatWithScenario = () => {
+    if (selectedScenario && onOpenChatWithPrompt) {
+      const prompt = generateScenarioPrompt(selectedScenario);
+      onOpenChatWithPrompt(prompt);
+    } else if (onToggleChat) {
+      onToggleChat();
+    }
+  };
   return <div className="bg-background">
       {/* Header */}
       <header className="border-b border-border bg-gradient-card backdrop-blur-sm sticky top-0 z-50">
@@ -419,6 +458,9 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, onOpenChatWithPromp
           selectedPhase={selectedPhase}
           onPhaseSelect={setSelectedPhase}
           onClearAllFavorites={clearAllFavorites}
+          selectedScenario={selectedScenario}
+          onScenarioSelect={handleScenarioSelect}
+          onOpenChatWithScenario={handleOpenChatWithScenario}
         />
 
         {/* Main Content - Better container structure for responsive grid */}
