@@ -56,8 +56,35 @@ serve(async (req) => {
       });
     }
 
-    // Parse request body
-    const requestBody = await req.json();
+    // Robust request body parsing with multiple fallback methods
+    let requestBody;
+    const contentLength = req.headers.get('content-length');
+    const contentType = req.headers.get('content-type');
+    
+    console.log('Request body info:', { contentLength, contentType, hasBody: !!req.body });
+    
+    // Check for empty body condition
+    if (contentLength === '0' || contentLength === null) {
+      throw new Error('Empty request body detected - deployment configuration issue. Please retry or contact support.');
+    }
+    
+    try {
+      // Clone the request to allow multiple read attempts
+      const bodyText = await req.text();
+      console.log('Body text length:', bodyText.length, 'Preview:', bodyText.substring(0, 100));
+      
+      if (!bodyText || bodyText.trim().length === 0) {
+        throw new Error('Request body is empty - edge function deployment issue detected');
+      }
+      
+      requestBody = JSON.parse(bodyText);
+    } catch (parseError) {
+      console.error('Body parsing error:', parseError.message);
+      if (parseError.message.includes('Unexpected end of JSON input')) {
+        throw new Error('Empty request body received - Supabase edge function configuration issue. Please retry.');
+      }
+      throw new Error(`Failed to parse request body: ${parseError.message}`);
+    }
     const { message, messages, selectedModelId, sessionId, conversationId } = requestBody;
     
     if (!message && !messages) {
