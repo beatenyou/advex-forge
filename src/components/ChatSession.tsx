@@ -92,6 +92,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
   const clearChatAndResetSession = async () => {
     setMessages([]);
     setCurrentSession(null);
+    setCollapsedMessages({});
     setStreamingState({
       isStreaming: false,
       streamingMessage: '',
@@ -354,7 +355,28 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
         .order('created_at', { ascending: true });
 
       if (error) throw error;
-      setMessages((data || []) as ChatMessage[]);
+      
+      const messages = (data || []) as ChatMessage[];
+      setMessages(messages);
+      
+      // Auto-collapse long AI messages when loading from database
+      const newCollapsedStates: Record<string, boolean> = {};
+      messages.forEach(message => {
+        if (message.role === 'assistant') {
+          const shouldAutoCollapse = (
+            message.content.length > 500 ||
+            message.content.split('\n').length > 8 ||
+            (message.content.match(/```/g) || []).length >= 2 ||
+            (message.content.match(/^[\s]*[-\*\+]\s/gm) || []).length > 5
+          );
+          
+          if (shouldAutoCollapse) {
+            newCollapsedStates[message.id] = true;
+          }
+        }
+      });
+      
+      setCollapsedMessages(prev => ({ ...prev, ...newCollapsedStates }));
     } catch (error) {
       console.error('Error loading messages:', error);
     }
@@ -396,6 +418,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
 
       setCurrentSession(newSession);
       setMessages([]);
+      setCollapsedMessages({});
       setQuestion('');
       
       // Log session creation

@@ -22,7 +22,24 @@ export const CollapsibleMessage = ({
   onToggleCollapse,
   threshold = { characters: 500, lines: 8 }
 }: CollapsibleMessageProps) => {
-  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  // Auto-detect if message should be collapsed by default
+  const shouldAutoCollapse = useMemo(() => {
+    const characterCount = content.length;
+    const lineCount = content.split('\n').length;
+    const codeBlockCount = (content.match(/```/g) || []).length / 2;
+    const hasCodeBlocks = codeBlockCount > 0;
+    const listItems = (content.match(/^[\s]*[-\*\+]\s/gm) || []).length;
+    const hasLongList = listItems > 5;
+    
+    return (
+      characterCount > threshold.characters ||
+      lineCount > threshold.lines ||
+      hasCodeBlocks ||
+      hasLongList
+    );
+  }, [content, threshold]);
+
+  const [internalCollapsed, setInternalCollapsed] = useState(shouldAutoCollapse);
   
   // Use external state if provided, otherwise use internal state
   const isCollapsed = externalCollapsed !== undefined ? externalCollapsed : internalCollapsed;
