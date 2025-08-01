@@ -101,46 +101,51 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
         onClick={() => setIsModalOpen(true)}
       >
         <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <CardTitle className="text-lg text-foreground group-hover:text-primary transition-colors">
-                  {technique.title}
-                </CardTitle>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`h-6 w-6 p-0 hover:bg-transparent ${!user ? 'opacity-50' : ''}`}
-                        onClick={toggleStar}
-                        disabled={isToggling}
-                      >
-                        {isToggling ? (
-                          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                        ) : (
-                          <Star 
-                            className={`w-4 h-4 transition-colors ${
-                              technique.starred ? "fill-cyber-orange text-cyber-orange" : "text-muted-foreground hover:text-cyber-orange"
-                            }`} 
-                          />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{!user ? "Sign in to save favorites" : technique.starred ? "Remove from favorites" : "Add to favorites"}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </div>
+          <div className="grid grid-cols-[1fr_auto_auto] items-start gap-2">
+            {/* Title and Badge Area */}
+            <div className="min-w-0">
+              <CardTitle className="text-lg text-foreground group-hover:text-primary transition-colors mb-2 pr-2">
+                {technique.title}
+              </CardTitle>
               {(technique.mitre_id && isValidMitreId(technique.mitre_id)) && (
                 <Badge variant="outline" className={`text-xs ${getPhaseColor(technique.phase)}`}>
                   {extractCleanMitreId(technique.mitre_id)}
                 </Badge>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            
+            {/* Star Button - Always Top Right */}
+            <div className="flex items-start justify-center pt-1">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`h-6 w-6 p-0 hover:bg-transparent ${!user ? 'opacity-50' : ''}`}
+                      onClick={toggleStar}
+                      disabled={isToggling}
+                    >
+                      {isToggling ? (
+                        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                      ) : (
+                        <Star 
+                          className={`w-4 h-4 transition-colors ${
+                            technique.starred ? "fill-cyber-orange text-cyber-orange" : "text-muted-foreground hover:text-cyber-orange"
+                          }`} 
+                        />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{!user ? "Sign in to save favorites" : technique.starred ? "Remove from favorites" : "Add to favorites"}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+            
+            {/* Action Icons */}
+            <div className="flex items-start gap-2 pt-1">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
