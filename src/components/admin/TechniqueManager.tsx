@@ -15,18 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { migrateTechniquesToDatabase, fetchTechniquesFromDatabase, DatabaseTechnique } from "@/lib/techniqueDataMigration";
 import { format, formatDistanceToNow, isAfter, isBefore, subDays, subWeeks, subMonths } from "date-fns";
-
-const PHASES = [
-  'Reconnaissance',
-  'Enumeration', 
-  'Initial Access',
-  'Credential Access',
-  'Lateral Movement',
-  'Privilege Escalation',
-  'Persistence',
-  'Collection',
-  'Command and Control'
-];
+import { useNavigationPhases } from "@/hooks/useNavigationPhases";
 
 const TechniqueManager = () => {
   const [techniques, setTechniques] = useState<any[]>([]);
@@ -54,6 +43,7 @@ const TechniqueManager = () => {
     commands: ''
   });
   const { toast } = useToast();
+  const { phases } = useNavigationPhases();
 
   useEffect(() => {
     loadTechniques();
@@ -369,9 +359,9 @@ const TechniqueManager = () => {
                       <SelectTrigger>
                         <SelectValue placeholder="Select phase" />
                       </SelectTrigger>
-                      <SelectContent>
-                        {PHASES.map(phase => (
-                          <SelectItem key={phase} value={phase}>{phase}</SelectItem>
+                       <SelectContent>
+                        {phases.filter(phase => phase.label !== 'All Techniques').map(phase => (
+                          <SelectItem key={phase.name} value={phase.label}>{phase.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

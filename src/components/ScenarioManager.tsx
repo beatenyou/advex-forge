@@ -10,6 +10,7 @@ import { Trash2, Edit, Plus, Upload, GripVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { parseMultipleScenarios, sampleScenarioMarkdown } from "@/lib/scenarioMarkdownParser";
+import { useNavigationPhases } from "@/hooks/useNavigationPhases";
 
 interface Scenario {
   id: string;
@@ -30,26 +31,7 @@ export const ScenarioManager = () => {
   const [editingScenario, setEditingScenario] = useState<Scenario | null>(null);
   const [showSample, setShowSample] = useState(false);
   const { toast } = useToast();
-
-  const phases = [
-    'Reconnaissance',
-    'Weaponization',
-    'Delivery',
-    'Exploitation',
-    'Installation',
-    'Command and Control',
-    'Actions on Objectives',
-    'Initial Access',
-    'Persistence',
-    'Privilege Escalation',
-    'Defense Evasion',
-    'Credential Access',
-    'Discovery',
-    'Lateral Movement',
-    'Collection',
-    'Exfiltration',
-    'Impact'
-  ];
+  const { phases } = useNavigationPhases();
 
   useEffect(() => {
     fetchScenarios();
@@ -200,7 +182,7 @@ export const ScenarioManager = () => {
         .insert([{
           title: 'New Scenario',
           description: 'Scenario description',
-          phase: 'Reconnaissance',
+          phase: phases.length > 0 ? phases[0].label : 'Active Reconnaissance',
           tags: [],
           linked_techniques: [],
           order_index: maxOrder + 1,
@@ -406,9 +388,9 @@ export const ScenarioManager = () => {
                   onChange={(e) => updateEditingScenario('phase', e.target.value)}
                   className="w-full p-2 border rounded-md"
                 >
-                  {phases.map((phase) => (
-                    <option key={phase} value={phase}>
-                      {phase}
+                  {phases.filter(phase => phase.label !== 'All Techniques').map((phase) => (
+                    <option key={phase.name} value={phase.label}>
+                      {phase.label}
                     </option>
                   ))}
                 </select>
