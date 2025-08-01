@@ -9,6 +9,7 @@ import { CommandGenerator } from "./CommandGenerator";
 import QuickSupportTicket from "./QuickSupportTicket";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useTechniqueTracking } from "@/hooks/useTechniqueTracking";
 
 interface Technique {
   id: string;
@@ -68,6 +69,14 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
   const [isToggling, setIsToggling] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
+  const {
+    trackTechniqueFavorited,
+    trackTechniqueUnfavorited,
+    trackTechniqueCommandGenerated,
+    trackTechniqueAIQuery,
+    trackTechniqueMitreLinkAccessed,
+    trackTechniqueModalOpened
+  } = useTechniqueTracking();
 
   const toggleStar = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -86,6 +95,21 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
     setIsToggling(true);
     try {
       await onToggleFavorite(technique.id);
+      
+      // Track the favorite action
+      const techniqueData = {
+        techniqueId: technique.id,
+        techniqueTitle: technique.title,
+        mitreId: technique.mitre_id,
+        phase: technique.phase,
+        category: technique.category
+      };
+      
+      if (technique.starred) {
+        trackTechniqueUnfavorited(techniqueData);
+      } else {
+        trackTechniqueFavorited(techniqueData);
+      }
     } catch (error) {
       console.error('Error toggling favorite:', error);
     } finally {
@@ -97,6 +121,16 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
     e.stopPropagation();
     if (onOpenAIChat) {
       const prompt = `Tell me more about the ${technique.title} attack technique${technique.mitre_id && isValidMitreId(technique.mitre_id) ? ` (${extractCleanMitreId(technique.mitre_id)})` : ''}. Please provide additional details about its usage, tools, and methods to employ this strategy.`;
+      
+      // Track AI query
+      trackTechniqueAIQuery({
+        techniqueId: technique.id,
+        techniqueTitle: technique.title,
+        mitreId: technique.mitre_id,
+        phase: technique.phase,
+        category: technique.category
+      });
+      
       onOpenAIChat(prompt);
     }
   };
@@ -189,6 +223,16 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                       className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
                       onClick={(e) => {
                         e.stopPropagation();
+                        
+                        // Track command generation
+                        trackTechniqueCommandGenerated({
+                          techniqueId: technique.id,
+                          techniqueTitle: technique.title,
+                          mitreId: technique.mitre_id,
+                          phase: technique.phase,
+                          category: technique.category
+                        });
+                        
                         setIsCommandGenOpen(true);
                       }}
                     >
@@ -270,6 +314,16 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                         className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary"
                         onClick={(e) => {
                           e.stopPropagation();
+                          
+                          // Track modal open
+                          trackTechniqueModalOpened({
+                            techniqueId: technique.id,
+                            techniqueTitle: technique.title,
+                            mitreId: technique.mitre_id,
+                            phase: technique.phase,
+                            category: technique.category
+                          });
+                          
                           setIsModalOpen(true);
                         }}
                       >
@@ -293,6 +347,16 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                           className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary"
                           onClick={(e) => {
                             e.stopPropagation();
+                            
+                            // Track MITRE link access
+                            trackTechniqueMitreLinkAccessed({
+                              techniqueId: technique.id,
+                              techniqueTitle: technique.title,
+                              mitreId: technique.mitre_id,
+                              phase: technique.phase,
+                              category: technique.category
+                            });
+                            
                             const mitreUrl = generateMitreUrl(technique.mitre_id!);
                             if (mitreUrl) {
                               window.open(mitreUrl, '_blank', 'noopener,noreferrer');

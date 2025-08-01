@@ -20,6 +20,7 @@ import { BulkImportManager } from "@/components/admin/BulkImportManager";
 import { AdminStatistics } from "@/components/admin/AdminStatistics";
 import { NavigationManager } from "@/components/admin/NavigationManager";
 import { AdminNotesManager } from "@/components/admin/AdminNotesManager";
+import { TechniqueAnalytics } from "@/components/admin/TechniqueAnalytics";
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -186,6 +187,13 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                 >
                   <FileEdit className="w-4 h-4" />
                   Admin Notes
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="technique-analytics" 
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground min-w-[120px]"
+                >
+                  <Target className="w-4 h-4" />
+                  Technique Analytics
                 </TabsTrigger>
               </div>
             </TabsList>
@@ -482,6 +490,10 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
 
             <TabsContent value="admin-notes" className="space-y-6">
               <AdminNotesManager />
+            </TabsContent>
+
+            <TabsContent value="technique-analytics" className="space-y-6">
+              <TechniqueAnalytics />
             </TabsContent>
           </Tabs>
         </div>
