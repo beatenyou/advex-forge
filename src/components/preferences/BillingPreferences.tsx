@@ -85,7 +85,7 @@ export default function BillingPreferences() {
             .insert({
               user_id: user.id,
               plan_id: freePlan.id,
-              ai_quota_limit: freePlan.ai_quota_monthly,
+              ai_quota_limit: freePlan.ai_quota_monthly || 20,
             });
 
           if (!error) {
@@ -300,7 +300,7 @@ export default function BillingPreferences() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {plans.map((plan) => (
               <Card key={plan.id} className={`relative ${currentPlan?.id === plan.id ? 'ring-2 ring-primary' : ''}`}>
                 {currentPlan?.id === plan.id && (

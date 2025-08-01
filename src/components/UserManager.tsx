@@ -281,7 +281,7 @@ export function UserManager() {
     setSelectedUserId(userId);
     setSelectedUserEmail(email);
     const billing = userBilling[userId];
-    setNewQuotaLimit(billing?.ai_quota_limit?.toString() || '50');
+    setNewQuotaLimit(billing?.ai_quota_limit?.toString() || '20');
     setNewCurrentUsage(billing?.ai_usage_current?.toString() || '0');
     setEditDialogOpen(true);
   };

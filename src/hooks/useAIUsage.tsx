@@ -17,7 +17,7 @@ export function useAIUsage() {
   const [usageData, setUsageData] = useState<AIUsageData>({
     canUseAI: false,
     currentUsage: 0,
-    quotaLimit: 50,
+    quotaLimit: 20,
     planName: 'Free',
     loading: true,
   });
