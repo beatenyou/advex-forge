@@ -499,6 +499,42 @@ export type Database = {
         }
         Relationships: []
       }
+      llm_extraction_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          template_content: string
+          updated_at: string
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          template_content: string
+          updated_at?: string
+          version_number?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          template_content?: string
+          updated_at?: string
+          version_number?: number
+        }
+        Relationships: []
+      }
       model_access_templates: {
         Row: {
           created_at: string | null

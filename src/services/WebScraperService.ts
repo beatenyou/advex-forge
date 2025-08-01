@@ -1,4 +1,5 @@
 import FirecrawlApp from '@mendable/firecrawl-js';
+import { TemplateManagementService } from './TemplateManagementService';
 
 interface ErrorResponse {
   success: false;
@@ -173,7 +174,7 @@ export class WebScraperService {
   ): Promise<ExtractionResult> {
     try {
       // Use custom template if provided, otherwise use default
-      const template = customTemplate || this.getDefaultExtractionTemplate();
+      const template = customTemplate || await this.getDefaultExtractionTemplate();
       const extractionPrompt = template.replace('{sourceUrl}', sourceUrl).replace('{content}', content);
 
       // Use Perplexity for validation if enabled
@@ -264,7 +265,17 @@ export class WebScraperService {
     return results;
   }
 
-  static getDefaultExtractionTemplate(): string {
+  static async getDefaultExtractionTemplate(): Promise<string> {
+    try {
+      const template = await TemplateManagementService.getDefaultTemplateContent();
+      return template;
+    } catch (error) {
+      console.warn('Failed to load template from database, using fallback:', error);
+      return this.getHardcodedTemplate();
+    }
+  }
+
+  static getHardcodedTemplate(): string {
     return `You are a cybersecurity expert tasked with extracting attack techniques from web content and converting them into structured JSON format for a security dashboard.
 
 **EXTRACTION GUIDELINES:**

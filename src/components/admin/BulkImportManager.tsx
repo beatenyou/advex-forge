@@ -29,13 +29,16 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
-  BookOpen
+  BookOpen,
+  PenTool
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { WebScraperService } from "@/services/WebScraperService";
 import { parseMultipleMarkdownTechniques, type ParsedTechnique } from "@/lib/markdownParser";
 import { migrateTechniquesToDatabase } from "@/lib/techniqueDataMigration";
+import { TemplateEditor } from "./TemplateEditor";
+import { TemplateManagementService } from "@/services/TemplateManagementService";
 
 interface BulkImportManagerProps {
   onTechniquesImported?: (count: number) => void;
@@ -74,14 +77,26 @@ export const BulkImportManager: React.FC<BulkImportManagerProps> = ({ onTechniqu
   const [formatValidationErrors, setFormatValidationErrors] = useState<ValidationError[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [selectedTechniques, setSelectedTechniques] = useState<Set<number>>(new Set());
+  const [showTemplateEditor, setShowTemplateEditor] = useState(false);
   
   const { toast } = useToast();
 
   // Load default template on mount
   useEffect(() => {
-    const defaultTemplate = WebScraperService.getDefaultExtractionTemplate();
-    setCustomTemplate(defaultTemplate);
+    loadDefaultTemplate();
   }, []);
+
+  const loadDefaultTemplate = async () => {
+    try {
+      const template = await TemplateManagementService.getDefaultTemplateContent();
+      setCustomTemplate(template);
+    } catch (error) {
+      console.error('Error loading template:', error);
+      // Fallback to hardcoded template
+      const fallbackTemplate = WebScraperService.getHardcodedTemplate();
+      setCustomTemplate(fallbackTemplate);
+    }
+  };
 
   // Validation functions
   const validateTechniqueFormat = (content: string): ValidationError[] => {
@@ -199,13 +214,22 @@ export const BulkImportManager: React.FC<BulkImportManagerProps> = ({ onTechniqu
     }
   };
 
-  const resetToDefaultTemplate = () => {
-    const defaultTemplate = WebScraperService.getDefaultExtractionTemplate();
-    setCustomTemplate(defaultTemplate);
-    toast({
-      title: "Template Reset",
-      description: "Extraction template has been reset to default"
-    });
+  const resetToDefaultTemplate = async () => {
+    try {
+      const defaultTemplate = await TemplateManagementService.getDefaultTemplateContent();
+      setCustomTemplate(defaultTemplate);
+      toast({
+        title: "Template Reset",
+        description: "Extraction template has been reset to system default"
+      });
+    } catch (error) {
+      const fallbackTemplate = WebScraperService.getHardcodedTemplate();
+      setCustomTemplate(fallbackTemplate);
+      toast({
+        title: "Template Reset",
+        description: "Extraction template has been reset to fallback default"
+      });
+    }
   };
 
   const saveCustomTemplate = () => {
@@ -605,6 +629,14 @@ export const BulkImportManager: React.FC<BulkImportManagerProps> = ({ onTechniqu
                   </div>
                   
                   <div className="flex flex-wrap gap-2">
+                    <Button 
+                      variant="default" 
+                      size="sm" 
+                      onClick={() => setShowTemplateEditor(true)}
+                    >
+                      <PenTool className="w-3 h-3 mr-1" />
+                      Edit System Default
+                    </Button>
                     <Button variant="outline" size="sm" onClick={resetToDefaultTemplate}>
                       <RotateCcw className="w-3 h-3 mr-1" />
                       Reset to Default
@@ -958,6 +990,13 @@ https://github.com/user/repo`}
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Template Editor Modal */}
+      <TemplateEditor
+        open={showTemplateEditor}
+        onOpenChange={setShowTemplateEditor}
+        onTemplateUpdate={loadDefaultTemplate}
+      />
     </div>
   );
 };
