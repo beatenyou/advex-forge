@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_notes: {
+        Row: {
+          assigned_to: string | null
+          category: string
+          content: string
+          created_at: string
+          created_by: string
+          due_date: string | null
+          id: string
+          priority: string
+          status: string
+          support_ticket_id: string | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          category?: string
+          content: string
+          created_at?: string
+          created_by: string
+          due_date?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          support_ticket_id?: string | null
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          category?: string
+          content?: string
+          created_at?: string
+          created_by?: string
+          due_date?: string | null
+          id?: string
+          priority?: string
+          status?: string
+          support_ticket_id?: string | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_chat_config: {
         Row: {
           created_at: string
