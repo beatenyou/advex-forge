@@ -30,6 +30,7 @@ const TechniqueManager = () => {
   const [sortBy, setSortBy] = useState('created_desc');
   const [formData, setFormData] = useState({
     title: '',
+    mitre_id: '',
     description: '',
     phase: '',
     tags: '',
@@ -176,6 +177,7 @@ const TechniqueManager = () => {
   const resetForm = () => {
     setFormData({
       title: '',
+      mitre_id: '',
       description: '',
       phase: '',
       tags: '',
@@ -195,6 +197,7 @@ const TechniqueManager = () => {
     setEditingTechnique(technique);
     setFormData({
       title: technique.title || '',
+      mitre_id: technique.mitre_id || '',
       description: technique.description || '',
       phase: technique.phase || '',
       tags: Array.isArray(technique.tags) ? technique.tags.join(', ') : '',
@@ -216,6 +219,7 @@ const TechniqueManager = () => {
     try {
       const techniqueData: DatabaseTechnique = {
         title: formData.title,
+        mitre_id: formData.mitre_id || null,
         description: formData.description,
         phase: formData.phase,
         tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
@@ -354,6 +358,21 @@ const TechniqueManager = () => {
                     />
                   </div>
                   <div>
+                    <Label htmlFor="mitre_id">MITRE ID</Label>
+                    <Input
+                      id="mitre_id"
+                      value={formData.mitre_id}
+                      onChange={(e) => setFormData({...formData, mitre_id: e.target.value})}
+                      placeholder="T1110.003"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Format: T#### or T####.### (e.g., T1110 or T1110.003)
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
                     <Label htmlFor="phase">Phase</Label>
                     <Select value={formData.phase} onValueChange={(value) => setFormData({...formData, phase: value})}>
                       <SelectTrigger>
@@ -365,6 +384,15 @@ const TechniqueManager = () => {
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div>
+                    <Label htmlFor="category">Category</Label>
+                    <Input
+                      id="category"
+                      value={formData.category}
+                      onChange={(e) => setFormData({...formData, category: e.target.value})}
+                      placeholder="General"
+                    />
                   </div>
                 </div>
                 
