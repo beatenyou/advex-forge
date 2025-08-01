@@ -38,9 +38,9 @@ export const ChatModeToggle = ({ isChatSidebarVisible = false }: ChatModeToggleP
 
   const getIcon = () => {
     if (isFullScreenChat) {
-      return <PanelRight className="h-5 w-5" />;
+      return <PanelRight className="w-3.5 h-3.5" />;
     }
-    return <Maximize2 className="h-5 w-5" />;
+    return <Maximize2 className="w-3.5 h-3.5" />;
   };
 
   const getTooltipText = () => {
@@ -69,18 +69,14 @@ export const ChatModeToggle = ({ isChatSidebarVisible = false }: ChatModeToggleP
         <TooltipTrigger asChild>
           <Button
             onClick={handleToggleMode}
+            variant="ghost"
             className={`
-              fixed ${getPositionClasses()} z-50 h-14 w-14 rounded-full shadow-lg
-              bg-primary hover:bg-primary/90 text-primary-foreground
-              hover:scale-110 transition-all duration-300 ease-out
-              hover:shadow-glow border-2 border-primary/20
-              ${isAnimating ? 'scale-95' : ''}
+              fixed ${getPositionClasses()} z-50 h-7 w-7 rounded-md p-0
+              hover:bg-muted/50 transition-colors duration-200
+              ${isAnimating ? 'opacity-70' : ''}
             `}
-            size="sm"
           >
-            <div className={`transition-transform duration-200 ${isAnimating ? 'rotate-180' : ''}`}>
-              {getIcon()}
-            </div>
+            {getIcon()}
           </Button>
         </TooltipTrigger>
         <TooltipContent side="left" className="mr-2">
