@@ -17,7 +17,7 @@ import { Sidebar } from "./Sidebar";
 import { QuickReference } from "./QuickReference";
 import { AdminDashboard } from "./AdminDashboard";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
-import { ChatModeToggle } from "./ChatModeToggle";
+
 import { TagSelector } from "./TagSelector";
 
 import { useResponsiveGrid } from "@/hooks/useResponsiveGrid";
@@ -530,6 +530,5 @@ Can you help me understand this scenario and provide guidance on the techniques,
         />
       )}
       
-      <ChatModeToggle />
     </div>;
 };
