@@ -155,7 +155,7 @@ export const AdminNotesManager = () => {
       category: 'General',
       priority: 'medium',
       status: 'active',
-      assigned_to: '',
+      assigned_to: 'unassigned',
       support_ticket_id: '',
       tags: '',
       due_date: ''
@@ -176,7 +176,7 @@ export const AdminNotesManager = () => {
         priority: formData.priority,
         status: formData.status,
         created_by: user.id,
-        assigned_to: formData.assigned_to || null,
+        assigned_to: formData.assigned_to === 'unassigned' ? null : formData.assigned_to,
         support_ticket_id: formData.support_ticket_id || null,
         tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : [],
         due_date: formData.due_date || null
@@ -211,7 +211,7 @@ export const AdminNotesManager = () => {
         category: formData.category,
         priority: formData.priority,
         status: formData.status,
-        assigned_to: formData.assigned_to || null,
+        assigned_to: formData.assigned_to === 'unassigned' ? null : formData.assigned_to,
         support_ticket_id: formData.support_ticket_id || null,
         tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : [],
         due_date: formData.due_date || null
@@ -262,7 +262,7 @@ export const AdminNotesManager = () => {
       category: note.category,
       priority: note.priority,
       status: note.status,
-      assigned_to: note.assigned_to || '',
+      assigned_to: note.assigned_to || 'unassigned',
       support_ticket_id: note.support_ticket_id || '',
       tags: note.tags.join(', '),
       due_date: note.due_date ? format(new Date(note.due_date), 'yyyy-MM-dd') : ''
@@ -352,7 +352,7 @@ export const AdminNotesManager = () => {
                     <SelectValue placeholder="Assign to admin (optional)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Unassigned</SelectItem>
+                    <SelectItem value="unassigned">Unassigned</SelectItem>
                     {admins.map(admin => (
                       <SelectItem key={admin.user_id} value={admin.user_id}>
                         {admin.display_name}
@@ -579,7 +579,7 @@ export const AdminNotesManager = () => {
                   <SelectValue placeholder="Assign to admin (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Unassigned</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
                   {admins.map(admin => (
                     <SelectItem key={admin.user_id} value={admin.user_id}>
                       {admin.display_name}
