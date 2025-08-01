@@ -646,7 +646,11 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
           body: requestPayload,
           headers: {
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            // Add fallback headers for Supabase infrastructure issue
+            'X-Message': encodeURIComponent(requestPayload.message || ''),
+            'X-Model-Id': requestPayload.selectedModelId || '',
+            'X-Session-Id': requestPayload.sessionId || ''
           }
         }),
         // Reduced timeout to 30 seconds for better UX

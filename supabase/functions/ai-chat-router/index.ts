@@ -56,36 +56,67 @@ serve(async (req) => {
       });
     }
 
-    // Robust request body parsing with multiple fallback methods
-    let requestBody;
+    // Hybrid request parsing - handle Supabase infrastructure issue where bodies are stripped
+    let requestBody: any = {};
+    let message: string = '';
+    let messages: any[] = [];
+    let selectedModelId: string = '';
+    let sessionId: string = '';
+    let conversationId: string = '';
+    
     const contentLength = req.headers.get('content-length');
     const contentType = req.headers.get('content-type');
+    const url = new URL(req.url);
     
-    console.log('Request body info:', { contentLength, contentType, hasBody: !!req.body });
+    console.log('Hybrid parsing - Request info:', { 
+      contentLength, 
+      contentType, 
+      hasBody: !!req.body,
+      hasHeaders: req.headers.has('X-Message'),
+      hasUrlParams: url.searchParams.has('message')
+    });
     
-    // Check for empty body condition
-    if (contentLength === '0' || contentLength === null) {
-      throw new Error('Empty request body detected - deployment configuration issue. Please retry or contact support.');
+    // Try to parse body first (normal case)
+    let bodyParsingSuccess = false;
+    if (contentLength !== '0' && contentLength !== null) {
+      try {
+        const bodyText = await req.text();
+        if (bodyText && bodyText.trim().length > 0) {
+          requestBody = JSON.parse(bodyText);
+          bodyParsingSuccess = true;
+          console.log('✅ Body parsing successful');
+        }
+      } catch (parseError) {
+        console.log('⚠️ Body parsing failed, trying fallback methods');
+      }
     }
     
-    try {
-      // Clone the request to allow multiple read attempts
-      const bodyText = await req.text();
-      console.log('Body text length:', bodyText.length, 'Preview:', bodyText.substring(0, 100));
-      
-      if (!bodyText || bodyText.trim().length === 0) {
-        throw new Error('Request body is empty - edge function deployment issue detected');
-      }
-      
-      requestBody = JSON.parse(bodyText);
-    } catch (parseError) {
-      console.error('Body parsing error:', parseError.message);
-      if (parseError.message.includes('Unexpected end of JSON input')) {
-        throw new Error('Empty request body received - Supabase edge function configuration issue. Please retry.');
-      }
-      throw new Error(`Failed to parse request body: ${parseError.message}`);
+    // Extract data from body if available
+    if (bodyParsingSuccess && requestBody) {
+      message = requestBody.message || '';
+      messages = requestBody.messages || [];
+      selectedModelId = requestBody.selectedModelId || '';
+      sessionId = requestBody.sessionId || '';
+      conversationId = requestBody.conversationId || '';
     }
-    const { message, messages, selectedModelId, sessionId, conversationId } = requestBody;
+    
+    // Fallback: Extract from headers (for Supabase infrastructure issue)
+    if (!message && req.headers.has('X-Message')) {
+      message = decodeURIComponent(req.headers.get('X-Message') || '');
+      selectedModelId = req.headers.get('X-Model-Id') || '';
+      sessionId = req.headers.get('X-Session-Id') || '';
+      conversationId = sessionId; // Use session ID as conversation ID
+      console.log('🔄 Using header fallback for message:', message.substring(0, 50));
+    }
+    
+    // Fallback: Extract from URL parameters
+    if (!message && url.searchParams.has('message')) {
+      message = url.searchParams.get('message') || '';
+      selectedModelId = url.searchParams.get('selectedModelId') || '';
+      sessionId = url.searchParams.get('sessionId') || '';
+      conversationId = url.searchParams.get('conversationId') || '';
+      console.log('🔄 Using URL parameter fallback for message:', message.substring(0, 50));
+    }
     
     if (!message && !messages) {
       throw new Error('Message or messages array is required');

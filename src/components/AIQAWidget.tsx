@@ -53,10 +53,15 @@ export const AIQAWidget = () => {
 
     setIsLoading(true);
     try {
-      // Call the AI chat router function
+      // Call the AI chat router function with hybrid approach
       const { data, error } = await supabase.functions.invoke('ai-chat-router', {
         body: {
           message: question
+        },
+        // Add fallback headers for Supabase infrastructure issue
+        headers: {
+          'X-Message': encodeURIComponent(question),
+          'X-Simple-Mode': 'true'
         }
       });
 
