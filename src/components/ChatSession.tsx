@@ -931,11 +931,18 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
     } finally {
       setIsLoading(false);
       setIsSending(false);
+      setShowStopButton(false);
       setStreamingState({
         isStreaming: false,
         streamingMessage: '',
         abortController: null
       });
+      
+      // Clear any remaining timeout
+      if (requestTimeout) {
+        clearTimeout(requestTimeout);
+        setRequestTimeout(null);
+      }
     }
   };
 
