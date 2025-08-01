@@ -94,6 +94,7 @@ Submitted via Quick Support Ticket`;
               size="sm" 
               className="h-7 px-2 text-xs opacity-50 cursor-not-allowed"
               disabled
+              onClick={(e) => e.stopPropagation()}
             >
               <HelpCircle className="w-3 h-3" />
             </Button>
@@ -111,15 +112,17 @@ Submitted via Quick Support Ticket`;
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <DialogTrigger asChild>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary"
-              >
-                <HelpCircle className="w-3 h-3" />
-              </Button>
-            </DialogTrigger>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary"
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpen(true);
+              }}
+            >
+              <HelpCircle className="w-3 h-3" />
+            </Button>
           </TooltipTrigger>
           <TooltipContent>
             <p>Suggest card improvement</p>
