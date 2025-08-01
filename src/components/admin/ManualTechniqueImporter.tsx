@@ -150,8 +150,37 @@ export const ManualTechniqueImporter: React.FC<ManualTechniqueImporterProps> = (
             mitreId: technique.mitreId || technique.mitre_id || null,
             tags: Array.isArray(technique.tags) ? technique.tags : 
                   typeof technique.tags === 'string' ? [technique.tags] : [],
-            tools: Array.isArray(technique.tools) ? technique.tools : 
-                   typeof technique.tools === 'string' ? [technique.tools] : [],
+            tools: (() => {
+              // Enhanced tools extraction with logging
+              console.log(`🔧 Processing tools for technique: ${technique.title}`);
+              console.log('Original tools:', technique.tools);
+              console.log('Original commands:', technique.commands);
+              
+              let toolsArray = [];
+              
+              // Try to get tools from the tools field first
+              if (Array.isArray(technique.tools)) {
+                toolsArray = technique.tools;
+              } else if (typeof technique.tools === 'string') {
+                toolsArray = [technique.tools];
+              }
+              
+              // If no tools found, extract from commands
+              if (toolsArray.length === 0 && Array.isArray(technique.commands)) {
+                const commandTools = technique.commands
+                  .map((cmd: any) => cmd.tool)
+                  .filter((tool: string) => tool && tool.trim() !== '')
+                  .filter((tool: string, index: number, self: string[]) => self.indexOf(tool) === index);
+                
+                if (commandTools.length > 0) {
+                  toolsArray = commandTools;
+                  console.log('🎯 Extracted tools from commands:', toolsArray);
+                }
+              }
+              
+              console.log('Final tools array:', toolsArray);
+              return toolsArray;
+            })(),
             commands: Array.isArray(technique.commands) ? technique.commands : [],
             referenceLinks: Array.isArray(technique.referenceLinks) ? technique.referenceLinks : 
                            Array.isArray(technique.reference_links) ? technique.reference_links : [],

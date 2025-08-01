@@ -27,6 +27,8 @@ export class TechniqueImportService {
 3. For missing information, use "TODO" placeholder
 4. Keep all code snippets and commands exactly as written in the source
 5. Extract reference links from the source content
+6. **CRITICAL**: Always populate the "tools" array with ALL tools mentioned in the technique description and commands
+7. Extract tool names from command descriptions, tool sections, and inline mentions
 
 **CRITICAL: You MUST respond with ONLY valid JSON. Do not include any markdown formatting, explanations, or text outside the JSON.**
 
@@ -44,7 +46,8 @@ Return a JSON object with a techniques array. Each technique object must have th
       "whenToUse": ["Conditions/scenarios when technique applies"],
       "howToUse": ["Step-by-step instructions formatted as **Step 1:**, **Step 2:**, etc. (without numbering like 1. 2. 3.)"],
       "tools": [
-        "Tool Name"
+        "Tool Name 1",
+        "Tool Name 2"
       ],
       "commands": [
         {

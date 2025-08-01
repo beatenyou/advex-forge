@@ -30,6 +30,14 @@ const extractCleanMitreId = (id: string): string => {
   return id;
 };
 
+// Helper function to check if ID is a valid MITRE ID format
+const isValidMitreId = (id: string): boolean => {
+  if (!id) return false;
+  // MITRE ID format: T#### or T####.### (with optional sub-technique)
+  const mitrePattern = /^T\d{4}(\.\d{3})?$/;
+  return mitrePattern.test(extractCleanMitreId(id));
+};
+
 interface TechniqueCardProps {
   technique: Technique;
   onToggleFavorite: (techniqueId: string) => Promise<void>;
@@ -108,9 +116,11 @@ export const TechniqueCard = ({ technique, onToggleFavorite }: TechniqueCardProp
                   )}
                 </Button>
               </div>
-              <Badge variant="outline" className={`text-xs ${getPhaseColor(technique.phase)}`}>
-                {extractCleanMitreId(technique.mitre_id || technique.id)}
-              </Badge>
+              {(technique.mitre_id && isValidMitreId(technique.mitre_id)) && (
+                <Badge variant="outline" className={`text-xs ${getPhaseColor(technique.phase)}`}>
+                  {extractCleanMitreId(technique.mitre_id)}
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <Button
