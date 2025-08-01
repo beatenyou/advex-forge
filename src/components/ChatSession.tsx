@@ -481,43 +481,6 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
     }
   };
 
-  // Debug function to test edge function connectivity
-  const testDebugFunction = async () => {
-    console.log('🔍 Testing debug function...');
-    
-    try {
-      const testPayload = {
-        test: 'debug_request',
-        timestamp: new Date().toISOString(),
-        sessionId: currentSession?.id,
-        userId: user?.id
-      };
-      
-      const result = await supabase.functions.invoke('ai-chat-debug', {
-        body: testPayload,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        }
-      });
-      
-      console.log('🔍 Debug function result:', result);
-      
-      toast({
-        title: "Debug Test",
-        description: result.error ? `Error: ${result.error.message}` : "Debug function executed successfully",
-        variant: result.error ? "destructive" : "default"
-      });
-      
-    } catch (error) {
-      console.error('❌ Debug function test failed:', error);
-      toast({
-        title: "Debug Test Failed",
-        description: error.message,
-        variant: "destructive"
-      });
-    }
-  };
 
   const stopStreaming = () => {
     console.log('🛑 Stopping AI request...');
@@ -1218,21 +1181,8 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
                 <Square className="h-4 w-4" />
                 Stop
               </Button>
-            ) : (
-              <div className="flex gap-2 shrink-0">
-                {isAdmin && (
-                  <Button 
-                    type="button" 
-                    variant="outline"
-                    size="sm"
-                    onClick={testDebugFunction}
-                    className="px-3 py-2"
-                    title="Test edge function connectivity"
-                  >
-                    🔍
-                  </Button>
-                )}
-                <Button 
+             ) : (
+                <Button
                   type="submit" 
                   disabled={isLoading || isSending || !currentQuestion.trim()}
                   size="sm"
@@ -1244,10 +1194,9 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
                     'Send'
                   )}
                 </Button>
-              </div>
-            )}
-          </div>
-        </form>
+              )}
+            </div>
+          </form>
         </div>
       )}
     </div>
