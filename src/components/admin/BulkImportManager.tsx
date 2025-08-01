@@ -103,46 +103,104 @@ export const BulkImportManager: React.FC<BulkImportManagerProps> = ({ onTechniqu
     const errors: ValidationError[] = [];
     const lines = content.split('\n');
     
-    lines.forEach((line, index) => {
-      const lineNum = index + 1;
+    try {
+      // Try JSON first
+      const jsonData = JSON.parse(content);
+      const techniques = Array.isArray(jsonData) ? jsonData : jsonData.techniques || [];
       
-      // Check for required fields
-      if (line.includes('**Name:**') && line.includes('TODO')) {
+      if (!Array.isArray(techniques)) {
         errors.push({
-          line: lineNum,
-          message: 'Technique name is missing (TODO placeholder found)',
+          line: 1,
+          message: "Content must be a JSON array or object with 'techniques' property containing an array",
           severity: 'error'
         });
+        return errors;
       }
       
-      if (line.includes('**Description:**') && line.includes('TODO')) {
+      if (techniques.length === 0) {
         errors.push({
-          line: lineNum,
-          message: 'Description is missing (TODO placeholder found)',
+          line: 1,
+          message: "No techniques found in the content",
           severity: 'warning'
         });
       }
       
-      // Check command template syntax
-      if (line.includes('`') && line.includes('<') && line.includes('>')) {
-        const commandMatch = line.match(/`([^`]+)`/);
-        if (commandMatch) {
-          const command = commandMatch[1];
-          const parameters = command.match(/<[^>]+>/g);
-          if (parameters) {
-            parameters.forEach(param => {
-              if (!param.match(/^<[a-zA-Z_][a-zA-Z0-9_]*>$/)) {
-                errors.push({
-                  line: lineNum,
-                  message: `Invalid parameter syntax: ${param}. Use <parameter_name> format.`,
-                  severity: 'warning'
-                });
-              }
-            });
+      techniques.forEach((technique: any, index: number) => {
+        if (!technique.title) {
+          errors.push({
+            line: index + 1,
+            message: `Technique ${index + 1}: Missing required 'title' field`,
+            severity: 'error'
+          });
+        }
+        if (!technique.description) {
+          errors.push({
+            line: index + 1,
+            message: `Technique ${index + 1}: Missing required 'description' field`,
+            severity: 'warning'
+          });
+        }
+        if (!technique.phase) {
+          errors.push({
+            line: index + 1,
+            message: `Technique ${index + 1}: Missing 'phase' field`,
+            severity: 'warning'
+          });
+        }
+      });
+      
+    } catch (jsonError) {
+      // Validate as markdown
+      const nameMatches = content.match(/\*\*Name:\*\*/g);
+      if (!nameMatches || nameMatches.length === 0) {
+        errors.push({
+          line: 1,
+          message: 'No techniques found. Content should be JSON or markdown with "**Name:**" markers',
+          severity: 'error'
+        });
+      }
+      
+      lines.forEach((line, index) => {
+        const lineNum = index + 1;
+        
+        // Check for required fields
+        if (line.includes('**Name:**') && line.includes('TODO')) {
+          errors.push({
+            line: lineNum,
+            message: 'Technique name is missing (TODO placeholder found)',
+            severity: 'error'
+          });
+        }
+        
+        if (line.includes('**Description:**') && line.includes('TODO')) {
+          errors.push({
+            line: lineNum,
+            message: 'Description is missing (TODO placeholder found)',
+            severity: 'warning'
+          });
+        }
+        
+        // Check command template syntax
+        if (line.includes('`') && line.includes('<') && line.includes('>')) {
+          const commandMatch = line.match(/`([^`]+)`/);
+          if (commandMatch) {
+            const command = commandMatch[1];
+            const parameters = command.match(/<[^>]+>/g);
+            if (parameters) {
+              parameters.forEach(param => {
+                if (!param.match(/^<[a-zA-Z_][a-zA-Z0-9_]*>$/)) {
+                  errors.push({
+                    line: lineNum,
+                    message: `Invalid parameter syntax: ${param}. Use <parameter_name> format.`,
+                    severity: 'warning'
+                  });
+                }
+              });
+            }
           }
         }
-      }
-    });
+      });
+    }
     
     return errors;
   };
@@ -158,22 +216,34 @@ export const BulkImportManager: React.FC<BulkImportManagerProps> = ({ onTechniqu
         const jsonData = JSON.parse(content);
         console.log('📊 Successfully parsed as JSON:', jsonData);
         
-        if (jsonData.techniques && Array.isArray(jsonData.techniques)) {
-          parsed = jsonData.techniques.map((technique: any, index: number) => ({
-            id: `json-${index}`,
+        const techniques = Array.isArray(jsonData) ? jsonData : jsonData.techniques || [];
+        if (Array.isArray(techniques)) {
+          parsed = techniques.map((technique: any, index: number) => ({
+            id: technique.id || technique.mitreId || technique.mitre_id || `json-${index}`,
             title: technique.title || 'Untitled Technique',
             description: technique.description || '',
             phase: technique.phase || 'Reconnaissance',
             category: technique.category || 'General',
-            mitreId: technique.mitreId || null,
-            tags: Array.isArray(technique.tags) ? technique.tags : [],
-            tools: Array.isArray(technique.tools) ? technique.tools : [],
+            mitreId: technique.mitreId || technique.mitre_id || null,
+            tags: Array.isArray(technique.tags) ? technique.tags : 
+                  typeof technique.tags === 'string' ? [technique.tags] : [],
+            tools: Array.isArray(technique.tools) ? technique.tools : 
+                   typeof technique.tools === 'string' ? [technique.tools] : [],
             commands: Array.isArray(technique.commands) ? technique.commands : [],
-            referenceLinks: Array.isArray(technique.referenceLinks) ? technique.referenceLinks : [],
-            detection: technique.detection || '',
-            mitigation: technique.mitigation || '',
-            whenToUse: technique.whenToUse || '',
-            howToUse: technique.howToUse || ''
+            referenceLinks: Array.isArray(technique.referenceLinks) ? technique.referenceLinks : 
+                           Array.isArray(technique.reference_links) ? technique.reference_links : [],
+            detection: Array.isArray(technique.detection) ? technique.detection : 
+                      typeof technique.detection === 'string' ? [technique.detection] : [],
+            mitigation: Array.isArray(technique.mitigation) ? technique.mitigation : 
+                       typeof technique.mitigation === 'string' ? [technique.mitigation] : [],
+            whenToUse: Array.isArray(technique.whenToUse) ? technique.whenToUse : 
+                      Array.isArray(technique.when_to_use) ? technique.when_to_use :
+                      typeof technique.whenToUse === 'string' ? [technique.whenToUse] :
+                      typeof technique.when_to_use === 'string' ? [technique.when_to_use] : [],
+            howToUse: Array.isArray(technique.howToUse) ? technique.howToUse : 
+                     Array.isArray(technique.how_to_use) ? technique.how_to_use :
+                     typeof technique.howToUse === 'string' ? [technique.howToUse] :
+                     typeof technique.how_to_use === 'string' ? [technique.how_to_use] : []
           }));
           console.log('✅ Parsed', parsed.length, 'techniques from JSON');
         }
@@ -300,10 +370,14 @@ export const BulkImportManager: React.FC<BulkImportManagerProps> = ({ onTechniqu
             category: technique.category,
             commands: technique.commands || [],
             mitre_id: technique.mitreId || technique.mitreMapping || null,
-            detection: technique.detection ? [technique.detection] : [],
-            mitigation: technique.mitigation ? [technique.mitigation] : [],
-            when_to_use: technique.whenToUse ? [technique.whenToUse] : [],
-            how_to_use: technique.howToUse ? [technique.howToUse] : [],
+            detection: Array.isArray(technique.detection) ? technique.detection : 
+                      typeof technique.detection === 'string' ? [technique.detection] : [],
+            mitigation: Array.isArray(technique.mitigation) ? technique.mitigation : 
+                       typeof technique.mitigation === 'string' ? [technique.mitigation] : [],
+            when_to_use: Array.isArray(technique.whenToUse) ? technique.whenToUse : 
+                        typeof technique.whenToUse === 'string' ? [technique.whenToUse] : [],
+            how_to_use: Array.isArray(technique.howToUse) ? technique.howToUse : 
+                       typeof technique.howToUse === 'string' ? [technique.howToUse] : [],
             reference_links: technique.referenceLinks || []
           });
           
@@ -494,6 +568,15 @@ export const BulkImportManager: React.FC<BulkImportManagerProps> = ({ onTechniqu
             tags: technique.tags,
             tools: technique.tools,
             category: technique.category,
+            mitre_id: technique.mitreId, // Map camelCase to snake_case
+            how_to_use: Array.isArray(technique.howToUse) ? technique.howToUse : 
+                       typeof technique.howToUse === 'string' ? [technique.howToUse] : [],
+            when_to_use: Array.isArray(technique.whenToUse) ? technique.whenToUse : 
+                        typeof technique.whenToUse === 'string' ? [technique.whenToUse] : [],
+            detection: Array.isArray(technique.detection) ? technique.detection : 
+                      typeof technique.detection === 'string' ? [technique.detection] : [],
+            mitigation: Array.isArray(technique.mitigation) ? technique.mitigation : 
+                       typeof technique.mitigation === 'string' ? [technique.mitigation] : [],
             commands: technique.commands || [],
             reference_links: technique.referenceLinks || []
           });

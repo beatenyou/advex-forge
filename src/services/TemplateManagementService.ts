@@ -210,38 +210,40 @@ For each technique you identify, extract the following information:
 - **Tags**: Relevant keywords and categories
 
 ## Output Format:
-Return ONLY a valid JSON array containing the extracted techniques. Each technique should follow this structure:
+Return ONLY a valid JSON object with a "techniques" property containing an array of extracted techniques:
 
 \`\`\`json
-[
-  {
-    "title": "string",
-    "description": "string",
-    "category": "string",
-    "phase": "string",
-    "mitre_id": "string or null",
-    "commands": [
-      {
-        "description": "string",
-        "command": "string",
-        "platform": "string",
-        "references": ["string"]
-      }
-    ],
-    "detection": ["string"],
-    "mitigation": ["string"],
-    "tools": ["string"],
-    "reference_links": [
-      {
-        "title": "string",
-        "url": "string"
-      }
-    ],
-    "tags": ["string"],
-    "when_to_use": ["string"],
-    "how_to_use": ["string"]
-  }
-]
+{
+  "techniques": [
+    {
+      "title": "string",
+      "description": "string",
+      "category": "string",
+      "phase": "string",
+      "mitreId": "string or null",
+      "commands": [
+        {
+          "description": "string",
+          "command": "string",
+          "platform": "string",
+          "references": ["string"]
+        }
+      ],
+      "detection": ["string"],
+      "mitigation": ["string"],
+      "when_to_use": ["string"],
+      "how_to_use": ["string"],
+      "tools": ["string"],
+      "reference_links": [
+        {
+          "title": "string",
+          "url": "string"
+        }
+      ],
+      "tags": ["string"]
+    }
+  ]
+}
 \`\`\`
 
 ## Important Guidelines:
@@ -251,6 +253,8 @@ Return ONLY a valid JSON array containing the extracted techniques. Each techniq
 - If information is not available, use appropriate defaults (empty arrays, null values)
 - Focus on actionable, practical information
 - Maintain accuracy and avoid speculation
+- Use camelCase for field names (mitreId, not mitre_id)
+- Ensure arrays are properly formatted from the start
 
 Now analyze the following content and extract cybersecurity techniques:`;
   }
