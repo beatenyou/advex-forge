@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
-import { Settings, FileText, Globe, Users, Database, Shield, Target, Rocket, Wrench, BookOpen, Link, Bot, Key, Megaphone, HelpCircle, MessageSquare, Upload } from "lucide-react";
+import { Settings, FileText, Globe, Users, Database, Shield, Target, Rocket, Wrench, BookOpen, Link, Bot, Key, Megaphone, HelpCircle, MessageSquare, Upload, BarChart3 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,6 +17,7 @@ import FAQManager from "@/components/admin/FAQManager";
 import SupportTicketManager from "@/components/admin/SupportTicketManager";
 import TechniqueManager from "@/components/admin/TechniqueManager";
 import { BulkImportManager } from "@/components/admin/BulkImportManager";
+import { AdminStatistics } from "@/components/admin/AdminStatistics";
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -162,6 +163,13 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                 >
                   <Upload className="w-4 h-4" />
                   Bulk Import
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="statistics" 
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground min-w-[120px]"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  Statistics
                 </TabsTrigger>
               </div>
             </TabsList>
@@ -311,6 +319,28 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                       </CardContent>
                     </Card>
 
+                    <Card className="bg-card border border-border hover:border-emerald-500/50 transition-all duration-200 cursor-pointer group hover:shadow-lg" onClick={() => setActiveTab("statistics")}>
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors duration-200">
+                            <BarChart3 className="w-5 h-5 text-emerald-400" />
+                          </div>
+                          <CardTitle className="text-lg">Analytics</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0 space-y-4">
+                        <p className="text-sm text-muted-foreground leading-relaxed">Monitor user engagement, AI usage, errors, and system performance</p>
+                        <Button 
+                          variant="outline"
+                          size="sm" 
+                          className="w-full border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/50"
+                          onClick={(e) => { e.stopPropagation(); setActiveTab("statistics"); }}
+                        >
+                          View Analytics →
+                        </Button>
+                      </CardContent>
+                    </Card>
+
                     <Card className="bg-card border border-border hover:border-pink-500/50 transition-all duration-200 cursor-pointer group hover:shadow-lg" onClick={() => setActiveTab("announcements")}>
                       <CardHeader className="pb-4">
                         <div className="flex items-center gap-3">
@@ -380,6 +410,10 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
 
             <TabsContent value="bulk-import" className="space-y-6">
               <BulkImportManager />
+            </TabsContent>
+
+            <TabsContent value="statistics" className="space-y-6">
+              <AdminStatistics />
             </TabsContent>
           </Tabs>
         </div>
