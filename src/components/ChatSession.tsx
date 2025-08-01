@@ -575,6 +575,9 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
           messages: conversationContext,
           sessionId: currentSession.id,
           selectedModelId: modelIdToUse
+        },
+        headers: {
+          'Content-Type': 'application/json'
         }
       });
       console.log('🤖 AI chat router response received:', { 
@@ -597,6 +600,50 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
       }
 
       if (error) {
+        console.error('❌ AI Chat Router Error:', error);
+        
+        // Clear loading states immediately on error
+        setIsLoading(false);
+        setIsSending(false);
+        setShowStopButton(false);
+        if (requestTimeout) {
+          clearTimeout(requestTimeout);
+          setRequestTimeout(null);
+        }
+        
+        // Show user-friendly error message
+        let errorMessage = 'Failed to get AI response. Please try again.';
+        if (error.message?.includes('quota exceeded')) {
+          errorMessage = `AI usage quota exceeded. You've used ${currentUsage}/${quotaLimit} AI interactions this month.`;
+        } else if (error.message?.includes('timeout')) {
+          errorMessage = 'Request timed out. Please try again.';
+        } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+          errorMessage = 'Network connection issue. Please check your connection and try again.';
+        } else if (error.message?.includes('authentication')) {
+          errorMessage = 'Authentication error. Please refresh the page and try again.';
+        } else if (error.message?.includes('provider')) {
+          errorMessage = 'AI service temporarily unavailable. Please try again in a moment.';
+        }
+        
+        toast({
+          title: "AI Error",
+          description: errorMessage,
+          variant: "destructive",
+          action: (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => {
+                // Retry the same request
+                setQuestion(userQuestion);
+                setTimeout(() => handleSubmit(e), 100);
+              }}
+            >
+              Retry
+            </Button>
+          )
+        });
+
         // Enhanced error logging with detailed context
         const errorContext = {
           user_id: user?.id,
