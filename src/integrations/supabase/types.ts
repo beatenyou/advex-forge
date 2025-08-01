@@ -1446,6 +1446,26 @@ export type Database = {
           plan_name: string
         }[]
       }
+      get_user_sessions_with_profiles: {
+        Args: {
+          start_date_param?: string
+          end_date_param?: string
+          limit_count?: number
+        }
+        Returns: {
+          id: string
+          user_id: string
+          email: string
+          session_start: string
+          session_end: string
+          duration_seconds: number
+          pages_visited: number
+          is_bounce: boolean
+          user_agent: string
+          referrer: string
+          created_at: string
+        }[]
+      }
       increment_ai_usage: {
         Args: { user_id_param: string }
         Returns: boolean

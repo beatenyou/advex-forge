@@ -63,6 +63,7 @@ interface AIError {
 interface UserSession {
   id: string;
   user_id: string;
+  email: string;
   session_start: string;
   session_end?: string;
   duration_seconds?: number;
@@ -70,7 +71,7 @@ interface UserSession {
   is_bounce: boolean;
   user_agent?: string;
   referrer?: string;
-  user_email?: string;
+  created_at: string;
 }
 
 interface UserAIUsage {
@@ -299,33 +300,15 @@ const UserEngagementSection = ({ selectedDateRange }: { selectedDateRange: strin
       const days = selectedDateRange === '7days' ? 7 : selectedDateRange === '30days' ? 30 : 90;
       startDate.setDate(endDate.getDate() - days);
 
-      const { data, error } = await supabase
-        .from('user_sessions')
-        .select(`
-          id, user_id, session_start, session_end, duration_seconds, 
-          pages_visited, is_bounce, user_agent, referrer,
-          profiles!inner(email)
-        `)
-        .gte('session_start', startDate.toISOString())
-        .order('session_start', { ascending: false })
-        .limit(50);
+      const { data, error } = await supabase.rpc('get_user_sessions_with_profiles', {
+        start_date_param: startDate.toISOString().split('T')[0],
+        end_date_param: endDate.toISOString().split('T')[0],
+        limit_count: 50
+      });
 
       if (error) throw error;
-
-      const formattedSessions: UserSession[] = (data || []).map(session => ({
-        id: session.id,
-        user_id: session.user_id,
-        session_start: session.session_start,
-        session_end: session.session_end,
-        duration_seconds: session.duration_seconds,
-        pages_visited: session.pages_visited,
-        is_bounce: session.is_bounce,
-        user_agent: session.user_agent,
-        referrer: session.referrer,
-        user_email: (session.profiles as any)?.email
-      }));
-
-      setUserSessions(formattedSessions);
+      
+      setUserSessions(data || []);
     } catch (error) {
       console.error('Error fetching user sessions:', error);
     } finally {
@@ -406,7 +389,7 @@ const UserEngagementSection = ({ selectedDateRange }: { selectedDateRange: strin
                     {userSessions.map((session) => (
                       <TableRow key={session.id}>
                         <TableCell className="font-medium">
-                          {session.user_email || 'Unknown'}
+                          {session.email || 'Unknown'}
                         </TableCell>
                         <TableCell>{formatDuration(session.duration_seconds)}</TableCell>
                         <TableCell>{session.pages_visited}</TableCell>
