@@ -3,8 +3,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
-import { Eye, Star, Terminal, MessageSquare, ExternalLink, TrendingUp, BarChart3, Users } from 'lucide-react';
+import { Eye, Star, Terminal, MessageSquare, ExternalLink, TrendingUp, BarChart3, Users, Clock } from 'lucide-react';
 
 interface TechniqueActivity {
   technique_id?: string;
@@ -21,6 +23,17 @@ interface TechniqueActivity {
   created_at?: string;
 }
 
+interface GroupedTechniqueActivity {
+  technique_title: string;
+  mitre_id: string;
+  phase: string;
+  category: string;
+  total_activities: number;
+  unique_users: number;
+  last_accessed: string;
+  individual_activities: TechniqueActivity[];
+}
+
 interface TechniqueStats {
   totalViews: number;
   totalFavorites: number;
@@ -29,6 +42,7 @@ interface TechniqueStats {
   totalMitreAccess: number;
   topTechniques: TechniqueActivity[];
   recentActivities: TechniqueActivity[];
+  groupedRecentActivities: GroupedTechniqueActivity[];
 }
 
 export const TechniqueAnalytics = () => {
@@ -39,7 +53,8 @@ export const TechniqueAnalytics = () => {
     totalAIQueries: 0,
     totalMitreAccess: 0,
     topTechniques: [],
-    recentActivities: []
+    recentActivities: [],
+    groupedRecentActivities: []
   });
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState('7'); // days
@@ -171,6 +186,60 @@ export const TechniqueAnalytics = () => {
         .sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime())
         .slice(0, 20);
 
+      // Group recent activities by technique for accordion view
+      const recentGroups: { [key: string]: any } = {};
+      
+      processedActivities
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 100) // Get more activities for grouping
+        .forEach(activity => {
+          const key = activity.technique_title;
+          if (!recentGroups[key]) {
+            recentGroups[key] = {
+              technique_title: activity.technique_title,
+              mitre_id: activity.mitre_id,
+              phase: activity.phase,
+              category: 'General',
+              activities: [],
+              unique_users: new Set(),
+              last_accessed: activity.created_at
+            };
+          }
+          
+          recentGroups[key].activities.push({
+            id: activity.id,
+            technique_title: activity.technique_title,
+            mitre_id: activity.mitre_id,
+            phase: activity.phase,
+            category: 'General',
+            activity_type: activity.activity_type,
+            activity_count: 1,
+            unique_users: 1,
+            last_accessed: activity.created_at,
+            created_at: activity.created_at
+          });
+          
+          recentGroups[key].unique_users.add(activity.user_id);
+          
+          if (new Date(activity.created_at) > new Date(recentGroups[key].last_accessed)) {
+            recentGroups[key].last_accessed = activity.created_at;
+          }
+        });
+
+      const groupedRecentActivities: GroupedTechniqueActivity[] = Object.values(recentGroups)
+        .map((group: any) => ({
+          technique_title: group.technique_title,
+          mitre_id: group.mitre_id,
+          phase: group.phase,
+          category: group.category,
+          total_activities: group.activities.length,
+          unique_users: group.unique_users.size,
+          last_accessed: group.last_accessed,
+          individual_activities: group.activities
+        }))
+        .sort((a, b) => new Date(b.last_accessed).getTime() - new Date(a.last_accessed).getTime())
+        .slice(0, 20);
+
       setStats({
         totalViews,
         totalFavorites,
@@ -178,7 +247,8 @@ export const TechniqueAnalytics = () => {
         totalAIQueries,
         totalMitreAccess,
         topTechniques,
-        recentActivities
+        recentActivities,
+        groupedRecentActivities
       });
 
     } catch (error) {
@@ -392,39 +462,99 @@ export const TechniqueAnalytics = () => {
         <TabsContent value="recent-activity">
           <Card>
             <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="w-5 h-5" />
+                Recent Activity by Technique
+              </CardTitle>
               <CardDescription>
-                Latest technique interactions across all users
+                Latest technique interactions grouped by technique. Click to expand details.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {stats.recentActivities.slice(0, 20).map((activity, index) => (
-                  <div
-                    key={`${activity.id}-${index}`}
-                    className="flex items-center gap-3 p-3 border rounded-lg"
-                  >
-                    <div className="flex-shrink-0">
-                      {getActivityIcon(activity.activity_type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium truncate">{activity.technique_title}</span>
-                        {activity.mitre_id && (
-                          <Badge variant="outline" className="text-xs">
-                            {activity.mitre_id}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {formatActivityType(activity.activity_type)} • {activity.phase}
-                      </div>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {activity.created_at ? new Date(activity.created_at).toLocaleString() : 'Unknown'}
-                    </div>
-                  </div>
-                ))}
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Technique</TableHead>
+                      <TableHead>Phase</TableHead>
+                      <TableHead className="text-center">Activities</TableHead>
+                      <TableHead className="text-center">Users</TableHead>
+                      <TableHead>Last Activity</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                </Table>
+                
+                <Accordion type="multiple" className="w-full">
+                  {stats.groupedRecentActivities.map((group, index) => (
+                    <AccordionItem 
+                      key={`${group.technique_title}-${index}`} 
+                      value={`technique-${index}`}
+                      className="border-x-0 border-t-0 last:border-b-0"
+                    >
+                      <AccordionTrigger className="hover:no-underline px-4 py-3">
+                        <div className="grid grid-cols-5 gap-4 w-full text-left">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="font-medium truncate">{group.technique_title}</span>
+                            {group.mitre_id && (
+                              <Badge variant="outline" className="text-xs shrink-0">
+                                {group.mitre_id}
+                              </Badge>
+                            )}
+                          </div>
+                          <div>
+                            <Badge variant="secondary" className="text-xs">
+                              {group.phase}
+                            </Badge>
+                          </div>
+                          <div className="text-center">
+                            <Badge variant="default" className="text-xs">
+                              {group.total_activities}
+                            </Badge>
+                          </div>
+                          <div className="text-center">
+                            <span className="flex items-center justify-center gap-1 text-sm">
+                              <Users className="w-3 h-3" />
+                              {group.unique_users}
+                            </span>
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {new Date(group.last_accessed).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-4 pb-4">
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                          <h4 className="text-sm font-medium text-muted-foreground mb-3">
+                            Individual Activities ({group.individual_activities.length})
+                          </h4>
+                          {group.individual_activities.slice(0, 10).map((activity, actIndex) => (
+                            <div
+                              key={`${activity.id}-${actIndex}`}
+                              className="flex items-center gap-3 p-2 bg-muted/30 rounded-md"
+                            >
+                              <div className="flex-shrink-0">
+                                {getActivityIcon(activity.activity_type)}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-medium">
+                                  {formatActivityType(activity.activity_type)}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {activity.created_at ? new Date(activity.created_at).toLocaleString() : 'Unknown'}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          {group.individual_activities.length > 10 && (
+                            <div className="text-xs text-muted-foreground text-center py-2">
+                              ... and {group.individual_activities.length - 10} more activities
+                            </div>
+                          )}
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
               </div>
             </CardContent>
           </Card>
