@@ -112,8 +112,12 @@ Submitted via Quick Support Ticket`;
         <Tooltip>
           <TooltipTrigger asChild>
             <DialogTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <HelpCircle className="w-4 h-4" />
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary"
+              >
+                <HelpCircle className="w-3 h-3" />
               </Button>
             </DialogTrigger>
           </TooltipTrigger>
