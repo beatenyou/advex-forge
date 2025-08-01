@@ -481,6 +481,44 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
     }
   };
 
+  // Debug function to test edge function connectivity
+  const testDebugFunction = async () => {
+    console.log('🔍 Testing debug function...');
+    
+    try {
+      const testPayload = {
+        test: 'debug_request',
+        timestamp: new Date().toISOString(),
+        sessionId: currentSession?.id,
+        userId: user?.id
+      };
+      
+      const result = await supabase.functions.invoke('ai-chat-debug', {
+        body: testPayload,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+      
+      console.log('🔍 Debug function result:', result);
+      
+      toast({
+        title: "Debug Test",
+        description: result.error ? `Error: ${result.error.message}` : "Debug function executed successfully",
+        variant: result.error ? "destructive" : "default"
+      });
+      
+    } catch (error) {
+      console.error('❌ Debug function test failed:', error);
+      toast({
+        title: "Debug Test Failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   const stopStreaming = () => {
     console.log('🛑 Stopping AI request...');
     
@@ -582,23 +620,33 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
         throw new Error('No AI model selected. Please select a model first.');
       }
       
+      // Enhanced payload preparation with debugging
+      const requestPayload = {
+        message: userQuestion,
+        messages: conversationContext,
+        sessionId: currentSession.id,
+        selectedModelId: modelIdToUse
+      };
+      
       console.log('🚀 Making AI request with payload:', {
         message: userQuestion.substring(0, 100) + '...',
         messagesCount: conversationContext.length,
         sessionId: currentSession.id,
-        selectedModelId: modelIdToUse
+        selectedModelId: modelIdToUse,
+        payloadSize: JSON.stringify(requestPayload).length,
+        hasValidSession: !!currentSession.id,
+        hasValidModel: !!modelIdToUse
       });
+      
+      // Log the exact request being sent for debugging
+      console.log('📤 Full request payload:', JSON.stringify(requestPayload, null, 2));
 
       const result = await Promise.race([
         supabase.functions.invoke('ai-chat-router', {
-          body: {
-            message: userQuestion,
-            messages: conversationContext,
-            sessionId: currentSession.id,
-            selectedModelId: modelIdToUse
-          },
+          body: requestPayload,
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
           }
         }),
         // Reduced timeout to 30 seconds for better UX
@@ -648,8 +696,8 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
           retryable = false;
         } else if (error.message?.includes('timeout') || error.message?.includes('30 seconds')) {
           errorMessage = 'Request timed out after 30 seconds. Please try again with a shorter message.';
-        } else if (error.message?.includes('Empty request body') || error.message?.includes('Request body is empty')) {
-          errorMessage = 'Connection issue detected. Please refresh the page and try again.';
+        } else if (error.message?.includes('Empty request body') || error.message?.includes('Request body is empty') || error.message?.includes('deployment') || error.message?.includes('configuration issue')) {
+          errorMessage = 'Edge function deployment issue detected. The AI chat router is not receiving request bodies properly. Please contact support to resolve this configuration issue.';
           retryable = false;
         } else if (error.message?.includes('network') || error.message?.includes('fetch') || error.message?.includes('NetworkError')) {
           errorMessage = 'Network connection issue. Please check your connection and try again.';
@@ -1148,7 +1196,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
                 )}
               </Popover>
             </div>
-            {isStreaming ? (
+             {isStreaming ? (
               <Button 
                 type="button" 
                 variant="destructive" 
@@ -1160,18 +1208,32 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
                 Stop
               </Button>
             ) : (
-              <Button 
-                type="submit" 
-                disabled={isLoading || isSending || !currentQuestion.trim()}
-                size="sm"
-                className="px-4 py-2 shrink-0"
-              >
-                {isLoading || isSending ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Send'
+              <div className="flex gap-2 shrink-0">
+                {isAdmin && (
+                  <Button 
+                    type="button" 
+                    variant="outline"
+                    size="sm"
+                    onClick={testDebugFunction}
+                    className="px-3 py-2"
+                    title="Test edge function connectivity"
+                  >
+                    🔍
+                  </Button>
                 )}
-              </Button>
+                <Button 
+                  type="submit" 
+                  disabled={isLoading || isSending || !currentQuestion.trim()}
+                  size="sm"
+                  className="px-4 py-2"
+                >
+                  {isLoading || isSending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Send'
+                  )}
+                </Button>
+              </div>
             )}
           </div>
         </form>

@@ -77,38 +77,93 @@ serve(async (req) => {
       });
     }
 
-    // Parse request body with comprehensive error handling
+    // Enhanced request body parsing with multiple approaches
     let requestBody;
+    let requestText;
+    
     try {
-      // Check if we have a body
-      const contentLength = req.headers.get('content-length');
-      console.log('Content-Length header:', contentLength);
+      console.log('🔍 Request parsing debug info:');
+      console.log('- Content-Type:', req.headers.get('content-type'));
+      console.log('- Content-Length:', req.headers.get('content-length'));
+      console.log('- Method:', req.method);
+      console.log('- Has body:', req.body !== null);
       
-      if (contentLength === '0' || contentLength === null) {
-        console.error('❌ No request body - Content-Length is 0 or missing');
-        throw new Error('Request body is empty - please check your request configuration');
+      // First attempt: Try to read as text
+      try {
+        requestText = await req.text();
+        console.log('✅ Raw request text length:', requestText.length);
+        console.log('✅ Raw request preview (first 200 chars):', requestText.substring(0, 200));
+      } catch (textError) {
+        console.error('❌ Failed to read request as text:', textError);
+        throw new Error('Unable to read request body as text');
       }
       
-      const requestText = await req.text();
-      console.log('Raw request body length:', requestText.length);
-      console.log('Raw request body preview:', requestText.substring(0, 200));
-      
-      if (!requestText || !requestText.trim()) {
-        console.error('❌ Request body is empty or whitespace-only');
-        throw new Error('Request body is empty');
+      // Check if we actually got content
+      if (!requestText || requestText.trim().length === 0) {
+        console.error('❌ Request body is empty after reading');
+        
+        // Try alternative approach: check if this is a streaming request
+        if (req.headers.get('content-type')?.includes('application/json')) {
+          console.log('🔄 Attempting alternative body parsing...');
+          
+          // Create a new request with a test body to verify the issue
+          const testBody = JSON.stringify({ 
+            error: 'empty_body_detected',
+            debug_info: {
+              headers: Object.fromEntries(req.headers.entries()),
+              url: req.url,
+              method: req.method
+            }
+          });
+          
+          console.error('🚨 CRITICAL: Request body is completely empty despite Content-Type header');
+          console.error('🚨 This indicates a deployment or network-level issue');
+          console.error('🚨 Headers received:', Object.fromEntries(req.headers.entries()));
+          
+          throw new Error('Request body is empty - this indicates a deployment or configuration issue. Please check edge function deployment.');
+        }
+        
+        throw new Error('Request body is empty or malformed');
       }
       
-      requestBody = JSON.parse(requestText);
-      console.log('✅ Successfully parsed request body:', Object.keys(requestBody));
+      // Try to parse as JSON
+      try {
+        requestBody = JSON.parse(requestText);
+        console.log('✅ Successfully parsed JSON body with keys:', Object.keys(requestBody));
+      } catch (jsonError) {
+        console.error('❌ JSON parsing failed:', jsonError);
+        console.error('❌ Raw content that failed to parse:', requestText);
+        
+        if (jsonError instanceof SyntaxError) {
+          throw new Error(`Invalid JSON format: ${jsonError.message}`);
+        }
+        throw new Error(`JSON parsing error: ${jsonError.message}`);
+      }
+      
     } catch (parseError) {
-      console.error('❌ JSON parsing error:', parseError);
-      console.error('Parse error details:', { name: parseError.name, message: parseError.message });
+      console.error('❌ Complete request parsing failure:', parseError);
       
-      if (parseError instanceof SyntaxError) {
-        throw new Error(`Invalid JSON in request body: ${parseError.message}`);
+      // Enhanced error context for debugging
+      const debugInfo = {
+        error_type: parseError.name || 'UnknownError',
+        error_message: parseError.message,
+        content_length: req.headers.get('content-length'),
+        content_type: req.headers.get('content-type'),
+        method: req.method,
+        url: req.url,
+        has_auth: !!req.headers.get('authorization'),
+        user_agent: req.headers.get('user-agent'),
+        all_headers: Object.fromEntries(req.headers.entries())
+      };
+      
+      console.error('🔍 Debug information:', debugInfo);
+      
+      // Return specific error based on the issue
+      if (parseError.message.includes('deployment') || parseError.message.includes('configuration')) {
+        throw parseError; // Re-throw deployment errors as-is
       }
       
-      throw new Error(`Failed to parse request body: ${parseError.message}`);
+      throw new Error(`Request parsing failed: ${parseError.message}. Debug info logged for investigation.`);
     }
 
     const { message: reqMessage, messages: reqMessages, providerId, sessionId: reqSessionId, conversationId: reqConversationId, selectedModelId } = requestBody;
