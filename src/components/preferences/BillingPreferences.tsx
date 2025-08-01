@@ -237,12 +237,12 @@ export default function BillingPreferences() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {[
-              { interactions: 100, price: 5, pricePerInteraction: 0.050 },
-              { interactions: 250, price: 12, pricePerInteraction: 0.048, popular: true },
-              { interactions: 500, price: 25, pricePerInteraction: 0.050 },
-              { interactions: 1000, price: 48, pricePerInteraction: 0.048 },
-              { interactions: 2500, price: 115, pricePerInteraction: 0.046, bestValue: true },
-              { interactions: 5000, price: 225, pricePerInteraction: 0.045, bestValue: true }
+              { interactions: 100, price: 4, pricePerInteraction: 0.040 },
+              { interactions: 250, price: 10, pricePerInteraction: 0.040, popular: true },
+              { interactions: 500, price: 20, pricePerInteraction: 0.040 },
+              { interactions: 1000, price: 45, pricePerInteraction: 0.045 },
+              { interactions: 2500, price: 110, pricePerInteraction: 0.044, bestValue: true },
+              { interactions: 5000, price: 200, pricePerInteraction: 0.040, bestValue: true }
             ].map((bundle) => (
               <Card key={bundle.interactions} className={`relative ${bundle.popular ? 'ring-2 ring-primary' : ''}`}>
                 {bundle.popular && (
