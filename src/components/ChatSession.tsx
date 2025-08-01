@@ -70,6 +70,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
   // Local state for UI-specific concerns
   const [requestTimeout, setRequestTimeout] = useState<NodeJS.Timeout | null>(null);
   const [showStopButton, setShowStopButton] = useState(false);
+  const isRequestActiveRef = useRef(false);
   const [savedPrompts, setSavedPrompts] = useState<SavedPrompt[]>([]);
   const [showPromptSuggestions, setShowPromptSuggestions] = useState(false);
   const [filteredPrompts, setFilteredPrompts] = useState<SavedPrompt[]>([]);
@@ -518,6 +519,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
 
     // Reset all states at the beginning to ensure clean start
     setShowStopButton(false);
+    isRequestActiveRef.current = true; // Mark request as active
     setStreamingState({
       streamingMessage: '',
       isStreaming: false,
@@ -547,9 +549,15 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
     const controller = new AbortController();
     setStreamingState({ abortController: controller });
 
-    // Set timeout to show stop button after 30 seconds
+    // Set timeout to show stop button after 30 seconds with race condition protection
     const timeout = setTimeout(() => {
-      setShowStopButton(true);
+      // Only show stop button if request is still active
+      if (isRequestActiveRef.current) {
+        console.log('⏰ 30-second timeout reached - showing stop button');
+        setShowStopButton(true);
+      } else {
+        console.log('⏰ 30-second timeout reached but request is no longer active - not showing stop button');
+      }
     }, 30000);
     setRequestTimeout(timeout);
 
@@ -758,11 +766,13 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
       // No need to log here to avoid double counting
 
       // Clear timeout and stop button since we got a response
+      isRequestActiveRef.current = false; // Mark request as inactive
       if (requestTimeout) {
         clearTimeout(requestTimeout);
         setRequestTimeout(null);
       }
       setShowStopButton(false);
+      console.log('✅ Request completed successfully - marked as inactive');
 
       // Set provider information and log usage
       if (data.providerName) {
@@ -861,11 +871,13 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
       await trackActivity('ai_response_error', `AI response failed: ${error.message}`);
 
       // Clear timeout and stop button on error
+      isRequestActiveRef.current = false; // Mark request as inactive
       if (requestTimeout) {
         clearTimeout(requestTimeout);
         setRequestTimeout(null);
       }
       setShowStopButton(false);
+      console.log('❌ Request failed - marked as inactive');
       
       if (error.message !== 'Request was cancelled') {
         console.error('Error in chat:', error);
@@ -896,6 +908,8 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
         });
       }
     } finally {
+      // Ensure request is marked as inactive in all cases
+      isRequestActiveRef.current = false;
       setIsLoading(false);
       setIsSending(false);
       setShowStopButton(false);
@@ -910,6 +924,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
         clearTimeout(requestTimeout);
         setRequestTimeout(null);
       }
+      console.log('🔧 Finally block executed - request marked as inactive');
     }
   };
 
