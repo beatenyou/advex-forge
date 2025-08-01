@@ -18,6 +18,16 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let userId: string | null = null;
+  let config: any = null;
+  let provider: any = null;
+  let targetProviderId: string | null = null;
+  let isUsingFallback = false;
+  let sessionId: string | null = null;
+  let conversationId: string | null = null;
+  let message: string | null = null;
+  let messages: any[] | null = null;
+
   try {
     // Get user from auth header for quota checking
     const authHeader = req.headers.get('Authorization');
@@ -33,7 +43,7 @@ serve(async (req) => {
       throw new Error('Invalid authentication token');
     }
 
-    const userId = userData.user.id;
+    userId = userData.user.id;
     
     // Check AI usage quota before processing
     const { data: quotaData, error: quotaError } = await supabase.rpc('check_ai_quota', {
@@ -58,7 +68,28 @@ serve(async (req) => {
       });
     }
 
-    const { message, messages, providerId, sessionId, conversationId, selectedModelId } = await req.json();
+    // Parse request body with better error handling
+    let requestBody;
+    try {
+      const requestText = await req.text();
+      console.log('Raw request body:', requestText);
+      
+      if (!requestText.trim()) {
+        throw new Error('Empty request body');
+      }
+      
+      requestBody = JSON.parse(requestText);
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError);
+      throw new Error(`Failed to parse request body: ${parseError.message}`);
+    }
+
+    const { message: reqMessage, messages: reqMessages, providerId, sessionId: reqSessionId, conversationId: reqConversationId, selectedModelId } = requestBody;
+    
+    message = reqMessage;
+    messages = reqMessages;
+    sessionId = reqSessionId;
+    conversationId = reqConversationId;
 
     // Support both single message (legacy) and conversation context (new)
     if (!message && !messages) {
@@ -76,19 +107,17 @@ serve(async (req) => {
     }
 
     // Get AI configuration
-    const { data: config, error: configError } = await supabase
+    const { data: configData, error: configError } = await supabase
       .from('ai_chat_config')
       .select('*')
       .eq('is_enabled', true)
       .single();
 
-    if (configError || !config) {
+    if (configError || !configData) {
       throw new Error('AI chat is not configured or disabled');
     }
 
-    // Check user model access and determine provider
-    let targetProviderId = null;
-    let isUsingFallback = false;
+    config = configData;
     
     // Check if user is admin
     const { data: profileData } = await supabase
@@ -217,16 +246,18 @@ serve(async (req) => {
     }
 
     // Get provider details
-    const { data: provider, error: providerError } = await supabase
+    const { data: providerData, error: providerError } = await supabase
       .from('ai_providers')
       .select('*')
       .eq('id', targetProviderId)
       .eq('is_active', true)
       .single();
 
-    if (providerError || !provider) {
+    if (providerError || !providerData) {
       throw new Error('AI provider not found or inactive');
     }
+
+    provider = providerData;
 
     console.log('🎯 FINAL SELECTION - Using provider:', provider.name, 'ID:', provider.id, 'Type:', provider.type, 'Fallback:', isUsingFallback);
     console.log('🔗 Provider mapping - selectedModelId:', selectedModelId, '-> targetProviderId:', targetProviderId, '-> finalProvider:', provider.id);
