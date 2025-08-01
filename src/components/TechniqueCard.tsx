@@ -107,24 +107,32 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                 <CardTitle className="text-lg text-foreground group-hover:text-primary transition-colors">
                   {technique.title}
                 </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={`h-6 w-6 p-0 hover:bg-transparent ${!user ? 'opacity-50' : ''}`}
-                  onClick={toggleStar}
-                  disabled={isToggling}
-                  title={!user ? "Sign in to save favorites" : technique.starred ? "Remove from favorites" : "Add to favorites"}
-                >
-                  {isToggling ? (
-                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-                  ) : (
-                    <Star 
-                      className={`w-4 h-4 transition-colors ${
-                        technique.starred ? "fill-cyber-orange text-cyber-orange" : "text-muted-foreground hover:text-cyber-orange"
-                      }`} 
-                    />
-                  )}
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`h-6 w-6 p-0 hover:bg-transparent ${!user ? 'opacity-50' : ''}`}
+                        onClick={toggleStar}
+                        disabled={isToggling}
+                      >
+                        {isToggling ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                        ) : (
+                          <Star 
+                            className={`w-4 h-4 transition-colors ${
+                              technique.starred ? "fill-cyber-orange text-cyber-orange" : "text-muted-foreground hover:text-cyber-orange"
+                            }`} 
+                          />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{!user ? "Sign in to save favorites" : technique.starred ? "Remove from favorites" : "Add to favorites"}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               {(technique.mitre_id && isValidMitreId(technique.mitre_id)) && (
                 <Badge variant="outline" className={`text-xs ${getPhaseColor(technique.phase)}`}>
@@ -170,10 +178,19 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <div className="flex items-center gap-1">
-                <Zap className="w-4 h-4 text-cyber-orange" />
-                <span className="text-xs text-muted-foreground">{technique.tools.length} tools</span>
-              </div>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 cursor-help">
+                      <Zap className="w-4 h-4 text-cyber-orange" />
+                      <span className="text-xs text-muted-foreground">{technique.tools.length} tools</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Available tools for this technique</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
           <CardDescription className="text-muted-foreground line-clamp-2">
@@ -222,26 +239,44 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                 {technique.phase}
               </Badge>
               <div className="flex items-center gap-1">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsModalOpen(true);
-                  }}
-                >
-                  <Eye className="w-3 h-3 mr-1" />
-                  View
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <ExternalLink className="w-3 h-3" />
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsModalOpen(true);
+                        }}
+                      >
+                        <Eye className="w-3 h-3 mr-1" />
+                        View
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>View technique details</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>View MITRE ATT&CK reference</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
           </div>

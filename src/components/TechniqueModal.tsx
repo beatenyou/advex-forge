@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "@/hooks/use-toast";
 import { CommandGenerator } from "./CommandGenerator";
 
@@ -196,44 +197,79 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
             </Badge>
           </div>
           <div className="flex items-center gap-1">
-            <Button
-              variant="ghost" 
-              size="sm"
-              onClick={handleAIChatClick}
-              className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
-              title="Ask AI about this technique"
-            >
-              <MessageSquare className="h-4 w-4 text-cyber-purple" />
-            </Button>
-            <Button
-              variant="ghost" 
-              size="sm"
-              onClick={() => setIsCommandGenOpen(true)}
-              className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
-            >
-              <Bolt className="h-4 w-4 text-primary" />
-            </Button>
-            <Button
-              variant="ghost" 
-              size="sm"
-              onClick={toggleStar}
-              disabled={isToggling}
-              className="h-6 w-6 p-0 hover:bg-muted"
-            >
-              {isToggling ? (
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-              ) : (
-                <Star className={`h-4 w-4 ${isStarred ? 'fill-yellow-500 text-yellow-500' : 'text-muted-foreground hover:text-yellow-500'}`} />
-              )}
-            </Button>
-            <Button
-              variant="ghost" 
-              size="sm"
-              onClick={onClose}
-              className="h-6 w-6 p-0 hover:bg-muted"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost" 
+                    size="sm"
+                    onClick={handleAIChatClick}
+                    className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
+                  >
+                    <MessageSquare className="h-4 w-4 text-cyber-purple" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Ask AI about this technique</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setIsCommandGenOpen(true)}
+                    className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
+                  >
+                    <Bolt className="h-4 w-4 text-primary" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Generate commands for this technique</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost" 
+                    size="sm"
+                    onClick={toggleStar}
+                    disabled={isToggling}
+                    className="h-6 w-6 p-0 hover:bg-muted"
+                  >
+                    {isToggling ? (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    ) : (
+                      <Star className={`h-4 w-4 ${isStarred ? 'fill-yellow-500 text-yellow-500' : 'text-muted-foreground hover:text-yellow-500'}`} />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{isStarred ? "Remove from favorites" : "Add to favorites"}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost" 
+                    size="sm"
+                    onClick={onClose}
+                    className="h-6 w-6 p-0 hover:bg-muted"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Close modal</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </DialogHeader>
 
