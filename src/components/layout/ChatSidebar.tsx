@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Bot, Download, Trash2, X } from "lucide-react";
+import { Bot, Download, Trash2, X, Maximize2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChatSession } from "@/components/ChatSession";
@@ -24,7 +25,8 @@ export const ChatSidebar = ({
   const { user } = useAuth();
   const { toast } = useToast();
   const { canUseAI, currentUsage, quotaLimit, planName } = useAIUsage();
-  const { currentSession } = useChatContext();
+  const { currentSession, preserveStateForModeSwitch } = useChatContext();
+  const navigate = useNavigate();
 
   // Function to clear chat that can be passed to ChatSession
   const clearChatAndResetSession = async () => {
@@ -77,6 +79,15 @@ export const ChatSidebar = ({
       });
     }
   };
+  const handleExpandToFullScreen = () => {
+    // Preserve chat state before switching to full screen
+    preserveStateForModeSwitch();
+    
+    // Navigate to full-screen chat with current session if available
+    const targetPath = currentSession ? `/chat/${currentSession.id}` : '/chat';
+    navigate(targetPath, { state: { preserveChat: true } });
+  };
+
   const handleDownloadChats = async () => {
     if (!user) return;
     try {
@@ -225,6 +236,16 @@ export const ChatSidebar = ({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>Download chat history</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="sm" onClick={handleExpandToFullScreen} className="h-7 w-7 p-0 hover:bg-primary/10">
+                    <Maximize2 className="w-3.5 h-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Expand to full screen</p>
                 </TooltipContent>
               </Tooltip>
               <Tooltip>
