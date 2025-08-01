@@ -3,7 +3,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-message, x-model-id, x-session-id, x-simple-mode',
 };
 
 serve(async (req) => {
@@ -13,6 +13,55 @@ serve(async (req) => {
   }
 
   try {
+    console.log('ai-chat-openai: Processing request');
+    
+    // Hybrid body parsing - handle Supabase infrastructure bug where bodies are stripped
+    let requestData: any = {};
+    
+    try {
+      const bodyText = await req.text();
+      console.log('Raw body length:', bodyText.length);
+      
+      if (bodyText.length > 0) {
+        requestData = JSON.parse(bodyText);
+        console.log('✅ Successfully parsed body data');
+      } else {
+        console.log('⚠️ Empty body detected, using header fallback');
+        
+        // Fallback to headers when body is empty
+        const headerMessage = req.headers.get('X-Message');
+        const headerModelId = req.headers.get('X-Model-Id');
+        const headerSessionId = req.headers.get('X-Session-Id');
+        
+        if (headerMessage) {
+          requestData = {
+            message: headerMessage,
+            model: 'gpt-4o-mini',
+            systemPrompt: 'You are a helpful AI assistant.',
+            maxTokens: 1000,
+            temperature: 0.7,
+            sessionId: headerSessionId
+          };
+          console.log('🔄 Using header fallback data');
+        }
+      }
+    } catch (parseError) {
+      console.error('Body parsing failed, trying header fallback:', parseError);
+      
+      // Fallback to headers when JSON parsing fails
+      const headerMessage = req.headers.get('X-Message');
+      if (headerMessage) {
+        requestData = {
+          message: headerMessage,
+          model: 'gpt-4o-mini',
+          systemPrompt: 'You are a helpful AI assistant.',
+          maxTokens: 1000,
+          temperature: 0.7
+        };
+        console.log('🔄 Using header fallback after parse error');
+      }
+    }
+
     const { 
       message, 
       messages, 
@@ -20,7 +69,7 @@ serve(async (req) => {
       systemPrompt = 'You are a helpful AI assistant.', 
       maxTokens = 1000, 
       temperature = 0.7 
-    } = await req.json();
+    } = requestData;
 
     if (!message && !messages) {
       throw new Error('Message or messages array is required');

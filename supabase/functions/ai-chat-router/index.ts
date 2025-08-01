@@ -253,7 +253,12 @@ serve(async (req) => {
         baseUrl: provider.base_url
       },
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        // Pass data via headers as fallback for Supabase infrastructure bug
+        'X-Message': message || conversationMessages[conversationMessages.length - 1]?.content || '',
+        'X-Model-Id': provider.id,
+        'X-Session-Id': sessionId || '',
+        'X-Simple-Mode': 'true'
       }
     });
 
