@@ -29,6 +29,13 @@ serve(async (req) => {
   let messages: any[] | null = null;
 
   try {
+    // Debug request information
+    console.log('=== REQUEST DEBUG INFO ===');
+    console.log('Method:', req.method);
+    console.log('URL:', req.url);
+    console.log('Headers:', Object.fromEntries(req.headers.entries()));
+    console.log('Content-Length:', req.headers.get('content-length'));
+    
     // Get user from auth header for quota checking
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -40,10 +47,12 @@ serve(async (req) => {
     const { data: userData, error: userError } = await supabase.auth.getUser(authToken);
     
     if (userError || !userData.user) {
+      console.error('Authentication error:', userError);
       throw new Error('Invalid authentication token');
     }
 
     userId = userData.user.id;
+    console.log('✅ User authenticated:', userId);
     
     // Check AI usage quota before processing
     const { data: quotaData, error: quotaError } = await supabase.rpc('check_ai_quota', {
@@ -68,19 +77,37 @@ serve(async (req) => {
       });
     }
 
-    // Parse request body with better error handling
+    // Parse request body with comprehensive error handling
     let requestBody;
     try {
-      const requestText = await req.text();
-      console.log('Raw request body:', requestText);
+      // Check if we have a body
+      const contentLength = req.headers.get('content-length');
+      console.log('Content-Length header:', contentLength);
       
-      if (!requestText.trim()) {
-        throw new Error('Empty request body');
+      if (contentLength === '0' || contentLength === null) {
+        console.error('❌ No request body - Content-Length is 0 or missing');
+        throw new Error('Request body is empty - please check your request configuration');
+      }
+      
+      const requestText = await req.text();
+      console.log('Raw request body length:', requestText.length);
+      console.log('Raw request body preview:', requestText.substring(0, 200));
+      
+      if (!requestText || !requestText.trim()) {
+        console.error('❌ Request body is empty or whitespace-only');
+        throw new Error('Request body is empty');
       }
       
       requestBody = JSON.parse(requestText);
+      console.log('✅ Successfully parsed request body:', Object.keys(requestBody));
     } catch (parseError) {
-      console.error('JSON parsing error:', parseError);
+      console.error('❌ JSON parsing error:', parseError);
+      console.error('Parse error details:', { name: parseError.name, message: parseError.message });
+      
+      if (parseError instanceof SyntaxError) {
+        throw new Error(`Invalid JSON in request body: ${parseError.message}`);
+      }
+      
       throw new Error(`Failed to parse request body: ${parseError.message}`);
     }
 
@@ -106,6 +133,19 @@ serve(async (req) => {
       console.log('⚠️ No selectedModelId provided, will use fallback logic');
     }
 
+    // Verify API keys are available
+    const openaiKey = Deno.env.get('OPENAI_API_KEY');
+    const mistralKey = Deno.env.get('MISTRAL_API_KEY');
+    
+    console.log('API Keys status:', {
+      openai: openaiKey ? `Available (${openaiKey.substring(0, 10)}...)` : 'Missing',
+      mistral: mistralKey ? `Available (${mistralKey.substring(0, 10)}...)` : 'Missing'
+    });
+    
+    if (!openaiKey && !mistralKey) {
+      throw new Error('No API keys configured - please configure at least one AI provider');
+    }
+
     // Get AI configuration
     const { data: configData, error: configError } = await supabase
       .from('ai_chat_config')
@@ -114,10 +154,12 @@ serve(async (req) => {
       .single();
 
     if (configError || !configData) {
+      console.error('❌ Config error:', configError);
       throw new Error('AI chat is not configured or disabled');
     }
 
     config = configData;
+    console.log('✅ AI config loaded:', { id: config.id, isEnabled: config.is_enabled });
     
     // Check if user is admin
     const { data: profileData } = await supabase

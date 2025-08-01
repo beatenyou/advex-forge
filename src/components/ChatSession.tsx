@@ -482,20 +482,33 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
   };
 
   const stopStreaming = () => {
+    console.log('🛑 Stopping AI request...');
+    
     if (abortController) {
       abortController.abort();
       setStreamingState({ abortController: null });
+      console.log('✅ Abort controller signaled');
     }
+    
     if (requestTimeout) {
       clearTimeout(requestTimeout);
       setRequestTimeout(null);
+      console.log('✅ Request timeout cleared');
     }
+    
     setStreamingState({
       isStreaming: false,
       streamingMessage: ''
     });
     setIsLoading(false);
     setShowStopButton(false);
+    
+    toast({
+      title: "Request Stopped",
+      description: "AI request has been cancelled",
+    });
+    
+    console.log('✅ AI request stopped successfully');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -569,6 +582,13 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
         throw new Error('No AI model selected. Please select a model first.');
       }
       
+      console.log('🚀 Making AI request with payload:', {
+        message: userQuestion.substring(0, 100) + '...',
+        messagesCount: conversationContext.length,
+        sessionId: currentSession.id,
+        selectedModelId: modelIdToUse
+      });
+
       const result = await Promise.race([
         supabase.functions.invoke('ai-chat-router', {
           body: {
@@ -581,9 +601,9 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
             'Content-Type': 'application/json'
           }
         }),
-        // Add timeout after 60 seconds
+        // Reduced timeout to 30 seconds for better UX
         new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Request timeout - please try again')), 60000)
+          setTimeout(() => reject(new Error('Request timeout after 30 seconds - please try again')), 30000)
         )
       ]) as { data: any; error: any };
       
@@ -619,25 +639,38 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
           setRequestTimeout(null);
         }
         
-        // Show user-friendly error message
+        // Enhanced user-friendly error messages with better classification
         let errorMessage = 'Failed to get AI response. Please try again.';
+        let retryable = true;
+        
         if (error.message?.includes('quota exceeded')) {
           errorMessage = `AI usage quota exceeded. You've used ${currentUsage}/${quotaLimit} AI interactions this month.`;
-        } else if (error.message?.includes('timeout')) {
-          errorMessage = 'Request timed out. Please try again.';
-        } else if (error.message?.includes('network') || error.message?.includes('fetch')) {
+          retryable = false;
+        } else if (error.message?.includes('timeout') || error.message?.includes('30 seconds')) {
+          errorMessage = 'Request timed out after 30 seconds. Please try again with a shorter message.';
+        } else if (error.message?.includes('Empty request body') || error.message?.includes('Request body is empty')) {
+          errorMessage = 'Connection issue detected. Please refresh the page and try again.';
+          retryable = false;
+        } else if (error.message?.includes('network') || error.message?.includes('fetch') || error.message?.includes('NetworkError')) {
           errorMessage = 'Network connection issue. Please check your connection and try again.';
-        } else if (error.message?.includes('authentication')) {
+        } else if (error.message?.includes('authentication') || error.message?.includes('Invalid authentication')) {
           errorMessage = 'Authentication error. Please refresh the page and try again.';
-        } else if (error.message?.includes('provider')) {
+          retryable = false;
+        } else if (error.message?.includes('API key') || error.message?.includes('not configured')) {
+          errorMessage = 'AI service configuration issue. Please contact support.';
+          retryable = false;
+        } else if (error.message?.includes('provider') || error.message?.includes('inactive')) {
           errorMessage = 'AI service temporarily unavailable. Please try again in a moment.';
+        } else if (error.message?.includes('Model not found') || error.message?.includes('model access')) {
+          errorMessage = 'Selected AI model is not available. Please select a different model.';
+          retryable = false;
         }
         
         toast({
           title: "AI Error",
           description: errorMessage,
           variant: "destructive",
-          action: (
+          action: retryable ? (
             <Button 
               variant="outline" 
               size="sm" 
@@ -649,7 +682,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt }: ChatSessionPr
             >
               Retry
             </Button>
-          )
+          ) : undefined,
         });
 
         // Enhanced error logging with detailed context
