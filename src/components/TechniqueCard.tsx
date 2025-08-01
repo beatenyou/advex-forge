@@ -70,6 +70,7 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
   const { user } = useAuth();
   const { toast } = useToast();
   const {
+    trackTechniqueViewed,
     trackTechniqueFavorited,
     trackTechniqueUnfavorited,
     trackTechniqueCommandGenerated,
@@ -149,7 +150,17 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
     <>
       <Card 
         className="group bg-gradient-card border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 cursor-pointer"
-        onClick={() => setIsModalOpen(true)}
+        onClick={() => {
+          // Track technique viewed
+          trackTechniqueViewed({
+            techniqueId: technique.id,
+            techniqueTitle: technique.title,
+            mitreId: technique.mitre_id,
+            phase: technique.phase,
+            category: technique.category
+          });
+          setIsModalOpen(true);
+        }}
       >
         <CardHeader className="pb-3">
           <div className="grid grid-cols-[1fr_auto_auto] items-start gap-2">

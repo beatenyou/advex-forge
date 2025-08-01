@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "@/hooks/use-toast";
 import { CommandGenerator } from "./CommandGenerator";
+import { useTechniqueTracking } from "@/hooks/useTechniqueTracking";
 
 interface Technique {
   id: string;
@@ -130,13 +131,29 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
   const [isToggling, setIsToggling] = useState(false);
   
   const detailedTechnique = getDetailedTechnique(technique);
+  const {
+    trackTechniqueFavorited,
+    trackTechniqueUnfavorited,
+    trackTechniqueAIQuery,
+    trackTechniqueCommandGenerated,
+    trackTechniqueModalOpened
+  } = useTechniqueTracking();
 
   // Reset starred state when modal opens or technique changes
   useEffect(() => {
     if (isOpen) {
       setIsStarred(technique.starred);
+      
+      // Track modal opened when it first opens
+      trackTechniqueModalOpened({
+        techniqueId: technique.id,
+        techniqueTitle: technique.title,
+        mitreId: technique.mitre_id,
+        phase: technique.phase,
+        category: technique.category
+      });
     }
-  }, [isOpen, technique.starred]);
+  }, [isOpen, technique.starred, trackTechniqueModalOpened, technique.id, technique.title, technique.mitre_id, technique.phase, technique.category]);
 
   const generateCommand = () => {
     const command = detailedTechnique.commands[selectedCommand];
@@ -161,9 +178,25 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
   const toggleStar = async () => {
     try {
       setIsToggling(true);
+      const wasStarred = isStarred;
       // Update local state immediately for instant visual feedback
       setIsStarred(!isStarred);
       await onToggleFavorite(technique.id);
+      
+      // Track the favorite action
+      const techniqueData = {
+        techniqueId: technique.id,
+        techniqueTitle: technique.title,
+        mitreId: technique.mitre_id,
+        phase: technique.phase,
+        category: technique.category
+      };
+      
+      if (wasStarred) {
+        trackTechniqueUnfavorited(techniqueData);
+      } else {
+        trackTechniqueFavorited(techniqueData);
+      }
     } catch (error) {
       console.error('Error toggling favorite:', error);
       // Revert local state on error
@@ -181,6 +214,16 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
   const handleAIChatClick = () => {
     if (onOpenAIChat) {
       const prompt = `Tell me more about the ${technique.title} attack technique${technique.mitre_id ? ` (${extractCleanMitreId(technique.mitre_id)})` : ''}. Please provide additional details about its usage, tools, and methods to employ this strategy.`;
+      
+      // Track AI query
+      trackTechniqueAIQuery({
+        techniqueId: technique.id,
+        techniqueTitle: technique.title,
+        mitreId: technique.mitre_id,
+        phase: technique.phase,
+        category: technique.category
+      });
+      
       onOpenAIChat(prompt);
       onClose(); // Close modal after opening chat
     }
@@ -220,7 +263,17 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
                   <Button
                     variant="ghost" 
                     size="sm"
-                    onClick={() => setIsCommandGenOpen(true)}
+                     onClick={() => {
+                       // Track command generation
+                       trackTechniqueCommandGenerated({
+                         techniqueId: technique.id,
+                         techniqueTitle: technique.title,
+                         mitreId: technique.mitre_id,
+                         phase: technique.phase,
+                         category: technique.category
+                       });
+                       setIsCommandGenOpen(true);
+                     }}
                     className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
                   >
                     <Bolt className="h-4 w-4 text-primary" />
