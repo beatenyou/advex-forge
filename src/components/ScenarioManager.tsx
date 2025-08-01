@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Trash2, Edit, Plus, Upload, GripVertical } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -382,18 +384,18 @@ export const ScenarioManager = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="edit-phase">Phase</Label>
-                <select
-                  id="edit-phase"
-                  value={editingScenario.phase}
-                  onChange={(e) => updateEditingScenario('phase', e.target.value)}
-                  className="w-full p-2 border rounded-md"
-                >
-                  {phases.filter(phase => phase.label !== 'All Techniques').map((phase) => (
-                    <option key={phase.name} value={phase.label}>
-                      {phase.label}
-                    </option>
-                  ))}
-                </select>
+                <Select value={editingScenario.phase} onValueChange={(value) => updateEditingScenario('phase', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select phase" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {phases.filter(phase => phase.label !== 'All Techniques').map((phase) => (
+                      <SelectItem key={phase.name} value={phase.label}>
+                        {phase.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -437,11 +439,10 @@ export const ScenarioManager = () => {
               </div>
 
               <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="edit-active"
                   checked={editingScenario.is_active}
-                  onChange={(e) => updateEditingScenario('is_active', e.target.checked)}
+                  onCheckedChange={(checked) => updateEditingScenario('is_active', checked)}
                 />
                 <Label htmlFor="edit-active">Active</Label>
               </div>

@@ -51,32 +51,41 @@ export function parseMultipleScenarios(markdownText: string): ParsedScenario[] {
   return scenarioBlocks.map(block => parseScenarioMarkdown(block));
 }
 
-export const sampleScenarioMarkdown = `**Title:** Advanced Persistent Threat (APT) Simulation
-**Description:** A comprehensive scenario simulating advanced persistent threat tactics
+export const sampleScenarioMarkdown = `**Title:** External Network Reconnaissance
+**Description:** Systematic discovery and enumeration of target network infrastructure from external perspective
 **Phase:** Reconnaissance
-**Tags:** apt, advanced, persistent, threat
+**Tags:** reconnaissance, discovery, external, network
 **Linked Techniques:**
-- Network Scanning
+- Port Scanning with Nmap
+- DNS Enumeration
+- Service Version Detection
+- WHOIS Information Gathering
+- Subdomain Enumeration
+
+**Title:** Credential Harvesting Campaign
+**Description:** Multi-vector approach to harvesting user credentials through various attack methods
+**Phase:** Credential Access
+**Tags:** credentials, phishing, brute-force, harvesting
+**Linked Techniques:**
+- Password Spraying
+- Credential Dumping
+- Kerberoasting
+- Hash Cracking with Hashcat
 - Social Engineering
-- Spear Phishing
-- Lateral Movement
 
-**Title:** Red Team Assessment
-**Description:** Full-scale red team assessment of enterprise infrastructure
-**Phase:** Initial Access
-**Tags:** red team, assessment, enterprise
+**Title:** Post-Exploitation Persistence
+**Description:** Establishing and maintaining long-term access to compromised systems
+**Phase:** Persistence
+**Tags:** persistence, backdoor, scheduled-tasks, registry
 **Linked Techniques:**
-- Vulnerability Scanning
-- Exploitation
-- Privilege Escalation
-- Persistence
+- Registry Run Key Persistence
+- Scheduled Task Creation
+- Service Installation
+- DLL Hijacking
+- Startup Folder Modification
 
-**Title:** Web Application Penetration Test
-**Description:** Focused testing of web application security vulnerabilities
-**Phase:** Initial Access
-**Tags:** web, application, penetration, testing
-**Linked Techniques:**
-- SQL Injection
-- XSS
-- CSRF
-- Directory Traversal`;
+**Format Guidelines:**
+- Use exact technique titles as they appear in the techniques database
+- Available phases: Reconnaissance, Active Reconnaissance, Initial Access, Persistence, Privilege Escalation, Discovery, Lateral Movement, Collection, Command and Control, Credential Access, Enumeration
+- Tags should be lowercase and comma-separated
+- Each scenario should be separated by a blank line`;
