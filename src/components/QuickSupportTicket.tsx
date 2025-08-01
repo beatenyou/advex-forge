@@ -92,10 +92,10 @@ Submitted via Quick Support Ticket`;
             <Button 
               variant="ghost" 
               size="sm" 
-              className="opacity-50 cursor-not-allowed"
+              className="h-7 px-2 text-xs opacity-50 cursor-not-allowed"
               disabled
             >
-              <HelpCircle className="w-4 h-4" />
+              <HelpCircle className="w-3 h-3" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
