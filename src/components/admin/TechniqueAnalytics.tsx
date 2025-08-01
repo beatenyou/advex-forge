@@ -413,47 +413,104 @@ export const TechniqueAnalytics = () => {
                 Most Popular Techniques
               </CardTitle>
               <CardDescription>
-                Techniques ranked by total user interactions in the selected time period
+                Techniques ranked by total user interactions. Click to expand activity breakdown.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {stats.topTechniques.map((technique, index) => (
-                  <div
-                    key={`${technique.technique_title}-${index}`}
-                    className="flex items-center justify-between p-4 border rounded-lg"
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium">{technique.technique_title}</span>
-                        {technique.mitre_id && (
-                          <Badge variant="outline" className="text-xs">
-                            {technique.mitre_id}
-                          </Badge>
-                        )}
-                        <Badge variant="secondary" className="text-xs">
-                          {technique.phase}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <BarChart3 className="w-3 h-3" />
-                          {technique.activity_count} interactions
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Users className="w-3 h-3" />
-                          {technique.unique_users} users
-                        </span>
-                        <span>
-                          Last: {new Date(technique.last_accessed).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-2xl font-bold">#{index + 1}</div>
-                    </div>
-                  </div>
-                ))}
+              <div className="border rounded-lg">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-16">Rank</TableHead>
+                      <TableHead>Technique Name</TableHead>
+                      <TableHead>Phase</TableHead>
+                      <TableHead className="text-center">Total Activities</TableHead>
+                      <TableHead className="text-center">Users</TableHead>
+                      <TableHead className="w-16"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                </Table>
+                
+                <Accordion type="multiple" className="w-full">
+                  {stats.topTechniques.map((technique, index) => (
+                    <AccordionItem key={`${technique.technique_title}-${index}`} value={`technique-${index}`} className="border-0">
+                      <AccordionTrigger className="hover:no-underline p-0">
+                        <div className="flex w-full items-center">
+                          <div className="w-16 flex justify-center">
+                            <Badge variant="secondary" className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold">
+                              #{index + 1}
+                            </Badge>
+                          </div>
+                          <div className="flex-1 text-left px-4">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">{technique.technique_title}</span>
+                              {technique.mitre_id && (
+                                <Badge variant="outline" className="text-xs">{technique.mitre_id}</Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="w-32 text-center">
+                            {technique.phase && (
+                              <Badge variant="secondary" className="text-xs">{technique.phase}</Badge>
+                            )}
+                          </div>
+                          <div className="w-32 text-center font-medium">
+                            {technique.activity_count}
+                          </div>
+                          <div className="w-32 text-center">
+                            {technique.unique_users}
+                          </div>
+                          <div className="w-16"></div>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        <div className="px-4 py-3 bg-muted/30 rounded-lg ml-16 mr-16">
+                          <h4 className="font-medium mb-3">Activity Breakdown</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                            <div className="flex items-center gap-2">
+                              <Eye className="h-4 w-4 text-blue-500" />
+                              <div>
+                                <p className="font-medium">{(technique.activities?.technique_viewed || 0) + (technique.activities?.technique_modal_opened || 0)}</p>
+                                <p className="text-xs text-muted-foreground">Views</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Star className="h-4 w-4 text-yellow-500" />
+                              <div>
+                                <p className="font-medium">{technique.activities?.technique_favorited || 0}</p>
+                                <p className="text-xs text-muted-foreground">Favorites</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Terminal className="h-4 w-4 text-green-500" />
+                              <div>
+                                <p className="font-medium">{technique.activities?.technique_command_generated || 0}</p>
+                                <p className="text-xs text-muted-foreground">Commands</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <MessageSquare className="h-4 w-4 text-purple-500" />
+                              <div>
+                                <p className="font-medium">{technique.activities?.technique_ai_query || 0}</p>
+                                <p className="text-xs text-muted-foreground">AI Queries</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <ExternalLink className="h-4 w-4 text-orange-500" />
+                              <div>
+                                <p className="font-medium">{technique.activities?.technique_mitre_link_accessed || 0}</p>
+                                <p className="text-xs text-muted-foreground">MITRE Links</p>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-3 text-xs text-muted-foreground">
+                            Last activity: {new Date(technique.last_accessed).toLocaleString()}
+                          </div>
+                        </div>
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
               </div>
             </CardContent>
           </Card>
