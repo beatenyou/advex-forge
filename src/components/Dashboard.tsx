@@ -82,7 +82,7 @@ export const Dashboard = ({
     columnCount,
     gridStyle
   } = useResponsiveGrid({
-    isChatVisible
+    isChatVisible: isChatVisible || false
   });
 
   // Initialize selectedPhase when navigation phases load

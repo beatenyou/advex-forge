@@ -39,19 +39,19 @@ export const useResponsiveGrid = ({
     
     // Define breakpoints based on chat visibility for larger screens
     if (isChatVisible) {
-      // More conservative when chat is open
-      if (containerWidth < 900) return Math.min(2, maxPossibleColumns);
-      if (containerWidth < 1200) return Math.min(2, maxPossibleColumns);
-      if (containerWidth < 1600) return Math.min(3, maxPossibleColumns);
-      return Math.min(3, maxPossibleColumns); // Max 3 when chat open
-    } else {
-      // More aggressive when chat is closed
+    // More conservative when chat is open
       if (containerWidth < 900) return Math.min(2, maxPossibleColumns);
       if (containerWidth < 1200) return Math.min(3, maxPossibleColumns);
-      if (containerWidth < 1500) return Math.min(3, maxPossibleColumns);
-      if (containerWidth < 1900) return Math.min(4, maxPossibleColumns);
-      if (containerWidth < 2400) return Math.min(5, maxPossibleColumns);
-      return Math.min(6, maxPossibleColumns); // Max 6 for ultra-wide
+      if (containerWidth < 1600) return Math.min(4, maxPossibleColumns);
+      return Math.min(4, maxPossibleColumns); // Max 4 when chat open
+    } else {
+      // More aggressive when chat is closed - better utilization of screen space
+      if (containerWidth < 900) return Math.min(2, maxPossibleColumns);
+      if (containerWidth < 1200) return Math.min(3, maxPossibleColumns);
+      if (containerWidth < 1600) return Math.min(4, maxPossibleColumns);
+      if (containerWidth < 1900) return Math.min(5, maxPossibleColumns);
+      if (containerWidth < 2400) return Math.min(6, maxPossibleColumns);
+      return Math.min(7, maxPossibleColumns); // Max 7 for ultra-wide
     }
   }, [isChatVisible, minCardWidth, gap]);
 
