@@ -85,6 +85,18 @@ export const Dashboard = ({
     isChatVisible
   });
 
+  // Force grid recalculation after navigation transitions
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (containerRef.current) {
+        // Trigger a resize event to recalculate grid
+        window.dispatchEvent(new Event('resize'));
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [isChatVisible, containerRef]);
+
   // Initialize selectedPhase when navigation phases load
   useEffect(() => {
     if (navigationPhases.length > 0 && !selectedPhase) {

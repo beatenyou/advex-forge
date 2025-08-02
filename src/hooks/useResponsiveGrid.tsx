@@ -21,11 +21,12 @@ export const useResponsiveGrid = ({
     const cardWithGap = minCardWidth + gap;
     const maxPossibleColumns = Math.floor(containerWidth / cardWithGap) || 1;
     
-    console.log('Column calculation:', {
+    console.log('🔄 Grid calculation:', {
       containerWidth,
       cardWithGap,
       maxPossibleColumns,
-      isChatVisible
+      isChatVisible,
+      calculatedColumns: 'calculating...'
     });
     
     // Mobile-first breakpoints
@@ -37,22 +38,31 @@ export const useResponsiveGrid = ({
       return Math.min(2, maxPossibleColumns); // Small tablet: max 2 columns
     }
     
+    let columns;
     // Define breakpoints based on chat visibility for larger screens
     if (isChatVisible) {
-    // More conservative when chat is open
-      if (containerWidth < 900) return Math.min(2, maxPossibleColumns);
-      if (containerWidth < 1200) return Math.min(3, maxPossibleColumns);
-      if (containerWidth < 1600) return Math.min(4, maxPossibleColumns);
-      return Math.min(4, maxPossibleColumns); // Max 4 when chat open
+      // More conservative when chat is open
+      if (containerWidth < 900) columns = Math.min(2, maxPossibleColumns);
+      else if (containerWidth < 1200) columns = Math.min(3, maxPossibleColumns);
+      else if (containerWidth < 1600) columns = Math.min(4, maxPossibleColumns);
+      else columns = Math.min(4, maxPossibleColumns); // Max 4 when chat open
     } else {
       // More aggressive when chat is closed - better utilization of screen space
-      if (containerWidth < 900) return Math.min(2, maxPossibleColumns);
-      if (containerWidth < 1200) return Math.min(3, maxPossibleColumns);
-      if (containerWidth < 1600) return Math.min(4, maxPossibleColumns);
-      if (containerWidth < 1900) return Math.min(5, maxPossibleColumns);
-      if (containerWidth < 2400) return Math.min(6, maxPossibleColumns);
-      return Math.min(7, maxPossibleColumns); // Max 7 for ultra-wide
+      if (containerWidth < 900) columns = Math.min(2, maxPossibleColumns);
+      else if (containerWidth < 1200) columns = Math.min(3, maxPossibleColumns);
+      else if (containerWidth < 1600) columns = Math.min(4, maxPossibleColumns);
+      else if (containerWidth < 1900) columns = Math.min(5, maxPossibleColumns);
+      else if (containerWidth < 2400) columns = Math.min(6, maxPossibleColumns);
+      else columns = Math.min(7, maxPossibleColumns); // Max 7 for ultra-wide
     }
+    
+    console.log('✅ Grid calculated:', {
+      containerWidth,
+      isChatVisible,
+      finalColumns: columns
+    });
+    
+    return columns;
   }, [isChatVisible, minCardWidth, gap]);
 
   useEffect(() => {

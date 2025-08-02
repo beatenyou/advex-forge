@@ -26,14 +26,16 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   // Check for navigation state to show chat and restore state
   useEffect(() => {
     if (location.state?.showChat) {
-      setIsChatVisible(true);
-      
-      // If this is a mode switch, restore the chat state
+      // Only show chat if explicitly requesting split-screen mode
       if (location.state?.preserveChat) {
+        setIsChatVisible(true);
         const restored = restoreStateFromModeSwitch();
         if (restored) {
           console.log('Chat state restored in split screen mode');
         }
+      } else {
+        // For regular navigation from full-screen chat, don't auto-show chat
+        setIsChatVisible(false);
       }
       
       // Clear the state to avoid it persisting on future navigations
