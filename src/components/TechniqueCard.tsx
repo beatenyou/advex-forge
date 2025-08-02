@@ -200,7 +200,7 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>{!user ? "Sign in to save favorites" : technique.starred ? "Remove from favorites" : "Add to favorites"}</p>
+                    <p>{!user ? "Sign in to save favorites" : technique.starred ? "Remove favorite" : "Add favorite"}</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -221,7 +221,7 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Ask AI about this technique</p>
+                    <p>Ask AI</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -251,7 +251,7 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Generate commands for this technique</p>
+                    <p>Generate Commands</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
@@ -264,7 +264,7 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                     </div>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Available tools for this technique</p>
+                    <p>Available tools</p>
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>

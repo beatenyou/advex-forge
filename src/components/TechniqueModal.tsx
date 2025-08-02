@@ -253,7 +253,7 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" sideOffset={8}>
-                  <p>Ask AI about this technique</p>
+                  <p>Ask AI</p>
                 </TooltipContent>
               </Tooltip>
               <Tooltip>
@@ -278,7 +278,7 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" sideOffset={8}>
-                  <p>Generate commands for this technique</p>
+                  <p>Generate Commands</p>
                 </TooltipContent>
               </Tooltip>
               <Tooltip>
@@ -298,7 +298,7 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" sideOffset={8}>
-                  <p>{isStarred ? "Remove from favorites" : "Add to favorites"}</p>
+                  <p>{isStarred ? "Remove favorite" : "Add favorite"}</p>
                 </TooltipContent>
               </Tooltip>
               <Tooltip>
@@ -313,7 +313,7 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" sideOffset={8}>
-                  <p>Close modal</p>
+                  <p>Close</p>
                 </TooltipContent>
               </Tooltip>
             </div>
