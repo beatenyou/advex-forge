@@ -22,6 +22,7 @@ import { NavigationManager } from "@/components/admin/NavigationManager";
 import { AdminNotesManager } from "@/components/admin/AdminNotesManager";
 import { TechniqueAnalytics } from "@/components/admin/TechniqueAnalytics";
 import { TagManager } from "@/components/admin/TagManager";
+import { MaintenanceManager } from "@/components/admin/MaintenanceManager";
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -202,6 +203,13 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                 >
                   <Hash className="w-4 h-4" />
                   Tags
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="maintenance" 
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-destructive/10 hover:bg-destructive/20 data-[state=active]:text-foreground min-w-[120px]"
+                >
+                  <Wrench className="w-4 h-4" />
+                  Maintenance
                 </TabsTrigger>
               </div>
             </TabsList>
@@ -506,6 +514,10 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
 
             <TabsContent value="tags" className="space-y-6">
               <TagManager />
+            </TabsContent>
+
+            <TabsContent value="maintenance" className="space-y-6">
+              <MaintenanceManager />
             </TabsContent>
           </Tabs>
         </div>

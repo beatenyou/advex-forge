@@ -868,6 +868,42 @@ export type Database = {
         }
         Relationships: []
       }
+      site_maintenance: {
+        Row: {
+          contact_info: string | null
+          created_at: string
+          created_by: string | null
+          estimated_completion: string | null
+          id: string
+          is_enabled: boolean
+          maintenance_message: string
+          maintenance_title: string
+          updated_at: string
+        }
+        Insert: {
+          contact_info?: string | null
+          created_at?: string
+          created_by?: string | null
+          estimated_completion?: string | null
+          id?: string
+          is_enabled?: boolean
+          maintenance_message?: string
+          maintenance_title?: string
+          updated_at?: string
+        }
+        Update: {
+          contact_info?: string | null
+          created_at?: string
+          created_by?: string | null
+          estimated_completion?: string | null
+          id?: string
+          is_enabled?: boolean
+          maintenance_message?: string
+          maintenance_title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       support_ticket_messages: {
         Row: {
           created_at: string

@@ -7,17 +7,45 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { usePerformanceMonitoring } from "@/hooks/usePerformanceMonitoring";
 import { ChatProvider } from "@/contexts/ChatContext";
+import { useMaintenanceCheck } from "@/hooks/useMaintenanceCheck";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AdminStats from "./pages/AdminStats";
 import UserPreferences from "./pages/UserPreferences";
 import FullScreenChat from "./pages/FullScreenChat";
 import NotFound from "./pages/NotFound";
+import { MaintenancePage } from "./pages/MaintenancePage";
 
 // Component to initialize tracking
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
   useAnalytics();
   usePerformanceMonitoring();
+  return <>{children}</>;
+}
+
+// Component to handle maintenance mode routing
+function MaintenanceWrapper({ children }: { children: React.ReactNode }) {
+  const { maintenanceData, shouldRedirect, loading } = useMaintenanceCheck();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (shouldRedirect && maintenanceData) {
+    return (
+      <MaintenancePage
+        title={maintenanceData.maintenance_title}
+        message={maintenanceData.maintenance_message}
+        estimatedCompletion={maintenanceData.estimated_completion}
+        contactInfo={maintenanceData.contact_info}
+      />
+    );
+  }
+
   return <>{children}</>;
 }
 
@@ -32,16 +60,18 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/preferences" element={<UserPreferences />} />
-              <Route path="/admin/stats" element={<AdminStats />} />
-              <Route path="/chat" element={<FullScreenChat />} />
-              <Route path="/chat/:sessionId" element={<FullScreenChat />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <MaintenanceWrapper>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/preferences" element={<UserPreferences />} />
+                <Route path="/admin/stats" element={<AdminStats />} />
+                <Route path="/chat" element={<FullScreenChat />} />
+                <Route path="/chat/:sessionId" element={<FullScreenChat />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </MaintenanceWrapper>
           </BrowserRouter>
           </TooltipProvider>
         </AnalyticsProvider>
