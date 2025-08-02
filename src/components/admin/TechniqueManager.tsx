@@ -48,6 +48,26 @@ const TechniqueManager = () => {
   const { toast } = useToast();
   const { phases, loading: phasesLoading } = useNavigationPhases();
 
+  // Phase mapping to translate legacy technique phases to navigation phase labels
+  const createPhaseMapping = () => {
+    const mapping: Record<string, string> = {
+      'Reconnaissance': 'Active Reconnaissance',
+      'Command and Control': 'C2',
+      'Initial Access': 'Establish Foothold',
+      'Credential Access': 'Privilege Escalation', // Map to closest match
+      'Discovery': 'Enumeration', // Map to closest match
+    };
+    return mapping;
+  };
+
+  const phaseMapping = createPhaseMapping();
+
+  // Function to normalize and map phases
+  const normalizeAndMapPhase = (phase: string): string => {
+    const normalized = phase?.trim();
+    return phaseMapping[normalized] || normalized;
+  };
+
   useEffect(() => {
     loadTechniques();
   }, []);
@@ -124,26 +144,30 @@ const TechniqueManager = () => {
       }
     }
 
-    // Phase filter with improved debugging and normalization
+    // Phase filter with phase mapping support
     if (phaseFilter !== 'all') {
       console.log('Phase filtering with:', phaseFilter);
-      console.log('Available phases:', phases.map(p => p.label));
+      console.log('Available navigation phases:', phases.map(p => p.label));
       
       filtered = filtered.filter(technique => {
-        // Normalize comparison for better matching
-        const normalizePhase = (phase: string) => phase?.trim();
-        const targetPhase = normalizePhase(phaseFilter);
+        const targetPhase = phaseFilter;
         
         // Handle both legacy phase field and new phases array
         if (technique.phases && Array.isArray(technique.phases)) {
-          const hasMatch = technique.phases.some(p => normalizePhase(p) === targetPhase);
-          console.log(`Technique "${technique.title}" phases:`, technique.phases, 'Match:', hasMatch);
-          return hasMatch;
+          // Check for exact match or mapped match
+          const hasExactMatch = technique.phases.some(p => p?.trim() === targetPhase);
+          const hasMappedMatch = technique.phases.some(p => normalizeAndMapPhase(p?.trim()) === targetPhase);
+          
+          console.log(`Technique "${technique.title}" phases:`, technique.phases, 'Exact match:', hasExactMatch, 'Mapped match:', hasMappedMatch);
+          return hasExactMatch || hasMappedMatch;
         }
         
-        const legacyMatch = normalizePhase(technique.phase) === targetPhase;
-        console.log(`Technique "${technique.title}" legacy phase:`, technique.phase, 'Match:', legacyMatch);
-        return legacyMatch;
+        // Check legacy phase field for exact or mapped match
+        const exactMatch = technique.phase?.trim() === targetPhase;
+        const mappedMatch = normalizeAndMapPhase(technique.phase?.trim()) === targetPhase;
+        
+        console.log(`Technique "${technique.title}" legacy phase:`, technique.phase, 'Exact match:', exactMatch, 'Mapped match:', mappedMatch);
+        return exactMatch || mappedMatch;
       });
       
       console.log(`Filtered to ${filtered.length} techniques for phase "${phaseFilter}"`);
