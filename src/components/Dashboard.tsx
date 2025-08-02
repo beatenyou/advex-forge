@@ -194,7 +194,20 @@ export const Dashboard = ({
       });
     }
   };
-  const allTags = [...new Set(techniques.flatMap(t => t.tags.map(tag => tag.toLowerCase().replace(/\s+/g, '-'))))];
+  // Create mapping for tag transformation
+  const createTagMapping = (tags: string[]) => {
+    const mapping = new Map();
+    tags.forEach(tag => {
+      const transformed = tag.toLowerCase().replace(/\s+/g, '-');
+      mapping.set(transformed, tag);
+    });
+    return mapping;
+  };
+  
+  const allOriginalTags = [...new Set(techniques.flatMap(t => t.tags))];
+  const tagMapping = createTagMapping(allOriginalTags);
+  const allTags = [...tagMapping.keys()];
+  
   useEffect(() => {
     let filtered = techniques;
 
@@ -209,9 +222,16 @@ export const Dashboard = ({
       filtered = filtered.filter(technique => technique.phase === selectedPhase);
     }
 
-    // Tag filtering
+    // Tag filtering - Fix the transformation mismatch
     if (selectedTags.length > 0) {
-      filtered = filtered.filter(technique => selectedTags.some(selectedTag => technique.tags.some(tag => tag.toLowerCase().includes(selectedTag.toLowerCase()))));
+      filtered = filtered.filter(technique => 
+        selectedTags.some(selectedTag => {
+          const originalTag = tagMapping.get(selectedTag);
+          return technique.tags.some(tag => 
+            tag === originalTag || tag.toLowerCase().replace(/\s+/g, '-') === selectedTag
+          );
+        })
+      );
     }
     setFilteredTechniques(filtered);
   }, [searchQuery, selectedPhase, selectedTags, techniques]);

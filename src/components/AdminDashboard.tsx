@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
-import { Settings, FileText, Globe, Users, Database, Shield, Target, Rocket, Wrench, BookOpen, Link, Bot, Key, Megaphone, HelpCircle, MessageSquare, Upload, BarChart3, Navigation, FileEdit } from "lucide-react";
+import { Settings, FileText, Globe, Users, Database, Shield, Target, Rocket, Wrench, BookOpen, Link, Bot, Key, Megaphone, HelpCircle, MessageSquare, Upload, BarChart3, Navigation, FileEdit, Hash } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,6 +21,7 @@ import { AdminStatistics } from "@/components/admin/AdminStatistics";
 import { NavigationManager } from "@/components/admin/NavigationManager";
 import { AdminNotesManager } from "@/components/admin/AdminNotesManager";
 import { TechniqueAnalytics } from "@/components/admin/TechniqueAnalytics";
+import { TagManager } from "@/components/admin/TagManager";
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -194,6 +195,13 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                 >
                   <Target className="w-4 h-4" />
                   Technique Analytics
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="tags" 
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground min-w-[120px]"
+                >
+                  <Hash className="w-4 h-4" />
+                  Tags
                 </TabsTrigger>
               </div>
             </TabsList>
@@ -494,6 +502,10 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
 
             <TabsContent value="technique-analytics" className="space-y-6">
               <TechniqueAnalytics />
+            </TabsContent>
+
+            <TabsContent value="tags" className="space-y-6">
+              <TagManager />
             </TabsContent>
           </Tabs>
         </div>
