@@ -230,17 +230,17 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden bg-card border-border">
-        <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-border/30">
-          <div className="flex items-center gap-2">
-            <DialogTitle className="text-xl font-semibold">{technique.title}</DialogTitle>
-            <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-xs">
-              {extractCleanMitreId(technique.mitre_id || technique.id)}
-            </Badge>
-          </div>
-          <div className="flex items-center gap-1">
-            <TooltipProvider>
+    <TooltipProvider>
+      <Dialog open={isOpen} onOpenChange={onClose}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-card border-border">
+          <DialogHeader className="flex flex-row items-center justify-between space-y-0 pb-4 border-b border-border/30">
+            <div className="flex items-center gap-2">
+              <DialogTitle className="text-xl font-semibold">{technique.title}</DialogTitle>
+              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30 text-xs">
+                {extractCleanMitreId(technique.mitre_id || technique.id)}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-1">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -252,12 +252,10 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
                     <MessageSquare className="h-4 w-4 text-cyber-purple" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent side="bottom" sideOffset={8}>
                   <p>Ask AI about this technique</p>
                 </TooltipContent>
               </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -279,12 +277,10 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
                     <Bolt className="h-4 w-4 text-primary" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent side="bottom" sideOffset={8}>
                   <p>Generate commands for this technique</p>
                 </TooltipContent>
               </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -301,12 +297,10 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
                     )}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent side="bottom" sideOffset={8}>
                   <p>{isStarred ? "Remove from favorites" : "Add to favorites"}</p>
                 </TooltipContent>
               </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -318,13 +312,12 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
                     <X className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent side="bottom" sideOffset={8}>
                   <p>Close modal</p>
                 </TooltipContent>
               </Tooltip>
-            </TooltipProvider>
-          </div>
-        </DialogHeader>
+            </div>
+          </DialogHeader>
 
         <div className="space-y-6 overflow-y-auto max-h-[calc(90vh-120px)] p-1">
           {/* Description */}
@@ -464,13 +457,17 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
             </div>
           )}
         </div>
+
+        {/* Command Generator */}
+        {isCommandGenOpen && (
+          <CommandGenerator
+            technique={detailedTechnique}
+            isOpen={isCommandGenOpen}
+            onClose={() => setIsCommandGenOpen(false)}
+          />
+        )}
       </DialogContent>
-      
-      <CommandGenerator
-        technique={technique}
-        isOpen={isCommandGenOpen}
-        onClose={() => setIsCommandGenOpen(false)}
-      />
     </Dialog>
+    </TooltipProvider>
   );
 };
