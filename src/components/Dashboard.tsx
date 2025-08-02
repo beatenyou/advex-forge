@@ -69,7 +69,7 @@ export const Dashboard = ({
   const [userFavorites, setUserFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedPhase, setSelectedPhase] = useState("All Techniques");
+  const [selectedPhase, setSelectedPhase] = useState<string>(""); // Initialize empty, will set to first phase when loaded
   const [filteredTechniques, setFilteredTechniques] = useState(techniques);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedTechnique, setSelectedTechnique] = useState<any>(null);
@@ -83,6 +83,13 @@ export const Dashboard = ({
   } = useResponsiveGrid({
     isChatVisible
   });
+
+  // Initialize selectedPhase when navigation phases load
+  useEffect(() => {
+    if (navigationPhases.length > 0 && !selectedPhase) {
+      setSelectedPhase(navigationPhases[0].label);
+    }
+  }, [navigationPhases, selectedPhase]);
 
   // Load techniques and favorites on mount
   useEffect(() => {
@@ -367,6 +374,26 @@ Can you help me understand this scenario and provide guidance on the techniques,
       onToggleChat();
     }
   };
+  // Add debug logging
+  console.log('Dashboard render:', {
+    navigationPhases: navigationPhases.length,
+    selectedPhase,
+    loading,
+    filteredTechniques: filteredTechniques.length
+  });
+
+  // Don't render main content until navigation phases are loaded and selectedPhase is set
+  if (navigationPhases.length === 0 || !selectedPhase) {
+    return (
+      <div className="bg-background min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading navigation...</p>
+        </div>
+      </div>
+    );
+  }
+
   return <div className="bg-background">
       {/* Header */}
       <header className="border-b border-border bg-gradient-card backdrop-blur-sm sticky top-0 z-50">
