@@ -172,7 +172,7 @@ export const CommandGenerator = ({ technique, isOpen, onClose }: CommandGenerato
           {/* Header */}
           <div>
             <h3 className="text-lg font-semibold text-foreground mb-2">
-              Command Templates for {technique.title}
+              {technique.title}
             </h3>
             <p className="text-sm text-muted-foreground">
               Fill in the parameters below to generate custom commands:
