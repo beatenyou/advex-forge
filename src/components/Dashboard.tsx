@@ -58,7 +58,8 @@ export const Dashboard = ({
     loading: adminLoading
   } = useAdminCheck();
   const {
-    phases: navigationPhases
+    phases: navigationPhases,
+    loading: phasesLoading
   } = useNavigationPhases();
   const {
     toast
@@ -246,9 +247,10 @@ export const Dashboard = ({
     }
 
     // Phase filtering with phase mapping support
-    if (selectedPhase !== "All Techniques") {
+    const currentPhase = selectedPhase || (navigationPhases.length > 0 ? navigationPhases[0].label : "All Techniques");
+    if (currentPhase !== "All Techniques") {
       filtered = filtered.filter(technique => {
-        const targetPhase = selectedPhase;
+        const targetPhase = currentPhase;
         
         // Handle both legacy phase field and new phases array
         if (technique.phases && Array.isArray(technique.phases)) {
@@ -382,8 +384,8 @@ Can you help me understand this scenario and provide guidance on the techniques,
     filteredTechniques: filteredTechniques.length
   });
 
-  // Don't render main content until navigation phases are loaded and selectedPhase is set
-  if (navigationPhases.length === 0 || !selectedPhase) {
+  // Use proper loading state from the hook
+  if (phasesLoading) {
     return (
       <div className="bg-background min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -393,6 +395,9 @@ Can you help me understand this scenario and provide guidance on the techniques,
       </div>
     );
   }
+
+  // Set fallback if no selectedPhase is set but phases are loaded
+  const effectiveSelectedPhase = selectedPhase || (navigationPhases.length > 0 ? navigationPhases[0].label : "All Techniques");
 
   return <div className="bg-background">
       {/* Header */}
@@ -437,7 +442,7 @@ Can you help me understand this scenario and provide guidance on the techniques,
 
           {/* Mobile Navigation */}
           {isMobile && <div className="mb-4">
-              <MobileNavigation selectedPhase={selectedPhase} onPhaseSelect={setSelectedPhase} />
+              <MobileNavigation selectedPhase={effectiveSelectedPhase} onPhaseSelect={setSelectedPhase} />
             </div>}
           
           {/* Search and Filters */}
@@ -451,7 +456,7 @@ Can you help me understand this scenario and provide guidance on the techniques,
               </div>
               
               {/* Desktop Phase Selector */}
-              {!isMobile && <Select value={selectedPhase} onValueChange={setSelectedPhase}>
+              {!isMobile && <Select value={effectiveSelectedPhase} onValueChange={setSelectedPhase}>
                   <SelectTrigger className="w-48 bg-muted/50 border-border/50">
                     <SelectValue />
                   </SelectTrigger>
