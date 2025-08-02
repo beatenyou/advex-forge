@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -152,7 +153,7 @@ const TechniqueManager = () => {
       if (success) {
         toast({
           title: "Success",
-          description: "Sample techniques migrated to database successfully",
+          description: "All data deleted and sample techniques restored",
         });
         await loadTechniques();
       } else {
@@ -325,10 +326,31 @@ const TechniqueManager = () => {
             <Upload className="h-4 w-4 mr-2" />
             Bulk Import
           </Button>
-          <Button onClick={handleMigration} variant="outline">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Migrate Sample Data
-          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive">
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete All Data
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete All Technique Data?</AlertDialogTitle>
+                <AlertDialogDescription className="space-y-2">
+                  <p className="font-semibold text-destructive">This will permanently delete ALL existing techniques from the database.</p>
+                  <p>This includes both custom techniques and imported data.</p>
+                  <p>Sample techniques will be restored, but your custom work will be lost forever.</p>
+                  <p className="font-semibold">This action cannot be undone.</p>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleMigration} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Yes, Delete All Data
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <Button onClick={resetForm}>
