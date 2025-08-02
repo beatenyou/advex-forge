@@ -137,6 +137,7 @@ export const Dashboard = ({
         tags: technique.tags || [],
         tools: technique.tools || [],
         starred: userFavorites.includes(technique.id),
+        phases: technique.phases || (technique.phase ? [technique.phase] : []),
         whenToUse: technique.when_to_use,
         howToUse: technique.how_to_use,
         commands: technique.commands || [],
@@ -217,9 +218,12 @@ export const Dashboard = ({
       filtered = filtered.filter(technique => technique.title.toLowerCase().includes(query) || technique.description.toLowerCase().includes(query) || technique.mitre_id && technique.mitre_id.toLowerCase().includes(query) || technique.id.toLowerCase().includes(query) || technique.phase.toLowerCase().includes(query) || technique.category.toLowerCase().includes(query) || technique.tags.some(tag => tag.toLowerCase().includes(query)) || technique.tools.some(tool => tool.toLowerCase().includes(query)));
     }
 
-    // Phase filtering
+    // Phase filtering - support multiple phases
     if (selectedPhase !== "All Techniques") {
-      filtered = filtered.filter(technique => technique.phase === selectedPhase);
+      filtered = filtered.filter(technique => {
+        const techniquePhases = technique.phases || (technique.phase ? [technique.phase] : []);
+        return techniquePhases.includes(selectedPhase);
+      });
     }
 
     // Tag filtering - Fix the transformation mismatch

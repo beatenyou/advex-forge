@@ -18,7 +18,8 @@ interface Technique {
   mitre_id?: string;
   title: string;
   description: string;
-  phase: string;
+  phase?: string; // Keep for backwards compatibility
+  phases?: string[]; // New multiple phases field
   tags: string[];
   tools: string[];
   starred: boolean;
@@ -145,11 +146,12 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
       setIsStarred(technique.starred);
       
       // Track modal opened when it first opens
+      const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
       trackTechniqueModalOpened({
         techniqueId: technique.id,
         techniqueTitle: technique.title,
         mitreId: technique.mitre_id,
-        phase: technique.phase,
+        phase: primaryPhase,
         category: technique.category
       });
     }
@@ -184,11 +186,12 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
       await onToggleFavorite(technique.id);
       
       // Track the favorite action
+      const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
       const techniqueData = {
         techniqueId: technique.id,
         techniqueTitle: technique.title,
         mitreId: technique.mitre_id,
-        phase: technique.phase,
+        phase: primaryPhase,
         category: technique.category
       };
       
@@ -216,11 +219,12 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
       const prompt = `Tell me more about the ${technique.title} attack technique${technique.mitre_id ? ` (${extractCleanMitreId(technique.mitre_id)})` : ''}. Please provide additional details about its usage, tools, and methods to employ this strategy.`;
       
       // Track AI query
+      const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
       trackTechniqueAIQuery({
         techniqueId: technique.id,
         techniqueTitle: technique.title,
         mitreId: technique.mitre_id,
-        phase: technique.phase,
+        phase: primaryPhase,
         category: technique.category
       });
       
@@ -263,11 +267,12 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
                     size="sm"
                      onClick={() => {
                        // Track command generation
+                       const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
                        trackTechniqueCommandGenerated({
                          techniqueId: technique.id,
                          techniqueTitle: technique.title,
                          mitreId: technique.mitre_id,
-                         phase: technique.phase,
+                         phase: primaryPhase,
                          category: technique.category
                        });
                        setIsCommandGenOpen(true);
@@ -461,7 +466,10 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
         {/* Command Generator */}
         {isCommandGenOpen && (
           <CommandGenerator
-            technique={detailedTechnique}
+            technique={{
+              ...detailedTechnique,
+              phase: detailedTechnique.phases?.[0] || detailedTechnique.phase || 'Unknown'
+            }}
             isOpen={isCommandGenOpen}
             onClose={() => setIsCommandGenOpen(false)}
           />

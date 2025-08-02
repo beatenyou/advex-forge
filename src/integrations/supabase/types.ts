@@ -948,6 +948,7 @@ export type Database = {
           mitigation: string[]
           mitre_id: string | null
           phase: string
+          phases: string[] | null
           reference_links: Json
           tags: string[]
           title: string
@@ -968,6 +969,7 @@ export type Database = {
           mitigation?: string[]
           mitre_id?: string | null
           phase?: string
+          phases?: string[] | null
           reference_links?: Json
           tags?: string[]
           title: string
@@ -988,6 +990,7 @@ export type Database = {
           mitigation?: string[]
           mitre_id?: string | null
           phase?: string
+          phases?: string[] | null
           reference_links?: Json
           tags?: string[]
           title?: string

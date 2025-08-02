@@ -16,7 +16,8 @@ interface Technique {
   mitre_id?: string;
   title: string;
   description: string;
-  phase: string;
+  phase?: string; // Keep for backwards compatibility
+  phases?: string[]; // New multiple phases field
   tags: string[];
   tools: string[];
   starred: boolean;
@@ -98,11 +99,12 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
       await onToggleFavorite(technique.id);
       
       // Track the favorite action
+      const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
       const techniqueData = {
         techniqueId: technique.id,
         techniqueTitle: technique.title,
         mitreId: technique.mitre_id,
-        phase: technique.phase,
+        phase: primaryPhase,
         category: technique.category
       };
       
@@ -124,11 +126,12 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
       const prompt = `Tell me more about the ${technique.title} attack technique${technique.mitre_id && isValidMitreId(technique.mitre_id) ? ` (${extractCleanMitreId(technique.mitre_id)})` : ''}. Please provide additional details about its usage, tools, and methods to employ this strategy.`;
       
       // Track AI query
+      const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
       trackTechniqueAIQuery({
         techniqueId: technique.id,
         techniqueTitle: technique.title,
         mitreId: technique.mitre_id,
-        phase: technique.phase,
+        phase: primaryPhase,
         category: technique.category
       });
       
@@ -152,11 +155,12 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
         className="group bg-gradient-card border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 cursor-pointer"
         onClick={() => {
           // Track technique viewed
+          const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
           trackTechniqueViewed({
             techniqueId: technique.id,
             techniqueTitle: technique.title,
             mitreId: technique.mitre_id,
-            phase: technique.phase,
+            phase: primaryPhase,
             category: technique.category
           });
           setIsModalOpen(true);
@@ -170,7 +174,7 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                 {technique.title}
               </CardTitle>
               {(technique.mitre_id && isValidMitreId(technique.mitre_id)) && (
-                <Badge variant="outline" className={`text-xs ${getPhaseColor(technique.phase)}`}>
+                <Badge variant="outline" className={`text-xs ${getPhaseColor(technique.phases?.[0] || technique.phase || 'Unknown')}`}>
                   {extractCleanMitreId(technique.mitre_id)}
                 </Badge>
               )}
@@ -236,11 +240,12 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                         e.stopPropagation();
                         
                         // Track command generation
+                        const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
                         trackTechniqueCommandGenerated({
                           techniqueId: technique.id,
                           techniqueTitle: technique.title,
                           mitreId: technique.mitre_id,
-                          phase: technique.phase,
+                          phase: primaryPhase,
                           category: technique.category
                         });
                         
@@ -312,9 +317,13 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
 
             {/* Actions */}
             <div className="flex items-center justify-between pt-2 border-t border-border/30">
-              <Badge variant="outline" className={getPhaseColor(technique.phase)}>
-                {technique.phase}
-              </Badge>
+              <div className="flex flex-wrap gap-1">
+                {(technique.phases || [technique.phase]).filter(Boolean).map((phase, index) => (
+                  <Badge key={index} variant="outline" className={getPhaseColor(phase!)}>
+                    {phase}
+                  </Badge>
+                ))}
+              </div>
               <div className="flex items-center gap-1">
                 <TooltipProvider>
                   <Tooltip>
@@ -327,11 +336,12 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                           e.stopPropagation();
                           
                           // Track modal open
+                          const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
                           trackTechniqueModalOpened({
                             techniqueId: technique.id,
                             techniqueTitle: technique.title,
                             mitreId: technique.mitre_id,
-                            phase: technique.phase,
+                            phase: primaryPhase,
                             category: technique.category
                           });
                           
@@ -360,11 +370,12 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                             e.stopPropagation();
                             
                             // Track MITRE link access
+                            const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
                             trackTechniqueMitreLinkAccessed({
                               techniqueId: technique.id,
                               techniqueTitle: technique.title,
                               mitreId: technique.mitre_id,
-                              phase: technique.phase,
+                              phase: primaryPhase,
                               category: technique.category
                             });
                             
@@ -398,7 +409,10 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
       />
       
       <CommandGenerator
-        technique={technique}
+        technique={{
+          ...technique,
+          phase: technique.phases?.[0] || technique.phase || 'Unknown'
+        }}
         isOpen={isCommandGenOpen}
         onClose={() => setIsCommandGenOpen(false)}
       />

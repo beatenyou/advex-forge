@@ -33,7 +33,7 @@ const TechniqueManager = () => {
     title: '',
     mitre_id: '',
     description: '',
-    phase: '',
+    phases: [] as string[],
     tags: '',
     tools: '',
     category: '',
@@ -180,7 +180,7 @@ const TechniqueManager = () => {
       title: '',
       mitre_id: '',
       description: '',
-      phase: '',
+      phases: [],
       tags: '',
       tools: '',
       category: '',
@@ -200,7 +200,7 @@ const TechniqueManager = () => {
       title: technique.title || '',
       mitre_id: technique.mitre_id || '',
       description: technique.description || '',
-      phase: technique.phase || '',
+      phases: technique.phases || (technique.phase ? [technique.phase] : []),
       tags: Array.isArray(technique.tags) ? technique.tags.join(', ') : '',
       tools: Array.isArray(technique.tools) ? technique.tools.join(', ') : '',
       category: technique.category || '',
@@ -218,11 +218,11 @@ const TechniqueManager = () => {
     e.preventDefault();
     
     try {
-      const techniqueData: DatabaseTechnique = {
+      const techniqueData: any = {
         title: formData.title,
         mitre_id: formData.mitre_id || null,
         description: formData.description,
-        phase: formData.phase,
+        phases: formData.phases.length > 0 ? formData.phases : ['Reconnaissance'],
         tags: formData.tags.split(',').map(t => t.trim()).filter(Boolean),
         tools: formData.tools.split(',').map(t => t.trim()).filter(Boolean),
         category: formData.category || 'General',
@@ -395,17 +395,32 @@ const TechniqueManager = () => {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="phase">Phase</Label>
-                    <Select value={formData.phase} onValueChange={(value) => setFormData({...formData, phase: value})}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select phase" />
-                      </SelectTrigger>
-                       <SelectContent>
-                        {phases.filter(phase => phase.label !== 'All Techniques').map(phase => (
-                          <SelectItem key={phase.name} value={phase.label}>{phase.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Label htmlFor="phases">Phases</Label>
+                    <div className="space-y-2 max-h-32 overflow-y-auto border rounded-md p-2">
+                      {phases.filter(phase => phase.label !== 'All Techniques').map(phase => (
+                        <div key={phase.name} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={`phase-${phase.name}`}
+                            checked={formData.phases.includes(phase.label)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setFormData({...formData, phases: [...formData.phases, phase.label]});
+                              } else {
+                                setFormData({...formData, phases: formData.phases.filter(p => p !== phase.label)});
+                              }
+                            }}
+                            className="rounded border-border"
+                          />
+                          <Label htmlFor={`phase-${phase.name}`} className="text-sm font-normal">
+                            {phase.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                    {formData.phases.length === 0 && (
+                      <p className="text-xs text-destructive mt-1">At least one phase must be selected</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="category">Category</Label>
