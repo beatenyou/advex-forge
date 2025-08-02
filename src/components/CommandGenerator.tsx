@@ -21,6 +21,11 @@ interface Technique {
     tool: string;
     command: string;
     description: string;
+    platform?: string;
+    references?: Array<{
+      url: string;
+      description: string;
+    }>;
   }>;
 }
 
@@ -40,12 +45,24 @@ interface CommandTemplate {
 const getCommandTemplates = (technique: Technique): CommandTemplate[] => {
   // Use the technique's command templates if available
   if (technique.commands && technique.commands.length > 0) {
-    return technique.commands.map(cmd => ({
-      tool: cmd.tool || 'Unknown Tool',
-      template: cmd.command || '',
-      description: cmd.description || 'No description available',
-      params: extractParameters(cmd.command || '')
-    }));
+    console.log('Technique commands found:', technique.commands.length);
+    return technique.commands.map(cmd => {
+      if (!cmd || !cmd.command) {
+        console.warn('Invalid command object:', cmd);
+        return {
+          tool: 'Invalid Tool',
+          template: '',
+          description: 'Invalid command data',
+          params: []
+        };
+      }
+      return {
+        tool: cmd.tool || 'Unknown Tool',
+        template: cmd.command,
+        description: cmd.description || 'No description available',
+        params: extractParameters(cmd.command)
+      };
+    });
   }
   
   // Fallback to default templates if no commands are defined
@@ -69,11 +86,15 @@ const extractParameters = (command: string): string[] => {
 export const CommandGenerator = ({ technique, isOpen, onClose }: CommandGeneratorProps) => {
   const [parameters, setParameters] = useState<{[key: string]: string}>({
     target: "10.10.10.10",
-    domain: "target.local",
+    domain: "target.local", 
     username: "user",
     password: "password",
     output_file: "output.txt",
-    dc_ip: "10.10.10.10"
+    output_filename: "output.txt",
+    dc_ip: "10.10.10.10",
+    attacker_ip: "192.168.1.100",
+    lnk_file: "shortcut.lnk",
+    share_name: "share"
   });
   const [editedTemplates, setEditedTemplates] = useState<{[key: number]: string}>({});
 

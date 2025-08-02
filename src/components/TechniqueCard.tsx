@@ -22,6 +22,16 @@ interface Technique {
   tools: string[];
   starred: boolean;
   category: string;
+  commands?: Array<{
+    tool: string;
+    command: string;
+    description: string;
+    platform?: string;
+    references?: Array<{
+      url: string;
+      description: string;
+    }>;
+  }>;
 }
 
 // Helper function to extract clean MITRE ID
