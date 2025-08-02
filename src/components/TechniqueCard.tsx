@@ -173,11 +173,18 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
               <CardTitle className="text-lg text-foreground group-hover:text-primary transition-colors mb-2 pr-2">
                 {technique.title}
               </CardTitle>
-              {(technique.mitre_id && isValidMitreId(technique.mitre_id)) && (
-                <Badge variant="outline" className={`text-xs ${getPhaseColor(technique.phases?.[0] || technique.phase || 'Unknown')}`}>
-                  {extractCleanMitreId(technique.mitre_id)}
-                </Badge>
-              )}
+              <div className="flex flex-wrap gap-1 mb-2">
+                {(technique.phases && technique.phases.length > 0 ? technique.phases : technique.phase ? [technique.phase] : []).map((phase, index) => (
+                  <Badge key={index} variant="outline" className={`text-xs ${getPhaseColor(phase)}`}>
+                    {phase}
+                  </Badge>
+                ))}
+                {(technique.mitre_id && isValidMitreId(technique.mitre_id)) && (
+                  <Badge variant="outline" className="text-xs bg-muted/20 text-muted-foreground border-muted/30">
+                    {extractCleanMitreId(technique.mitre_id)}
+                  </Badge>
+                )}
+              </div>
             </div>
             
             {/* Star Button - Always Top Right */}

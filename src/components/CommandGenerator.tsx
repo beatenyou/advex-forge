@@ -41,10 +41,10 @@ const getCommandTemplates = (technique: Technique): CommandTemplate[] => {
   // Use the technique's command templates if available
   if (technique.commands && technique.commands.length > 0) {
     return technique.commands.map(cmd => ({
-      tool: cmd.tool,
-      template: cmd.command,
-      description: cmd.description,
-      params: extractParameters(cmd.command)
+      tool: cmd.tool || 'Unknown Tool',
+      template: cmd.command || '',
+      description: cmd.description || 'No description available',
+      params: extractParameters(cmd.command || '')
     }));
   }
   
@@ -61,6 +61,7 @@ const getCommandTemplates = (technique: Technique): CommandTemplate[] => {
 
 // Helper function to extract parameters from command template
 const extractParameters = (command: string): string[] => {
+  if (!command || typeof command !== 'string') return [];
   const paramMatches = command.match(/<([^>]+)>/g) || [];
   return paramMatches.map(param => param.slice(1, -1)); // Remove < and >
 };
