@@ -28,6 +28,11 @@ interface Technique {
     tool: string;
     command: string;
     description: string;
+    platform?: string;
+    references?: Array<{
+      url: string;
+      description: string;
+    }>;
   }>;
   referenceLinks?: Array<{
     title: string;
@@ -75,7 +80,10 @@ const getDetailedTechnique = (technique: any) => {
       whenToUse: Array.isArray(technique.whenToUse) ? technique.whenToUse : [technique.whenToUse],
       prerequisites: Array.isArray(technique.prerequisites) ? technique.prerequisites : [technique.prerequisites || "No specific prerequisites"],
       howToUse: cleanHowToUseSteps(rawHowToUse),
-      commands: technique.commands.map((cmd: any) => ({
+      // Keep the original commands structure for CommandGenerator
+      commands: technique.commands,
+      // Create display commands with templates for the modal view
+      displayCommands: technique.commands.map((cmd: any) => ({
         tool: cmd.tool,
         template: cmd.command,
         params: extractParamsFromCommand(cmd.command)
@@ -373,7 +381,7 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
           <div>
             <h3 className="text-sm font-semibold text-foreground mb-3">Tools & Commands</h3>
             <div className="space-y-4">
-              {detailedTechnique.commands.map((cmd, index) => (
+              {(detailedTechnique.displayCommands || detailedTechnique.commands).map((cmd, index) => (
                 <div key={index} className="bg-muted/30 rounded-md p-3 border border-border/50">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-sm font-medium text-primary">{cmd.tool}</span>
@@ -381,9 +389,10 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        navigator.clipboard.writeText(cmd.template.replace(/\{[^}]+\}/g, (match) => {
+                        const commandText = cmd.template || cmd.command;
+                        navigator.clipboard.writeText(commandText.replace(/\{[^}]+\}/g, (match) => {
                           const paramName = match.slice(1, -1);
-                          const param = cmd.params.find(p => p.name === paramName);
+                          const param = cmd.params?.find(p => p.name === paramName);
                           return param?.example || match;
                         }));
                         toast({
@@ -398,13 +407,13 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
                     </Button>
                   </div>
                   <code className="text-xs font-mono text-muted-foreground bg-background/50 p-2 rounded block whitespace-pre-wrap border">
-                    {cmd.template.replace(/\{([^}]+)\}/g, (match, paramName) => {
-                      const param = cmd.params.find(p => p.name === paramName);
+                    {(cmd.template || cmd.command).replace(/\{([^}]+)\}/g, (match, paramName) => {
+                      const param = cmd.params?.find(p => p.name === paramName);
                       return param?.example || match;
                     })}
                   </code>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {cmd.params.map(p => p.name).join(", ")} parameters
+                    {cmd.params?.map(p => p.name).join(", ") || "No"} parameters
                   </p>
                 </div>
               ))}
@@ -467,8 +476,8 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
         {isCommandGenOpen && (
           <CommandGenerator
             technique={{
-              ...detailedTechnique,
-              phase: detailedTechnique.phases?.[0] || detailedTechnique.phase || 'Unknown'
+              ...technique,
+              phase: technique.phases?.[0] || technique.phase || 'Unknown'
             }}
             isOpen={isCommandGenOpen}
             onClose={() => setIsCommandGenOpen(false)}
