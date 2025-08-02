@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigationPhases } from "@/hooks/useNavigationPhases";
 
@@ -306,17 +307,25 @@ export const Sidebar = ({
               No favorites yet. Star techniques to add them here.
             </p>
           ) : (
-            favoriteItems.map((technique) => (
-              <Button
-                key={technique.id}
-                variant="ghost"
-                className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/30"
-                onClick={() => onTechniqueClick(technique)}
-              >
-                <Star className="w-4 h-4 mr-2 fill-cyber-orange text-cyber-orange" />
-                {technique.title}
-              </Button>
-            ))
+            <TooltipProvider>
+              {favoriteItems.map((technique) => (
+                <Tooltip key={technique.id}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-muted/30 min-w-0"
+                      onClick={() => onTechniqueClick(technique)}
+                    >
+                      <Star className="w-4 h-4 mr-2 fill-cyber-orange text-cyber-orange flex-shrink-0" />
+                      <span className="truncate">{technique.title}</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{technique.title}</p>
+                  </TooltipContent>
+                </Tooltip>
+              ))}
+            </TooltipProvider>
           )}
         </CardContent>
       </Card>
