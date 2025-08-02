@@ -9,7 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Edit, Trash2, Upload, Download, RefreshCw, Search, Calendar, User, Clock } from "lucide-react";
+import { Plus, Edit, Trash2, Upload, Download, RefreshCw, Search, Calendar, User, Clock, Navigation } from "lucide-react";
 import { CommandTemplateEditor } from "./CommandTemplateEditor";
 import { BulkTechniqueImporter } from "./BulkTechniqueImporter";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +28,7 @@ const TechniqueManager = () => {
   const [isBulkImportOpen, setIsBulkImportOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('all');
+  const [phaseFilter, setPhaseFilter] = useState('all');
   const [sortBy, setSortBy] = useState('created_desc');
   const [formData, setFormData] = useState({
     title: '',
@@ -53,7 +54,7 @@ const TechniqueManager = () => {
 
   useEffect(() => {
     filterAndSortTechniques();
-  }, [techniques, searchTerm, dateFilter, sortBy]);
+  }, [techniques, searchTerm, dateFilter, phaseFilter, sortBy]);
 
   const loadTechniques = async () => {
     setLoading(true);
@@ -121,6 +122,17 @@ const TechniqueManager = () => {
           isAfter(new Date(technique.created_at), cutoffDate)
         );
       }
+    }
+
+    // Phase filter
+    if (phaseFilter !== 'all') {
+      filtered = filtered.filter(technique => {
+        // Handle both legacy phase field and new phases array
+        if (technique.phases && Array.isArray(technique.phases)) {
+          return technique.phases.includes(phaseFilter);
+        }
+        return technique.phase === phaseFilter;
+      });
     }
 
     // Sort
@@ -500,7 +512,7 @@ const TechniqueManager = () => {
       {/* Search and Filter Controls */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div className="relative">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -521,6 +533,21 @@ const TechniqueManager = () => {
                 <SelectItem value="today">Today</SelectItem>
                 <SelectItem value="week">This Week</SelectItem>
                 <SelectItem value="month">This Month</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            <Select value={phaseFilter} onValueChange={setPhaseFilter}>
+              <SelectTrigger>
+                <Navigation className="h-4 w-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Phases</SelectItem>
+                {phases.map((phase) => (
+                  <SelectItem key={phase.name} value={phase.label}>
+                    {phase.icon} {phase.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             
