@@ -163,4 +163,25 @@ body {
     font-size: 1.5rem;
   }
 }
+
+/* Enhanced hover animations */
+.hover-scale {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+/* Responsive Grid Container - Force grid layout */
+.grid-container {
+  display: grid !important;
+  width: 100% !important;
+  container-type: inline-size;
+}
+
+.grid-container > * {
+  min-width: 0; /* Prevent grid items from overflowing */
+  width: 100%;
+}
 }

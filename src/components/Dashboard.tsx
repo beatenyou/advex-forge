@@ -80,7 +80,8 @@ export const Dashboard = ({
   const {
     containerRef,
     columnCount,
-    gridStyle
+    gridStyle,
+    isInitialized
   } = useResponsiveGrid({
     isChatVisible
   });
@@ -508,8 +509,21 @@ Can you help me understand this scenario and provide guidance on the techniques,
             </div>
 
             {/* Technique Cards Grid - Dynamic responsive columns */}
-            <div ref={containerRef} style={gridStyle} className="mb-8 w-full">
-              {filteredTechniques.map(technique => <TechniqueCard key={technique.id} technique={technique} onToggleFavorite={toggleFavorite} onOpenAIChat={onOpenChatWithPrompt} />)}
+            <div 
+              ref={containerRef} 
+              style={gridStyle} 
+              className="mb-8 w-full grid-container"
+              data-columns={columnCount}
+              data-initialized={isInitialized}
+            >
+              {filteredTechniques.map(technique => (
+                <TechniqueCard 
+                  key={technique.id} 
+                  technique={technique} 
+                  onToggleFavorite={toggleFavorite} 
+                  onOpenAIChat={onOpenChatWithPrompt} 
+                />
+              ))}
             </div>
 
             {filteredTechniques.length === 0 && <Card className="bg-gradient-card border-border/50">
