@@ -20,14 +20,11 @@ import { MobileNavigation } from './MobileNavigation';
 import { QuickReference } from "./QuickReference";
 import { AdminDashboard } from "./AdminDashboard";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
-
 import { TagSelector } from "./TagSelector";
-
 import { useResponsiveGrid } from "@/hooks/useResponsiveGrid";
 import { ParsedTechnique } from "@/lib/markdownParser";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchTechniquesFromDatabase, fetchUserFavorites, toggleTechniqueFavorite } from "@/lib/techniqueDataMigration";
-
 interface DashboardProps {
   onTechniqueSelect?: (technique: ParsedTechnique) => void;
   onToggleChat?: () => void;
@@ -35,7 +32,6 @@ interface DashboardProps {
   isChatVisible?: boolean;
   isWideScreen?: boolean;
 }
-
 interface Scenario {
   id: string;
   title: string;
@@ -46,14 +42,24 @@ interface Scenario {
   order_index: number;
   is_active: boolean;
 }
-
-export const Dashboard = ({ onTechniqueSelect, onToggleChat, onOpenChatWithPrompt, isChatVisible = true, isWideScreen = false }: DashboardProps) => {
+export const Dashboard = ({
+  onTechniqueSelect,
+  onToggleChat,
+  onOpenChatWithPrompt,
+  isChatVisible = true,
+  isWideScreen = false
+}: DashboardProps) => {
   const {
     user,
     signOut
   } = useAuth();
-  const { isAdmin, loading: adminLoading } = useAdminCheck();
-  const { phases: navigationPhases } = useNavigationPhases();
+  const {
+    isAdmin,
+    loading: adminLoading
+  } = useAdminCheck();
+  const {
+    phases: navigationPhases
+  } = useNavigationPhases();
   const {
     toast
   } = useToast();
@@ -70,9 +76,12 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, onOpenChatWithPromp
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
-  
-  const { containerRef, columnCount, gridStyle } = useResponsiveGrid({ 
-    isChatVisible 
+  const {
+    containerRef,
+    columnCount,
+    gridStyle
+  } = useResponsiveGrid({
+    isChatVisible
   });
 
   // Load techniques and favorites on mount
@@ -93,40 +102,25 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, onOpenChatWithPromp
 
   // Set up realtime subscriptions
   useEffect(() => {
-    const techniquesChannel = supabase
-      .channel('techniques-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'techniques'
-        },
-        () => {
-          loadTechniques();
-        }
-      )
-      .subscribe();
+    const techniquesChannel = supabase.channel('techniques-changes').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'techniques'
+    }, () => {
+      loadTechniques();
+    }).subscribe();
 
     // Set up favorites realtime subscription
-    const favoritesChannel = user ? supabase
-      .channel('favorites-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_favorites'
-        },
-        (payload) => {
-          // Only update if it's for the current user
-          if ((payload.new as any)?.user_id === user.id || (payload.old as any)?.user_id === user.id) {
-            loadUserFavorites();
-          }
-        }
-      )
-      .subscribe() : null;
-
+    const favoritesChannel = user ? supabase.channel('favorites-changes').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'user_favorites'
+    }, payload => {
+      // Only update if it's for the current user
+      if ((payload.new as any)?.user_id === user.id || (payload.old as any)?.user_id === user.id) {
+        loadUserFavorites();
+      }
+    }).subscribe() : null;
     return () => {
       supabase.removeChannel(techniquesChannel);
       if (favoritesChannel) {
@@ -134,7 +128,6 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, onOpenChatWithPromp
       }
     };
   }, [user]);
-
   const loadTechniques = async () => {
     try {
       const data = await fetchTechniquesFromDatabase();
@@ -152,7 +145,7 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, onOpenChatWithPromp
         referenceLinks: technique.reference_links || []
       }));
       setTechniques(formattedTechniques);
-      
+
       // Update starred status based on favorites
       if (userFavorites.length > 0) {
         setTechniques(prev => prev.map(technique => ({
@@ -171,7 +164,6 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, onOpenChatWithPromp
       setLoading(false);
     }
   };
-
   const loadUserFavorites = async () => {
     if (!user) return;
     try {
@@ -181,15 +173,12 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, onOpenChatWithPromp
       console.error('Error loading user favorites:', error);
     }
   };
-
   const handleSessionSelect = (sessionId: string) => {
     navigate(`/chat/${sessionId}`);
   };
-
   const handleNewSession = () => {
     navigate('/chat');
   };
-
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -208,57 +197,39 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, onOpenChatWithPromp
   const allTags = [...new Set(techniques.flatMap(t => t.tags.map(tag => tag.toLowerCase().replace(/\s+/g, '-'))))];
   useEffect(() => {
     let filtered = techniques;
-    
+
     // Search functionality
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(technique => 
-        technique.title.toLowerCase().includes(query) ||
-        technique.description.toLowerCase().includes(query) ||
-        (technique.mitre_id && technique.mitre_id.toLowerCase().includes(query)) ||
-        technique.id.toLowerCase().includes(query) ||
-        technique.phase.toLowerCase().includes(query) ||
-        technique.category.toLowerCase().includes(query) ||
-        technique.tags.some(tag => tag.toLowerCase().includes(query)) ||
-        technique.tools.some(tool => tool.toLowerCase().includes(query))
-      );
+      filtered = filtered.filter(technique => technique.title.toLowerCase().includes(query) || technique.description.toLowerCase().includes(query) || technique.mitre_id && technique.mitre_id.toLowerCase().includes(query) || technique.id.toLowerCase().includes(query) || technique.phase.toLowerCase().includes(query) || technique.category.toLowerCase().includes(query) || technique.tags.some(tag => tag.toLowerCase().includes(query)) || technique.tools.some(tool => tool.toLowerCase().includes(query)));
     }
-    
+
     // Phase filtering
     if (selectedPhase !== "All Techniques") {
       filtered = filtered.filter(technique => technique.phase === selectedPhase);
     }
-    
+
     // Tag filtering
     if (selectedTags.length > 0) {
-      filtered = filtered.filter(technique => 
-        selectedTags.some(selectedTag => 
-          technique.tags.some(tag => tag.toLowerCase().includes(selectedTag.toLowerCase()))
-        )
-      );
+      filtered = filtered.filter(technique => selectedTags.some(selectedTag => technique.tags.some(tag => tag.toLowerCase().includes(selectedTag.toLowerCase()))));
     }
-    
     setFilteredTechniques(filtered);
   }, [searchQuery, selectedPhase, selectedTags, techniques]);
   const toggleTag = (tag: string) => {
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
-
   const toggleFavorite = async (techniqueId: string) => {
     if (!user) {
       toast({
-        title: "Authentication Required", 
+        title: "Authentication Required",
         description: "Please sign in to save favorites",
         variant: "destructive"
       });
       return;
     }
-    
     const isFavorite = userFavorites.includes(techniqueId);
-    
     try {
       const success = await toggleTechniqueFavorite(user.id, techniqueId, isFavorite);
-      
       if (success) {
         // Optimistically update the UI
         if (isFavorite) {
@@ -266,14 +237,12 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, onOpenChatWithPromp
         } else {
           setUserFavorites(prev => [...prev, techniqueId]);
         }
-        
+
         // Update the techniques array to reflect the starred status
-        setTechniques(prev => prev.map(technique => 
-          technique.id === techniqueId 
-            ? { ...technique, starred: !isFavorite }
-            : technique
-        ));
-        
+        setTechniques(prev => prev.map(technique => technique.id === techniqueId ? {
+          ...technique,
+          starred: !isFavorite
+        } : technique));
         toast({
           title: isFavorite ? "Removed from favorites" : "Added to favorites",
           description: isFavorite ? "Technique removed from your favorites" : "Technique saved to your favorites"
@@ -294,22 +263,17 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, onOpenChatWithPromp
       });
     }
   };
-
   const clearAllFavorites = async () => {
     if (!user || userFavorites.length === 0) return;
-    
     try {
-      const { error } = await supabase
-        .from('user_favorites')
-        .delete()
-        .eq('user_id', user.id);
-      
+      const {
+        error
+      } = await supabase.from('user_favorites').delete().eq('user_id', user.id);
       if (error) throw error;
-      
       setUserFavorites([]);
       toast({
         title: "Success",
-        description: "All favorites cleared",
+        description: "All favorites cleared"
       });
     } catch (error) {
       console.error('Error clearing favorites:', error);
@@ -320,21 +284,15 @@ export const Dashboard = ({ onTechniqueSelect, onToggleChat, onOpenChatWithPromp
       });
     }
   };
-
   const openTechniqueModal = (technique: any) => {
     setSelectedTechnique(technique);
     setIsModalOpen(true);
   };
-
   const handleScenarioSelect = (scenario: Scenario | null) => {
     setSelectedScenario(scenario);
   };
-
   const generateScenarioPrompt = (scenario: Scenario): string => {
-    const linkedTechniquesText = scenario.linked_techniques.length > 0 
-      ? `\n\nLinked techniques: ${scenario.linked_techniques.join(', ')}`
-      : '';
-    
+    const linkedTechniquesText = scenario.linked_techniques.length > 0 ? `\n\nLinked techniques: ${scenario.linked_techniques.join(', ')}` : '';
     return `I'm working on a scenario: "${scenario.title}"
 
 Description: ${scenario.description}
@@ -343,7 +301,6 @@ Tags: ${scenario.tags.join(', ')}${linkedTechniquesText}
 
 Can you help me understand this scenario and provide guidance on the techniques, tools, and methodologies involved?`;
   };
-
   const handleOpenChatWithScenario = () => {
     if (selectedScenario && onOpenChatWithPrompt) {
       const prompt = generateScenarioPrompt(selectedScenario);
@@ -358,18 +315,12 @@ Can you help me understand this scenario and provide guidance on the techniques,
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center gap-4 mb-4">
             <div className="flex items-center gap-3">
-              <div 
-                className="w-8 h-8 rounded-full bg-gradient-cyber flex items-center justify-center cursor-pointer hover:scale-105 transition-transform"
-                onClick={onToggleChat}
-                title={isChatVisible ? "Close chat panel" : "Open chat panel"}
-              >
+              <div className="w-8 h-8 rounded-full bg-gradient-cyber flex items-center justify-center cursor-pointer hover:scale-105 transition-transform" onClick={onToggleChat} title={isChatVisible ? "Close chat panel" : "Open chat panel"}>
                 <Shield className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">
-                  Active Directory Attack & Enumeration Dashboard
-                </h1>
-                <p className="text-muted-foreground text-sm">Comprehensive reference for security pros</p>
+                <h1 className="text-2xl font-bold text-foreground">Cyber Red Team Attack &amp; Enumeration</h1>
+                <p className="text-muted-foreground text-sm">A reference for cybersecurity professionals</p>
               </div>
             </div>
             <div className="ml-auto flex items-center gap-4">
@@ -377,12 +328,7 @@ Can you help me understand this scenario and provide guidance on the techniques,
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => navigate('/preferences')}
-                      className="hover-scale"
-                    >
+                    <Button variant="outline" size="sm" onClick={() => navigate('/preferences')} className="hover-scale">
                       <Users className="w-4 h-4 mr-2" />
                       {user?.email?.split('@')[0] || 'User'}
                     </Button>
@@ -392,47 +338,22 @@ Can you help me understand this scenario and provide guidance on the techniques,
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={onToggleChat}
-                title={isChatVisible ? "Close AI Chat" : "Open AI Chat"}
-                className="hover-scale text-red-700 hover:bg-red-700/10"
-              >
+              <Button variant="outline" size="sm" onClick={onToggleChat} title={isChatVisible ? "Close AI Chat" : "Open AI Chat"} className="hover-scale text-red-700 hover:bg-red-700/10">
                 <MessageSquare className="w-4 h-4" />
               </Button>
-              {isAdmin && (
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setShowAdminDashboard(true)}
-                  title="Admin Dashboard"
-                  className="border-primary/50 text-primary hover:bg-primary/10 hover-scale"
-                >
+              {isAdmin && <Button variant="outline" size="sm" onClick={() => setShowAdminDashboard(true)} title="Admin Dashboard" className="border-primary/50 text-primary hover:bg-primary/10 hover-scale">
                   <UserCog className="w-4 h-4" />
-                </Button>
-              )}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleSignOut}
-                title="Sign Out"
-                className="hover-scale"
-              >
+                </Button>}
+              <Button variant="outline" size="sm" onClick={handleSignOut} title="Sign Out" className="hover-scale">
                 <LogOut className="w-4 h-4" />
               </Button>
             </div>
           </div>
 
           {/* Mobile Navigation */}
-          {isMobile && (
-            <div className="mb-4">
-              <MobileNavigation
-                selectedPhase={selectedPhase}
-                onPhaseSelect={setSelectedPhase}
-              />
-            </div>
-          )}
+          {isMobile && <div className="mb-4">
+              <MobileNavigation selectedPhase={selectedPhase} onPhaseSelect={setSelectedPhase} />
+            </div>}
           
           {/* Search and Filters */}
           <div className="flex flex-col gap-4 mt-4">
@@ -440,36 +361,24 @@ Can you help me understand this scenario and provide guidance on the techniques,
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input 
-                    placeholder="Search attacks, tools, commands..." 
-                    className="pl-10 bg-muted/50 border-border/50 focus:border-primary btn-touch" 
-                    value={searchQuery} 
-                    onChange={e => setSearchQuery(e.target.value)} 
-                  />
+                  <Input placeholder="Search attacks, tools, commands..." className="pl-10 bg-muted/50 border-border/50 focus:border-primary btn-touch" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
                 </div>
               </div>
               
               {/* Desktop Phase Selector */}
-              {!isMobile && (
-                <Select value={selectedPhase} onValueChange={setSelectedPhase}>
+              {!isMobile && <Select value={selectedPhase} onValueChange={setSelectedPhase}>
                   <SelectTrigger className="w-48 bg-muted/50 border-border/50">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     {navigationPhases.map(phase => <SelectItem key={phase.name} value={phase.label}>{phase.label}</SelectItem>)}
                   </SelectContent>
-                </Select>
-              )}
+                </Select>}
             </div>
 
             {/* Tag Filters */}
             <div className="mt-2">
-              <TagSelector
-                allTags={allTags}
-                selectedTags={selectedTags}
-                onToggleTag={toggleTag}
-                maxVisibleTags={isMobile ? 3 : 5}
-              />
+              <TagSelector allTags={allTags} selectedTags={selectedTags} onToggleTag={toggleTag} maxVisibleTags={isMobile ? 3 : 5} />
             </div>
           </div>
         </div>
@@ -477,33 +386,10 @@ Can you help me understand this scenario and provide guidance on the techniques,
 
       <div className="flex relative">
         {/* Mobile Sidebar */}
-        {isMobile && (
-          <MobileSidebar
-            techniques={techniques}
-            onTechniqueSelect={openTechniqueModal}
-            onStarTechnique={toggleFavorite}
-            selectedPhase={selectedPhase}
-            onPhaseSelect={setSelectedPhase}
-            selectedScenario={selectedScenario}
-            onScenarioSelect={handleScenarioSelect}
-            onOpenChat={handleOpenChatWithScenario}
-            onOpenChatWithPrompt={onOpenChatWithPrompt || (() => {})}
-          />
-        )}
+        {isMobile && <MobileSidebar techniques={techniques} onTechniqueSelect={openTechniqueModal} onStarTechnique={toggleFavorite} selectedPhase={selectedPhase} onPhaseSelect={setSelectedPhase} selectedScenario={selectedScenario} onScenarioSelect={handleScenarioSelect} onOpenChat={handleOpenChatWithScenario} onOpenChatWithPrompt={onOpenChatWithPrompt || (() => {})} />}
         
         {/* Desktop Sidebar */}
-        {!isMobile && (
-          <Sidebar 
-            techniques={techniques} 
-            onTechniqueClick={openTechniqueModal}
-            selectedPhase={selectedPhase}
-            onPhaseSelect={setSelectedPhase}
-            onClearAllFavorites={clearAllFavorites}
-            selectedScenario={selectedScenario}
-            onScenarioSelect={handleScenarioSelect}
-            onOpenChatWithScenario={handleOpenChatWithScenario}
-          />
-        )}
+        {!isMobile && <Sidebar techniques={techniques} onTechniqueClick={openTechniqueModal} selectedPhase={selectedPhase} onPhaseSelect={setSelectedPhase} onClearAllFavorites={clearAllFavorites} selectedScenario={selectedScenario} onScenarioSelect={handleScenarioSelect} onOpenChatWithScenario={handleOpenChatWithScenario} />}
 
         {/* Main Content - Better container structure for responsive grid */}
         <main className="flex-1 max-w-none w-full">
@@ -520,19 +406,8 @@ Can you help me understand this scenario and provide guidance on the techniques,
             </div>
 
             {/* Technique Cards Grid - Dynamic responsive columns */}
-            <div 
-              ref={containerRef} 
-              style={gridStyle} 
-              className="mb-8 w-full"
-            >
-              {filteredTechniques.map(technique => (
-                <TechniqueCard 
-                  key={technique.id} 
-                  technique={technique} 
-                  onToggleFavorite={toggleFavorite}
-                  onOpenAIChat={onOpenChatWithPrompt}
-                />
-              ))}
+            <div ref={containerRef} style={gridStyle} className="mb-8 w-full">
+              {filteredTechniques.map(technique => <TechniqueCard key={technique.id} technique={technique} onToggleFavorite={toggleFavorite} onOpenAIChat={onOpenChatWithPrompt} />)}
             </div>
 
             {filteredTechniques.length === 0 && <Card className="bg-gradient-card border-border/50">
@@ -555,22 +430,10 @@ Can you help me understand this scenario and provide guidance on the techniques,
       </div>
 
       {/* Technique Modal */}
-      {selectedTechnique && (
-        <TechniqueModal 
-          technique={selectedTechnique}
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)}
-          onToggleFavorite={toggleFavorite}
-          onOpenAIChat={onOpenChatWithPrompt}
-        />
-      )}
+      {selectedTechnique && <TechniqueModal technique={selectedTechnique} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onToggleFavorite={toggleFavorite} onOpenAIChat={onOpenChatWithPrompt} />}
 
       {/* Admin Dashboard */}
-      {showAdminDashboard && (
-        <AdminDashboard
-          onClose={() => setShowAdminDashboard(false)}
-        />
-      )}
+      {showAdminDashboard && <AdminDashboard onClose={() => setShowAdminDashboard(false)} />}
       
     </div>;
 };
