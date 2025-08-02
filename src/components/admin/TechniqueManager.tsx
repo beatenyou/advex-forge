@@ -577,15 +577,17 @@ const TechniqueManager = () => {
             <Select value={phaseFilter} onValueChange={setPhaseFilter} disabled={phasesLoading}>
               <SelectTrigger>
                 <Navigation className="h-4 w-4 mr-2" />
-                <SelectValue placeholder={phasesLoading ? "Loading phases..." : phaseFilter === "all" ? "All Phases" : phases.find(p => p.label === phaseFilter)?.label || "Select phase"} />
+                <SelectValue placeholder={phasesLoading ? "Loading phases..." : phaseFilter === "all" ? "All Phases" : phaseFilter} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Phases</SelectItem>
-                {!phasesLoading && phases.map((phase) => (
-                  <SelectItem key={phase.name} value={phase.label}>
-                    {phase.icon} {phase.label}
-                  </SelectItem>
-                ))}
+                {!phasesLoading && phases
+                  .filter(phase => phase.label !== "All Techniques") // Filter out "All Techniques"
+                  .map((phase) => (
+                    <SelectItem key={phase.name} value={phase.label}>
+                      {phase.label}
+                    </SelectItem>
+                  ))}
                 {phasesLoading && (
                   <SelectItem value="loading" disabled>
                     <RefreshCw className="h-4 w-4 animate-spin mr-2" />
