@@ -46,7 +46,7 @@ const TechniqueManager = () => {
     commands: ''
   });
   const { toast } = useToast();
-  const { phases } = useNavigationPhases();
+  const { phases, loading: phasesLoading } = useNavigationPhases();
 
   useEffect(() => {
     loadTechniques();
@@ -124,15 +124,29 @@ const TechniqueManager = () => {
       }
     }
 
-    // Phase filter
+    // Phase filter with improved debugging and normalization
     if (phaseFilter !== 'all') {
+      console.log('Phase filtering with:', phaseFilter);
+      console.log('Available phases:', phases.map(p => p.label));
+      
       filtered = filtered.filter(technique => {
+        // Normalize comparison for better matching
+        const normalizePhase = (phase: string) => phase?.trim();
+        const targetPhase = normalizePhase(phaseFilter);
+        
         // Handle both legacy phase field and new phases array
         if (technique.phases && Array.isArray(technique.phases)) {
-          return technique.phases.includes(phaseFilter);
+          const hasMatch = technique.phases.some(p => normalizePhase(p) === targetPhase);
+          console.log(`Technique "${technique.title}" phases:`, technique.phases, 'Match:', hasMatch);
+          return hasMatch;
         }
-        return technique.phase === phaseFilter;
+        
+        const legacyMatch = normalizePhase(technique.phase) === targetPhase;
+        console.log(`Technique "${technique.title}" legacy phase:`, technique.phase, 'Match:', legacyMatch);
+        return legacyMatch;
       });
+      
+      console.log(`Filtered to ${filtered.length} techniques for phase "${phaseFilter}"`);
     }
 
     // Sort
@@ -536,18 +550,24 @@ const TechniqueManager = () => {
               </SelectContent>
             </Select>
             
-            <Select value={phaseFilter} onValueChange={setPhaseFilter}>
+            <Select value={phaseFilter} onValueChange={setPhaseFilter} disabled={phasesLoading}>
               <SelectTrigger>
                 <Navigation className="h-4 w-4 mr-2" />
-                <SelectValue />
+                <SelectValue placeholder={phasesLoading ? "Loading phases..." : phaseFilter === "all" ? "All Phases" : phases.find(p => p.label === phaseFilter)?.label || "Select phase"} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Phases</SelectItem>
-                {phases.map((phase) => (
+                {!phasesLoading && phases.map((phase) => (
                   <SelectItem key={phase.name} value={phase.label}>
                     {phase.icon} {phase.label}
                   </SelectItem>
                 ))}
+                {phasesLoading && (
+                  <SelectItem value="loading" disabled>
+                    <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                    Loading phases...
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
             
