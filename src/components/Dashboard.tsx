@@ -46,7 +46,7 @@ export const Dashboard = ({
   onTechniqueSelect,
   onToggleChat,
   onOpenChatWithPrompt,
-  isChatVisible = true,
+  isChatVisible = false,
   isWideScreen = false
 }: DashboardProps) => {
   const {
@@ -82,7 +82,7 @@ export const Dashboard = ({
     columnCount,
     gridStyle
   } = useResponsiveGrid({
-    isChatVisible: isChatVisible || false
+    isChatVisible
   });
 
   // Initialize selectedPhase when navigation phases load
