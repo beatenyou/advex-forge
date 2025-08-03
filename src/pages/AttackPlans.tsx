@@ -296,35 +296,33 @@ const AttackPlansPage: React.FC = () => {
   };
 
   const generatePrintableContent = (planData: any) => {
-    const textNodes = planData.nodes.filter((node: Node) => node.type === 'text');
-    const techniqueNodes = planData.nodes.filter((node: Node) => node.type === 'technique');
-    const phaseNodes = planData.nodes.filter((node: Node) => node.type === 'phase');
+    // Sort all nodes by canvas position (Y first, then X)
+    const sortedNodes = [...planData.nodes].sort((a: Node, b: Node) => 
+      a.position.y - b.position.y || a.position.x - b.position.x
+    );
     
-    return `
+    let content = `
       <div class="header">
         <h1>${planData.title}</h1>
         <p>${planData.description}</p>
         <p><small>Generated on ${new Date().toLocaleDateString()}</small></p>
       </div>
-      
-      ${phaseNodes.length > 0 ? `
-        <h2>Phases</h2>
-        ${phaseNodes.map((node: Node) => `
+      <h2>Attack Plan Elements</h2>
+    `;
+
+    sortedNodes.forEach((node: Node) => {
+      if (node.type === 'phase') {
+        content += `
           <div class="node phase-node">
-            <h3>${node.data.label || (node.data.phase as any)?.name || 'Phase'}</h3>
+            <h3>📋 Phase: ${node.data.label || (node.data.phase as any)?.name || 'Phase'}</h3>
           </div>
-        `).join('')}
-      ` : ''}
-      
-      ${techniqueNodes.length > 0 ? `
-        <h2>Techniques</h2>
-        ${techniqueNodes.map((node: Node) => {
-          const technique = node.data.technique as any;
-          if (!technique) return '';
-          
-          return `
+        `;
+      } else if (node.type === 'technique') {
+        const technique = node.data.technique as any;
+        if (technique) {
+          content += `
           <div class="node technique-node">
-            <h3>${technique.title || technique.name || 'Technique'}</h3>
+            <h3>⚡ ${technique.title || technique.name || 'Technique'}</h3>
             <p><strong>Description:</strong> ${technique.description || 'No description'}</p>
             <p><strong>Phase:</strong> ${technique.phase || 'N/A'}</p>
             <p><strong>Category:</strong> ${technique.category || 'N/A'}</p>
@@ -357,96 +355,93 @@ const AttackPlansPage: React.FC = () => {
             ` : ''}
           </div>
           `;
-        }).join('')}
-      ` : ''}
-      
-      ${textNodes.length > 0 ? `
-        <h2>Notes</h2>
-        ${textNodes.map((node: Node) => `
+        }
+      } else if (node.type === 'text') {
+        content += `
           <div class="node text-node">
+            <h4>📝 Note:</h4>
             <div>${node.data.content}</div>
           </div>
-        `).join('')}
-      ` : ''}
-    `;
+        `;
+      }
+    });
+    
+    return content;
   };
 
   const generateMarkdownContent = (planData: any) => {
-    const textNodes = planData.nodes.filter((node: Node) => node.type === 'text');
-    const techniqueNodes = planData.nodes.filter((node: Node) => node.type === 'technique');
-    const phaseNodes = planData.nodes.filter((node: Node) => node.type === 'phase');
+    // Sort all nodes by canvas position (Y first, then X)
+    const sortedNodes = [...planData.nodes].sort((a: Node, b: Node) => 
+      a.position.y - b.position.y || a.position.x - b.position.x
+    );
     
     let markdown = `# ${planData.title}\n\n`;
     markdown += `${planData.description}\n\n`;
     markdown += `*Generated on ${new Date().toLocaleDateString()}*\n\n`;
+    markdown += `## Attack Plan Elements\n\n`;
     
-    if (phaseNodes.length > 0) {
-      markdown += `## Phases\n\n`;
-      phaseNodes.forEach((node: Node) => {
-        markdown += `### ${node.data.label || (node.data.phase as any)?.name || 'Phase'}\n\n`;
-      });
-    }
-    
-    if (techniqueNodes.length > 0) {
-      markdown += `## Techniques\n\n`;
-      techniqueNodes.forEach((node: Node) => {
+    sortedNodes.forEach((node: Node) => {
+      if (node.type === 'phase') {
+        markdown += `### 📋 Phase: ${node.data.label || (node.data.phase as any)?.name || 'Phase'}\n\n`;
+      } else if (node.type === 'technique') {
         const technique = node.data.technique as any;
-        if (!technique) return;
-        
-        markdown += `### ${technique.title || technique.name || 'Technique'}\n\n`;
-        markdown += `${technique.description || 'No description'}\n\n`;
-        markdown += `**Phase:** ${technique.phase || 'N/A'}\n\n`;
-        markdown += `**Category:** ${technique.category || 'N/A'}\n\n`;
-        
-        if (technique.tags && technique.tags.length > 0) {
-          markdown += `**Tags:** ${technique.tags.join(', ')}\n\n`;
+        if (technique) {
+          markdown += `### ⚡ ${technique.title || technique.name || 'Technique'}\n\n`;
+          markdown += `${technique.description || 'No description'}\n\n`;
+          markdown += `**Phase:** ${technique.phase || 'N/A'}\n\n`;
+          markdown += `**Category:** ${technique.category || 'N/A'}\n\n`;
+          
+          if (technique.tags && technique.tags.length > 0) {
+            markdown += `**Tags:** ${technique.tags.join(', ')}\n\n`;
+          }
+          
+          if (technique.how_to_use && technique.how_to_use.length > 0) {
+            markdown += `**How to Use:**\n\n`;
+            technique.how_to_use.forEach((step: string, index: number) => {
+              markdown += `${index + 1}. ${step}\n`;
+            });
+            markdown += `\n`;
+          }
+          
+          if (technique.when_to_use && technique.when_to_use.length > 0) {
+            markdown += `**When to Use:**\n\n`;
+            technique.when_to_use.forEach((item: string) => {
+              markdown += `- ${item}\n`;
+            });
+            markdown += `\n`;
+          }
+          
+          if (technique.tools && technique.tools.length > 0) {
+            markdown += `**Tools:** \`${technique.tools.join('`, `')}\`\n\n`;
+          }
+          
+          if (technique.commands && technique.commands.length > 0) {
+            markdown += `**Commands:**\n\n`;
+            technique.commands.forEach((cmd: any) => {
+              const command = typeof cmd === 'string' ? cmd : cmd.command || cmd.text || JSON.stringify(cmd);
+              markdown += `\`\`\`\n${command}\n\`\`\`\n\n`;
+            });
+          }
         }
-        
-        if (technique.how_to_use && technique.how_to_use.length > 0) {
-          markdown += `**How to Use:**\n\n`;
-          technique.how_to_use.forEach((step: string, index: number) => {
-            markdown += `${index + 1}. ${step}\n`;
-          });
-          markdown += `\n`;
-        }
-        
-        if (technique.when_to_use && technique.when_to_use.length > 0) {
-          markdown += `**When to Use:**\n\n`;
-          technique.when_to_use.forEach((item: string) => {
-            markdown += `- ${item}\n`;
-          });
-          markdown += `\n`;
-        }
-        
-        if (technique.tools && technique.tools.length > 0) {
-          markdown += `**Tools:** \`${technique.tools.join('`, `')}\`\n\n`;
-        }
-        
-        if (technique.commands && technique.commands.length > 0) {
-          markdown += `**Commands:**\n\n`;
-          technique.commands.forEach((cmd: any) => {
-            const command = typeof cmd === 'string' ? cmd : cmd.command || cmd.text || JSON.stringify(cmd);
-            markdown += `\`\`\`\n${command}\n\`\`\`\n\n`;
-          });
-        }
-      });
-    }
-    
-    if (textNodes.length > 0) {
-      markdown += `## Notes\n\n`;
-      textNodes.forEach((node: Node) => {
+      } else if (node.type === 'text') {
+        markdown += `### 📝 Note\n\n`;
         markdown += `${node.data.content}\n\n`;
-      });
-    }
+      }
+    });
     
     return markdown;
   };
 
   const generateCSVContent = (planData: any) => {
-    const headers = ['Type', 'Name', 'Description', 'Phase', 'Category', 'Tags', 'How to Use', 'When to Use', 'Tools', 'Commands', 'Content'];
+    const headers = ['Type', 'Name', 'Description', 'Phase', 'Category', 'Tags', 'How to Use', 'When to Use', 'Tools', 'Commands', 'Content', 'Position Y', 'Position X'];
     const rows = [headers.join(',')];
     
-    planData.nodes.forEach((node: Node) => {
+    // Sort all nodes by canvas position (Y first, then X)
+    const sortedNodes = [...planData.nodes].sort((a: Node, b: Node) => 
+      a.position.y - b.position.y || a.position.x - b.position.x
+    );
+    
+    sortedNodes.forEach((node: Node) => {
       if (node.type === 'technique') {
         const technique = node.data.technique as any;
         const row = [
@@ -462,7 +457,9 @@ const AttackPlansPage: React.FC = () => {
           technique?.commands ? technique.commands.map((cmd: any) => 
             typeof cmd === 'string' ? cmd : cmd.command || cmd.text || JSON.stringify(cmd)
           ).join('; ') : '',
-          ''
+          '',
+          node.position.y.toString(),
+          node.position.x.toString()
         ].map(field => `"${(field || '').toString().replace(/"/g, '""')}"`);
         
         rows.push(row.join(','));
@@ -478,7 +475,9 @@ const AttackPlansPage: React.FC = () => {
           '',
           '',
           '',
-          node.type === 'text' ? (node.data.content || '') : ''
+          node.type === 'text' ? (node.data.content || '') : '',
+          node.position.y.toString(),
+          node.position.x.toString()
         ].map(field => `"${(field || '').toString().replace(/"/g, '""')}"`);
         
         rows.push(row.join(','));
