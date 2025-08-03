@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Shield, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 
 const Index = () => {
-  const { user, loading, clearAuthState, authError } = useAuth();
+  const { user, loading, nuclearReset, authError } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,15 +36,12 @@ const Index = () => {
                 <p className="text-sm text-muted-foreground">{authError}</p>
                 <div className="flex flex-col space-y-2">
                   <Button 
-                    onClick={() => {
-                      clearAuthState();
-                      window.location.reload();
-                    }}
-                    variant="outline"
+                    onClick={nuclearReset}
+                    variant="destructive"
                     className="w-full"
                   >
                     <RefreshCw className="h-4 w-4 mr-2" />
-                    Reset & Continue
+                    Nuclear Reset & Fix
                   </Button>
                   <Button 
                     onClick={() => navigate("/auth")}
@@ -59,15 +56,12 @@ const Index = () => {
             
             <div className="mt-6">
               <Button 
-                onClick={() => {
-                  clearAuthState();
-                  navigate("/auth");
-                }}
+                onClick={nuclearReset}
                 variant="outline"
                 size="sm"
                 className="text-xs"
               >
-                Having trouble? Reset Authentication
+                Having trouble? Nuclear Reset
               </Button>
             </div>
           </CardContent>

@@ -1570,6 +1570,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      nuclear_auth_reset: {
+        Args: { target_user_id?: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user"

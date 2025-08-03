@@ -7,7 +7,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signOut: () => Promise<void>;
-  clearAuthState: () => void;
+  nuclearReset: () => Promise<void>;
   authError: string | null;
 }
 
@@ -19,24 +19,80 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-    let isResolved = false;
+  const clearAllStorage = () => {
+    // Clear localStorage
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('sb-') || key.includes('supabase')) {
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Clear sessionStorage
+    Object.keys(sessionStorage).forEach(key => {
+      if (key.startsWith('sb-') || key.includes('supabase')) {
+        sessionStorage.removeItem(key);
+      }
+    });
+    
+    // Clear specific auth keys
+    const authKeys = [
+      'sb-csknxtzjfdqoaoforrfm-auth-token',
+      'supabase.auth.token',
+      'sb-localhost-auth-token',
+    ];
+    
+    authKeys.forEach(key => {
+      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
+    });
+  };
 
-    // Emergency timeout - force resolve after 3 seconds
+  const nuclearReset = async () => {
+    console.log('🚨 NUCLEAR RESET: Clearing all auth data');
+    
+    // Clear browser storage first
+    clearAllStorage();
+    
+    // Reset local state
+    setSession(null);
+    setUser(null);
+    setAuthError(null);
+    setLoading(false);
+    
+    try {
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+      
+      // Clean database sessions if user exists
+      if (user?.id) {
+        await supabase.rpc('nuclear_auth_reset', { target_user_id: user.id });
+      }
+    } catch (error) {
+      console.error('Nuclear reset error (non-critical):', error);
+    }
+    
+    // Force redirect to prevent any cached state
+    window.location.href = '/auth';
+  };
+
+  useEffect(() => {
+    let isResolved = false;
+    let timeoutId: NodeJS.Timeout;
+
+    // Emergency timeout - force resolution after 2 seconds
     const emergencyTimeout = setTimeout(() => {
       if (!isResolved) {
-        console.warn('Auth state taking too long, forcing resolution');
-        setAuthError('Authentication taking longer than expected');
+        console.warn('🚨 Auth taking too long, forcing resolution');
+        setAuthError('Authentication timeout - please try nuclear reset');
         setLoading(false);
         isResolved = true;
       }
-    }, 3000);
+    }, 2000);
 
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state change:', event, session?.user?.id);
+        console.log('🔐 Auth state change:', event, session?.user?.id);
         
         if (!isResolved) {
           setSession(session);
@@ -47,49 +103,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           clearTimeout(emergencyTimeout);
         }
         
-        // Handle session validation
+        // Handle specific auth events
         if (event === 'TOKEN_REFRESHED' && !session) {
-          console.warn('Token refresh failed, clearing auth state');
-          clearAuthState();
+          console.warn('⚠️ Token refresh failed, triggering nuclear reset');
+          await nuclearReset();
           return;
         }
         
-        // Defer database operations to prevent infinite loops
-        if (session?.user && event === 'SIGNED_IN') {
-          setTimeout(async () => {
-            try {
-              // Clean up any stale sessions first
-              await supabase.rpc('force_clean_user_auth', { 
-                target_user_id: session.user.id 
-              });
-              
-              await supabase.from('user_activity_log').insert({
-                user_id: session.user.id,
-                activity_type: 'sign_in',
-                description: 'User signed in',
-                user_agent: navigator.userAgent,
-              });
-            } catch (error) {
-              console.error('Error logging sign in activity:', error);
-            }
-          }, 100);
-        } else if (event === 'SIGNED_OUT') {
-          // Store previous user ID before state changes
-          const previousUserId = user?.id;
-          setTimeout(async () => {
-            if (previousUserId) {
-              try {
-                await supabase.from('user_activity_log').insert({
-                  user_id: previousUserId,
-                  activity_type: 'sign_out',
-                  description: 'User signed out',
-                  user_agent: navigator.userAgent,
-                });
-              } catch (error) {
-                console.error('Error logging sign out activity:', error);
-              }
-            }
-          }, 100);
+        if (event === 'SIGNED_OUT') {
+          console.log('👋 User signed out');
+          setSession(null);
+          setUser(null);
+          setAuthError(null);
         }
       }
     );
@@ -100,10 +125,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Session validation error:', error);
-          setAuthError(error.message);
-          clearAuthState();
+          console.error('❌ Session validation error:', error);
+          setAuthError('Session validation failed');
+          await nuclearReset();
           return;
+        }
+
+        // Additional session validation
+        if (session) {
+          try {
+            // Test if session is actually valid by making a simple request
+            const { error: testError } = await supabase.from('profiles').select('user_id').limit(1);
+            if (testError && testError.message.includes('JWT')) {
+              console.warn('⚠️ Invalid session detected, clearing');
+              await nuclearReset();
+              return;
+            }
+          } catch (validationError) {
+            console.warn('⚠️ Session validation failed, clearing');
+            await nuclearReset();
+            return;
+          }
         }
 
         if (!isResolved) {
@@ -115,10 +157,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           clearTimeout(emergencyTimeout);
         }
       } catch (error) {
-        console.error('Session check failed:', error);
+        console.error('💥 Session check failed:', error);
         if (!isResolved) {
           setAuthError('Failed to validate session');
-          setLoading(false);
+          await nuclearReset();
           isResolved = true;
           clearTimeout(emergencyTimeout);
         }
@@ -132,50 +174,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearTimeout(emergencyTimeout);
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, []); // Remove problematic dependency that was causing infinite loop
-
-  const clearAuthState = () => {
-    // Clear all auth-related localStorage
-    localStorage.removeItem('sb-csknxtzjfdqoaoforrfm-auth-token');
-    localStorage.removeItem('supabase.auth.token');
-    
-    // Clear all localStorage items that start with 'sb-'
-    Object.keys(localStorage).forEach(key => {
-      if (key.startsWith('sb-')) {
-        localStorage.removeItem(key);
-      }
-    });
-    
-    setSession(null);
-    setUser(null);
-    setAuthError(null);
-    setLoading(false);
-  };
+  }, []); // No dependencies to prevent infinite loops
 
   const signOut = async () => {
-    // Log the sign out activity before signing out
-    if (user) {
-      try {
-        await supabase.from('user_activity_log').insert({
-          user_id: user.id,
-          activity_type: 'sign_out_initiated',
-          description: 'User initiated sign out',
-          user_agent: navigator.userAgent,
-        });
-      } catch (error) {
-        console.error('Error logging sign out activity:', error);
-      }
-    }
-    
-    // Clear local state and storage
-    clearAuthState();
-    
-    // Then sign out from Supabase
     try {
+      // Log sign out activity if user exists
+      if (user) {
+        try {
+          await supabase.from('user_activity_log').insert({
+            user_id: user.id,
+            activity_type: 'sign_out_initiated',
+            description: 'User initiated sign out',
+            user_agent: navigator.userAgent,
+          });
+        } catch (error) {
+          console.error('Error logging sign out activity:', error);
+        }
+      }
+      
+      // Clear local state first
+      setSession(null);
+      setUser(null);
+      setAuthError(null);
+      setLoading(false);
+      
+      // Clear storage
+      clearAllStorage();
+      
+      // Sign out from Supabase
       await supabase.auth.signOut();
     } catch (error) {
-      console.error('Error signing out:', error);
-      // Even if signOut fails, we've cleared local state
+      console.error('Sign out error:', error);
+      // If signOut fails, force nuclear reset
+      await nuclearReset();
     }
   };
 
@@ -184,7 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     session,
     loading,
     signOut,
-    clearAuthState,
+    nuclearReset,
     authError,
   };
 
