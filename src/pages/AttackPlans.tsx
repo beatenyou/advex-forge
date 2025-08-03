@@ -312,7 +312,6 @@ const AttackPlansPage: React.FC = () => {
         ${phaseNodes.map((node: Node) => `
           <div class="node phase-node">
             <h3>${node.data.label || (node.data.phase as any)?.name || 'Phase'}</h3>
-            <div class="metadata">Position: (${Math.round(node.position.x)}, ${Math.round(node.position.y)})</div>
           </div>
         `).join('')}
       ` : ''}
@@ -324,7 +323,6 @@ const AttackPlansPage: React.FC = () => {
             <h3>${(node.data.technique as any)?.name || 'Technique'}</h3>
             <p><strong>Phase:</strong> ${(node.data.technique as any)?.phase || 'N/A'}</p>
             <p><strong>Description:</strong> ${(node.data.technique as any)?.description || 'No description'}</p>
-            <div class="metadata">Position: (${Math.round(node.position.x)}, ${Math.round(node.position.y)})</div>
           </div>
         `).join('')}
       ` : ''}
@@ -334,7 +332,6 @@ const AttackPlansPage: React.FC = () => {
         ${textNodes.map((node: Node) => `
           <div class="node text-node">
             <div>${node.data.content}</div>
-            <div class="metadata">Position: (${Math.round(node.position.x)}, ${Math.round(node.position.y)})</div>
           </div>
         `).join('')}
       ` : ''}
@@ -353,8 +350,7 @@ const AttackPlansPage: React.FC = () => {
     if (phaseNodes.length > 0) {
       markdown += `## Phases\n\n`;
       phaseNodes.forEach((node: Node) => {
-        markdown += `### ${node.data.label || (node.data.phase as any)?.name || 'Phase'}\n`;
-        markdown += `<!-- Position: (${Math.round(node.position.x)}, ${Math.round(node.position.y)}) -->\n\n`;
+        markdown += `### ${node.data.label || (node.data.phase as any)?.name || 'Phase'}\n\n`;
       });
     }
     
@@ -364,7 +360,6 @@ const AttackPlansPage: React.FC = () => {
         markdown += `### ${(node.data.technique as any)?.name || 'Technique'}\n`;
         markdown += `**Phase:** ${(node.data.technique as any)?.phase || 'N/A'}\n\n`;
         markdown += `${(node.data.technique as any)?.description || 'No description'}\n\n`;
-        markdown += `<!-- Position: (${Math.round(node.position.x)}, ${Math.round(node.position.y)}) -->\n\n`;
       });
     }
     
@@ -372,7 +367,6 @@ const AttackPlansPage: React.FC = () => {
       markdown += `## Notes\n\n`;
       textNodes.forEach((node: Node) => {
         markdown += `${node.data.content}\n\n`;
-        markdown += `<!-- Position: (${Math.round(node.position.x)}, ${Math.round(node.position.y)}) -->\n\n`;
       });
     }
     
@@ -380,7 +374,7 @@ const AttackPlansPage: React.FC = () => {
   };
 
   const generateCSVContent = (planData: any) => {
-    const headers = ['Type', 'Name', 'Description', 'Phase', 'Position X', 'Position Y', 'Content'];
+    const headers = ['Type', 'Name', 'Description', 'Phase', 'Content'];
     const rows = [headers.join(',')];
     
     planData.nodes.forEach((node: Node) => {
@@ -389,8 +383,6 @@ const AttackPlansPage: React.FC = () => {
         node.type === 'text' ? 'Text Box' : ((node.data.technique as any)?.name || node.data.label || (node.data.phase as any)?.name || ''),
         node.type === 'technique' ? ((node.data.technique as any)?.description || '') : '',
         node.type === 'technique' ? ((node.data.technique as any)?.phase || '') : node.type === 'phase' ? ((node.data.phase as any)?.name || '') : '',
-        Math.round(node.position.x).toString(),
-        Math.round(node.position.y).toString(),
         node.type === 'text' ? (node.data.content || '') : ''
       ].map(field => `"${(field || '').toString().replace(/"/g, '""')}"`);
       
