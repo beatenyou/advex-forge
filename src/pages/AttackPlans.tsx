@@ -188,9 +188,216 @@ const AttackPlansPage: React.FC = () => {
     }
   };
 
+  const handleAddTextBox = (position: { x: number; y: number }) => {
+    if (!reactFlowInstance) return;
+    
+    const flowPosition = reactFlowInstance.screenToFlowPosition(position);
+    
+    const newNode: Node = {
+      id: `text-${Date.now()}`,
+      type: 'text',
+      position: flowPosition,
+      data: {
+        content: 'Enter your text here...',
+        isEditing: true,
+        fontSize: 'base',
+        fontWeight: 'normal'
+      }
+    };
+    
+    setNodes((nds) => [...nds, newNode]);
+    toast.success('Text box added to canvas');
+  };
+
   const exportPlan = (format: 'pdf' | 'markdown' | 'csv') => {
-    // Implementation for export functionality would go here
-    toast.info(`Export to ${format.toUpperCase()} coming soon!`);
+    const planData = {
+      title: planTitle,
+      description: planDescription,
+      nodes,
+      edges,
+      createdAt: new Date().toISOString()
+    };
+
+    switch (format) {
+      case 'pdf':
+        exportToPDF(planData);
+        break;
+      case 'markdown':
+        exportToMarkdown(planData);
+        break;
+      case 'csv':
+        exportToCSV(planData);
+        break;
+    }
+  };
+
+  const exportToPDF = (planData: any) => {
+    // Create a printable version
+    const printContent = generatePrintableContent(planData);
+    
+    // Open print dialog
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>${planData.title} - Attack Plan</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 20px; }
+              .header { text-align: center; margin-bottom: 30px; }
+              .node { margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
+              .text-node { background-color: #f0f9ff; }
+              .technique-node { background-color: #fef3c7; }
+              .phase-node { background-color: #ecfdf5; }
+              .metadata { font-size: 12px; color: #666; margin-top: 5px; }
+            </style>
+          </head>
+          <body>
+            ${printContent}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+    toast.success('PDF export opened in new window');
+  };
+
+  const exportToMarkdown = (planData: any) => {
+    const markdown = generateMarkdownContent(planData);
+    
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${planData.title.replace(/\s+/g, '-').toLowerCase()}-attack-plan.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success('Markdown file downloaded');
+  };
+
+  const exportToCSV = (planData: any) => {
+    const csv = generateCSVContent(planData);
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${planData.title.replace(/\s+/g, '-').toLowerCase()}-attack-plan.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast.success('CSV file downloaded');
+  };
+
+  const generatePrintableContent = (planData: any) => {
+    const textNodes = planData.nodes.filter((node: Node) => node.type === 'text');
+    const techniqueNodes = planData.nodes.filter((node: Node) => node.type === 'technique');
+    const phaseNodes = planData.nodes.filter((node: Node) => node.type === 'phase');
+    
+    return `
+      <div class="header">
+        <h1>${planData.title}</h1>
+        <p>${planData.description}</p>
+        <p><small>Generated on ${new Date().toLocaleDateString()}</small></p>
+      </div>
+      
+      ${phaseNodes.length > 0 ? `
+        <h2>Phases</h2>
+        ${phaseNodes.map((node: Node) => `
+          <div class="node phase-node">
+            <h3>${node.data.label || (node.data.phase as any)?.name || 'Phase'}</h3>
+            <div class="metadata">Position: (${Math.round(node.position.x)}, ${Math.round(node.position.y)})</div>
+          </div>
+        `).join('')}
+      ` : ''}
+      
+      ${techniqueNodes.length > 0 ? `
+        <h2>Techniques</h2>
+        ${techniqueNodes.map((node: Node) => `
+          <div class="node technique-node">
+            <h3>${(node.data.technique as any)?.name || 'Technique'}</h3>
+            <p><strong>Phase:</strong> ${(node.data.technique as any)?.phase || 'N/A'}</p>
+            <p><strong>Description:</strong> ${(node.data.technique as any)?.description || 'No description'}</p>
+            <div class="metadata">Position: (${Math.round(node.position.x)}, ${Math.round(node.position.y)})</div>
+          </div>
+        `).join('')}
+      ` : ''}
+      
+      ${textNodes.length > 0 ? `
+        <h2>Notes</h2>
+        ${textNodes.map((node: Node) => `
+          <div class="node text-node">
+            <div>${node.data.content}</div>
+            <div class="metadata">Position: (${Math.round(node.position.x)}, ${Math.round(node.position.y)})</div>
+          </div>
+        `).join('')}
+      ` : ''}
+    `;
+  };
+
+  const generateMarkdownContent = (planData: any) => {
+    const textNodes = planData.nodes.filter((node: Node) => node.type === 'text');
+    const techniqueNodes = planData.nodes.filter((node: Node) => node.type === 'technique');
+    const phaseNodes = planData.nodes.filter((node: Node) => node.type === 'phase');
+    
+    let markdown = `# ${planData.title}\n\n`;
+    markdown += `${planData.description}\n\n`;
+    markdown += `*Generated on ${new Date().toLocaleDateString()}*\n\n`;
+    
+    if (phaseNodes.length > 0) {
+      markdown += `## Phases\n\n`;
+      phaseNodes.forEach((node: Node) => {
+        markdown += `### ${node.data.label || (node.data.phase as any)?.name || 'Phase'}\n`;
+        markdown += `<!-- Position: (${Math.round(node.position.x)}, ${Math.round(node.position.y)}) -->\n\n`;
+      });
+    }
+    
+    if (techniqueNodes.length > 0) {
+      markdown += `## Techniques\n\n`;
+      techniqueNodes.forEach((node: Node) => {
+        markdown += `### ${(node.data.technique as any)?.name || 'Technique'}\n`;
+        markdown += `**Phase:** ${(node.data.technique as any)?.phase || 'N/A'}\n\n`;
+        markdown += `${(node.data.technique as any)?.description || 'No description'}\n\n`;
+        markdown += `<!-- Position: (${Math.round(node.position.x)}, ${Math.round(node.position.y)}) -->\n\n`;
+      });
+    }
+    
+    if (textNodes.length > 0) {
+      markdown += `## Notes\n\n`;
+      textNodes.forEach((node: Node) => {
+        markdown += `${node.data.content}\n\n`;
+        markdown += `<!-- Position: (${Math.round(node.position.x)}, ${Math.round(node.position.y)}) -->\n\n`;
+      });
+    }
+    
+    return markdown;
+  };
+
+  const generateCSVContent = (planData: any) => {
+    const headers = ['Type', 'Name', 'Description', 'Phase', 'Position X', 'Position Y', 'Content'];
+    const rows = [headers.join(',')];
+    
+    planData.nodes.forEach((node: Node) => {
+      const row = [
+        node.type,
+        node.type === 'text' ? 'Text Box' : ((node.data.technique as any)?.name || node.data.label || (node.data.phase as any)?.name || ''),
+        node.type === 'technique' ? ((node.data.technique as any)?.description || '') : '',
+        node.type === 'technique' ? ((node.data.technique as any)?.phase || '') : node.type === 'phase' ? ((node.data.phase as any)?.name || '') : '',
+        Math.round(node.position.x).toString(),
+        Math.round(node.position.y).toString(),
+        node.type === 'text' ? (node.data.content || '') : ''
+      ].map(field => `"${(field || '').toString().replace(/"/g, '""')}"`);
+      
+      rows.push(row.join(','));
+    });
+    
+    return rows.join('\n');
   };
 
   if (proLoading) {
@@ -414,6 +621,7 @@ const AttackPlansPage: React.FC = () => {
               onNodeClick={handleNodeClick}
               onInit={setReactFlowInstance}
               onDrop={handleCanvasDrop}
+              onAddTextBox={handleAddTextBox}
             />
         </div>
 
