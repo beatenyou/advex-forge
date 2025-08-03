@@ -23,7 +23,6 @@ import { AdminDashboard } from "./AdminDashboard";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
 import { TagSelector } from "./TagSelector";
 import { cn } from '@/lib/utils';
-
 import { ParsedTechnique } from "@/lib/markdownParser";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchTechniquesFromDatabase, fetchUserFavorites, toggleTechniqueFavorite } from "@/lib/techniqueDataMigration";
@@ -70,15 +69,15 @@ export const Dashboard = ({
   } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  
+
   // Responsive grid hook
-  const { 
-    containerRef, 
-    columnCount, 
-    cardWidth, 
-    isInitialized, 
+  const {
+    containerRef,
+    columnCount,
+    cardWidth,
+    isInitialized,
     getGridClasses,
-    getCardContextClasses 
+    getCardContextClasses
   } = useResponsiveCardGrid({
     isChatVisible: isChatVisible,
     isWideScreen: isWideScreen,
@@ -86,7 +85,6 @@ export const Dashboard = ({
     minCardWidth: 280,
     maxColumns: 6
   });
-  
   const [techniques, setTechniques] = useState<any[]>([]);
   const [userFavorites, setUserFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -229,11 +227,9 @@ export const Dashboard = ({
     });
     return mapping;
   };
-  
   const allOriginalTags = [...new Set(techniques.flatMap(t => t.tags))];
   const tagMapping = createTagMapping(allOriginalTags);
   const allTags = [...tagMapping.keys()];
-  
   useEffect(() => {
     let filtered = techniques;
 
@@ -249,13 +245,12 @@ export const Dashboard = ({
       // Find the navigation phase name that corresponds to the selected label
       const selectedNavPhase = navigationPhases.find(p => p.label === currentPhase);
       const phaseName = selectedNavPhase ? selectedNavPhase.name : currentPhase;
-      
       filtered = filtered.filter(technique => {
         // Check phases array first (preferred)
         if (technique.phases && Array.isArray(technique.phases)) {
           return technique.phases.some(p => p?.trim() === phaseName);
         }
-        
+
         // Fallback to legacy phase field
         return technique.phase?.trim() === phaseName;
       });
@@ -263,14 +258,10 @@ export const Dashboard = ({
 
     // Tag filtering - Fix the transformation mismatch
     if (selectedTags.length > 0) {
-      filtered = filtered.filter(technique => 
-        selectedTags.some(selectedTag => {
-          const originalTag = tagMapping.get(selectedTag);
-          return technique.tags.some(tag => 
-            tag === originalTag || tag.toLowerCase().replace(/\s+/g, '-') === selectedTag
-          );
-        })
-      );
+      filtered = filtered.filter(technique => selectedTags.some(selectedTag => {
+        const originalTag = tagMapping.get(selectedTag);
+        return technique.tags.some(tag => tag === originalTag || tag.toLowerCase().replace(/\s+/g, '-') === selectedTag);
+      }));
     }
 
     // Move focused technique to top if it exists and is in filtered results
@@ -281,7 +272,6 @@ export const Dashboard = ({
         filtered = [focusedTechnique, ...filtered.filter(t => t.id !== focusedTechniqueId)];
       }
     }
-
     setFilteredTechniques(filtered);
   }, [searchQuery, selectedPhase, selectedTags, techniques, focusedTechniqueId]);
   const toggleTag = (tag: string) => {
@@ -378,7 +368,6 @@ Can you help me understand this scenario and provide guidance on the techniques,
       onToggleChat();
     }
   };
-
   const handleOpenChatWithPromptAndFocus = (prompt: string, techniqueId: string) => {
     setFocusedTechniqueId(techniqueId);
     if (onOpenChatWithPrompt) {
@@ -402,19 +391,16 @@ Can you help me understand this scenario and provide guidance on the techniques,
 
   // Use proper loading state from the hook
   if (phasesLoading) {
-    return (
-      <div className="bg-background min-h-screen flex items-center justify-center">
+    return <div className="bg-background min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading navigation...</p>
         </div>
-      </div>
-    );
+      </div>;
   }
 
   // Set fallback if no selectedPhase is set but phases are loaded
   const effectiveSelectedPhase = selectedPhase || (navigationPhases.length > 0 ? navigationPhases[0].label : "All Techniques");
-
   return <div className="bg-background">
       {/* Header */}
       <header className="border-b border-border bg-gradient-card backdrop-blur-sm sticky top-0 z-50">
@@ -425,7 +411,7 @@ Can you help me understand this scenario and provide guidance on the techniques,
                 <Shield className="w-5 h-5 text-primary-foreground" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Cyber Red Team Attack &amp; Enumeration</h1>
+                <h1 className="text-2xl font-bold text-foreground">Cyber Red Team Attack Techniques</h1>
                 <p className="text-muted-foreground text-sm">A reference for cybersecurity professionals</p>
               </div>
             </div>
@@ -512,22 +498,8 @@ Can you help me understand this scenario and provide guidance on the techniques,
             </div>
 
             {/* Technique Cards Grid - Fully responsive multi-column layout */}
-            <div 
-              ref={containerRef}
-              className={cn(getGridClasses(), getCardContextClasses())}
-            >
-              {filteredTechniques.map(technique => (
-                <TechniqueCard 
-                  key={technique.id} 
-                  technique={technique} 
-                  onToggleFavorite={toggleFavorite} 
-                  onOpenAIChat={onOpenChatWithPrompt}
-                  onOpenAIChatWithFocus={handleOpenChatWithPromptAndFocus}
-                  cardWidth={cardWidth}
-                  columnCount={columnCount}
-                  isFocused={technique.id === focusedTechniqueId}
-                />
-              ))}
+            <div ref={containerRef} className={cn(getGridClasses(), getCardContextClasses())}>
+              {filteredTechniques.map(technique => <TechniqueCard key={technique.id} technique={technique} onToggleFavorite={toggleFavorite} onOpenAIChat={onOpenChatWithPrompt} onOpenAIChatWithFocus={handleOpenChatWithPromptAndFocus} cardWidth={cardWidth} columnCount={columnCount} isFocused={technique.id === focusedTechniqueId} />)}
             </div>
 
             {filteredTechniques.length === 0 && <Card className="bg-gradient-card border-border/50">
