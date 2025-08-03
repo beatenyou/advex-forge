@@ -170,15 +170,20 @@ const AttackPlansPage: React.FC = () => {
           type: 'phase',
           position,
           data: {
-            label: dropData.phase.name,
-            phase: dropData.phase
+            label: dropData.phase.label || dropData.phase.name,
+            phase: {
+              ...dropData.phase,
+              name: dropData.phase.label || dropData.phase.name, // Ensure consistency
+            }
           }
         };
         
         setNodes((nds) => [...nds, newNode]);
+        toast.success(`Added "${dropData.phase.label || dropData.phase.name}" phase to canvas`);
       }
     } catch (error) {
       console.error('Error handling drop:', error);
+      toast.error('Failed to add phase to canvas');
     }
   };
 
