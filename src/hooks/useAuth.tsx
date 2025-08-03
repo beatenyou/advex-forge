@@ -1,24 +1,17 @@
-import { createContext, useContext, useEffect, useState, ReactNode, useMemo, useCallback } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useMemo, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { customStorage } from '@/lib/customStorage';
 
-// Global flag to prevent multiple auth initializations
-let authInitialized = false;
-
-// Circuit breaker to prevent infinite auth loops
-let authRetryCount = 0;
-const MAX_AUTH_RETRIES = 3;
-const RETRY_RESET_TIME = 60000; // 1 minute
-
+// Types for our auth system
 interface UserProfile {
   user_id: string;
-  email: string | null;
-  display_name: string | null;
+  email: string;
+  display_name: string;
   role: string;
+  permissions: string[];
   subscription_status: string;
   is_pro: boolean;
-  permissions: string[];
   ai_usage_current: number;
   ai_quota_limit: number;
   plan_name: string;
@@ -49,276 +42,98 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isRecovering, setIsRecovering] = useState(false);
+  
+  // Use refs to prevent re-renders from causing auth loops
+  const processingAuth = useRef(false);
+  const authSubscription = useRef<{ unsubscribe: () => void } | null>(null);
+  const mounted = useRef(true);
 
-  console.log('[AUTH_PROVIDER] Component render, authInitialized:', authInitialized);
+  console.log('[AUTH_PROVIDER] Component render');
 
-  const fetchUserProfile = async (userId: string, retryCount = 0): Promise<UserProfile | null> => {
+  const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
-      console.log(`[AUTH] Fetching profile for user: ${userId} (attempt ${retryCount + 1})`);
-      
-      const { data, error } = await supabase.rpc('get_complete_user_profile', {
-        target_user_id: userId
-      });
+      const { data, error } = await supabase
+        .rpc('get_complete_user_profile', { target_user_id: userId });
 
       if (error) {
-        console.error('[AUTH] Error fetching user profile:', error);
-        
-        // Retry up to 2 times for network errors
-        if (retryCount < 2 && (error.message?.includes('network') || error.message?.includes('timeout'))) {
-          console.log(`[AUTH] Retrying profile fetch (${retryCount + 1}/2)`);
-          await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
-          return fetchUserProfile(userId, retryCount + 1);
-        }
-        
+        console.error('[AUTH] Profile fetch error:', error);
         return null;
       }
 
-      const profile = data?.[0] || null;
-      
-      if (profile) {
-        console.log(`[AUTH] Profile loaded:`, {
-          email: profile.email,
-          role: profile.role,
-          permissions: profile.permissions,
-          isAdmin: profile.role === 'admin'
-        });
-      } else {
-        console.warn('[AUTH] No profile data returned from get_complete_user_profile');
+      if (data && data.length > 0) {
+        return data[0];
       }
 
-      return profile;
+      return null;
     } catch (error) {
-      console.error('[AUTH] Exception fetching user profile:', error);
+      console.error('[AUTH] Profile fetch exception:', error);
       return null;
     }
   };
 
-  const ensureProfileExists = async (user: User) => {
+  const ensureProfileExists = async (user: User): Promise<void> => {
     try {
-      const { data: existingProfile } = await supabase
+      const { error } = await supabase
         .from('profiles')
-        .select('user_id, role')
-        .eq('user_id', user.id)
-        .single();
+        .upsert({
+          user_id: user.id,
+          email: user.email || '',
+          display_name: user.email?.split('@')[0] || 'User',
+          role: 'user',
+          permissions: ['user'],
+          is_pro: false,
+          subscription_status: 'free'
+        }, {
+          onConflict: 'user_id'
+        });
 
-      if (!existingProfile) {
-        console.log('[AUTH] Creating profile for user:', user.id);
-        // Check if this is an admin user by email
-        const isAdmin = user.email === 'beatenyouog@gmail.com';
-        
-        const { error } = await supabase
-          .from('profiles')
-          .insert({
-            user_id: user.id,
-            email: user.email,
-            display_name: user.email?.split('@')[0] || 'User',
-            role: isAdmin ? 'admin' : 'user',
-            subscription_status: 'free',
-            is_pro: isAdmin,
-            permissions: isAdmin ? ['admin', 'user', 'pro'] : ['user']
-          });
-
-        if (error) {
-          console.error('[AUTH] Failed to create profile:', error);
-        }
+      if (error) {
+        console.error('[AUTH] Error ensuring profile exists:', error);
       }
     } catch (error) {
-      console.error('[AUTH] Error ensuring profile exists:', error);
+      console.error('[AUTH] Exception ensuring profile exists:', error);
     }
   };
 
-  // Session recovery mechanism
-  const recoverSession = async () => {
-    if (isRecovering) return;
-    
-    console.log('[AUTH] Attempting session recovery...');
-    setIsRecovering(true);
-    
+  const recoverSession = async (): Promise<boolean> => {
     try {
-      // Clear any corrupted local storage
-      localStorage.removeItem('supabase.auth.token');
+      setIsRecovering(true);
+      const { data: { session }, error } = await supabase.auth.getSession();
       
-      // Force refresh session
-      const { data: { session: refreshedSession }, error } = await supabase.auth.refreshSession();
-      
-      if (error) {
-        console.error('[AUTH] Session recovery failed:', error);
-        setAuthError('Authentication session could not be recovered. Please sign in again.');
-        await forceSignOut();
+      if (error || !session) {
         return false;
       }
-      
-      if (refreshedSession) {
-        console.log('[AUTH] Session recovered successfully');
-        setAuthError(null);
-        return true;
-      }
-      
-      return false;
+
+      return true;
     } catch (error) {
-      console.error('[AUTH] Session recovery exception:', error);
-      setAuthError('Session recovery failed. Please try signing in again.');
+      console.error('[AUTH] Session recovery error:', error);
       return false;
     } finally {
       setIsRecovering(false);
     }
   };
 
-  // Emergency admin bypass
-  const emergencyAdminAccess = async () => {
-    if (typeof window !== 'undefined' && window.location.hash === '#admin-emergency') {
-      console.log('[AUTH] Emergency admin access triggered');
-      try {
-        const { data: adminProfile } = await supabase.rpc('get_complete_user_profile', {
-          target_user_id: (await supabase.from('profiles').select('user_id').eq('email', 'beatenyouog@gmail.com').single()).data?.user_id
-        });
-          
-        if (adminProfile?.[0]) {
-          setProfile(adminProfile[0]);
-          setAuthError(null);
-          console.log('[AUTH] Emergency admin access granted');
-          return true;
-        }
-      } catch (error) {
-        console.error('[AUTH] Emergency admin access failed:', error);
+  const emergencyAdminAccess = async (): Promise<boolean> => {
+    try {
+      const hash = window.location.hash;
+      if (hash.includes('emergency_admin=true')) {
+        console.log('[AUTH] Emergency admin access attempted');
+        window.location.hash = '';
+        return await recoverSession();
       }
+    } catch (error) {
+      console.error('[AUTH] Emergency access error:', error);
     }
     return false;
   };
 
-  // Force sign out with cleanup
-  const forceSignOut = async () => {
-    console.log('[AUTH] Force sign out initiated');
-    try {
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.error('[AUTH] Error during force sign out:', error);
-    }
-    clearAuthState();
-  };
-
-  useEffect(() => {
-    // Prevent multiple auth initializations globally
-    if (authInitialized) {
-      console.log('[AUTH] Already initialized globally, skipping...');
-      return;
-    }
-    
-    console.log('[AUTH] Starting authentication initialization...');
-    authInitialized = true;
-    
-    let mounted = true;
-    let authSubscription: { unsubscribe: () => void } | null = null;
-    
-    const handleAuthChange = (event: string, session: Session | null) => {
-      if (!mounted) {
-        console.log('[AUTH] Component unmounted, ignoring auth change');
-        return;
-      }
-      
-      console.log(`[AUTH] ${event}:`, session?.user?.email || 'No user', {
-        hasSession: !!session,
-        hasUser: !!session?.user
-      });
-
-      // Always update core state first
-      setSession(session);
-      setUser(session?.user || null);
-      setAuthError(null);
-      
-      // Handle user profile loading
-      if (session?.user) {
-        // Defer profile loading to prevent blocking the auth flow
-        setTimeout(() => {
-          if (mounted) {
-            fetchUserProfile(session.user.id).then(profile => {
-              if (mounted && profile) {
-                setProfile(profile);
-                console.log('[AUTH] Profile loaded successfully');
-              }
-            }).catch(error => {
-              console.error('[AUTH] Profile fetch error:', error);
-              if (mounted) {
-                // Create a basic profile as fallback
-                setProfile({
-                  user_id: session.user.id,
-                  email: session.user.email || '',
-                  display_name: session.user.email?.split('@')[0] || 'User',
-                  role: 'user',
-                  permissions: ['user'],
-                  subscription_status: 'free',
-                  is_pro: false,
-                  ai_usage_current: 0,
-                  ai_quota_limit: 50,
-                  plan_name: 'Free'
-                });
-              }
-            });
-          }
-        }, 100);
-      } else {
-        setProfile(null);
-      }
-      
-      setLoading(false);
-    };
-
-    const initializeAuth = async () => {
-      try {
-        console.log('[AUTH] Setting up auth listener...');
-        
-        // Set up auth listener FIRST
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
-        authSubscription = subscription;
-        
-        console.log('[AUTH] Getting initial session...');
-        
-        // THEN get initial session
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('[AUTH] Session error:', error);
-          if (mounted) {
-            setAuthError(`Session error: ${error.message}`);
-            setLoading(false);
-          }
-          return;
-        }
-        
-        if (mounted) {
-          handleAuthChange('INITIAL_SESSION', session);
-        }
-      } catch (error) {
-        console.error('[AUTH] Auth initialization error:', error);
-        if (mounted) {
-          setAuthError('Failed to initialize authentication');
-          setLoading(false);
-        }
-      }
-    };
-    
-    initializeAuth();
-
-    return () => {
-      console.log('[AUTH] Cleaning up auth effect...');
-      mounted = false;
-      if (authSubscription) {
-        authSubscription.unsubscribe();
-      }
-      // Don't reset authInitialized here to prevent re-initialization
-    };
-  }, []); // Empty deps - run only once
-
-  const clearAuthState = () => {
-    console.log('[AUTH] Clearing auth state and browser storage');
+  const clearAuthState = useCallback(() => {
+    console.log('[AUTH] Clearing auth state');
     setUser(null);
     setSession(null);
     setProfile(null);
-    
-    // Clear any cached auth data
-    localStorage.removeItem('supabase.auth.token');
-    sessionStorage.clear();
-  };
+    setAuthError(null);
+  }, []);
 
   const signOut = useCallback(async () => {
     try {
@@ -328,16 +143,129 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearAuthState();
     } catch (error) {
       console.error('[AUTH] Sign out error:', error);
-      // Clear state even if signOut fails
       clearAuthState();
     } finally {
       setLoading(false);
     }
+  }, [clearAuthState]);
+
+  // Single auth initialization effect
+  useEffect(() => {
+    if (processingAuth.current) {
+      console.log('[AUTH] Already processing, skipping...');
+      return;
+    }
+
+    console.log('[AUTH] Starting authentication initialization...');
+    processingAuth.current = true;
+
+    const handleAuthChange = async (event: string, session: Session | null) => {
+      if (!mounted.current) return;
+      
+      console.log(`[AUTH] ${event}:`, session?.user?.email || 'No user', {
+        hasSession: !!session,
+        hasUser: !!session?.user
+      });
+
+      try {
+        // Update core auth state
+        setSession(session);
+        setUser(session?.user || null);
+        setAuthError(null);
+
+        if (session?.user) {
+          // Ensure profile exists and fetch it
+          await ensureProfileExists(session.user);
+          const userProfile = await fetchUserProfile(session.user.id);
+          
+          if (mounted.current) {
+            if (userProfile) {
+              setProfile(userProfile);
+              console.log('[AUTH] Profile loaded successfully');
+            } else {
+              // Create fallback profile
+              setProfile({
+                user_id: session.user.id,
+                email: session.user.email || '',
+                display_name: session.user.email?.split('@')[0] || 'User',
+                role: 'user',
+                permissions: ['user'],
+                subscription_status: 'free',
+                is_pro: false,
+                ai_usage_current: 0,
+                ai_quota_limit: 50,
+                plan_name: 'Free'
+              });
+            }
+          }
+        } else {
+          setProfile(null);
+        }
+      } catch (error) {
+        console.error('[AUTH] Error in auth change handler:', error);
+        if (mounted.current) {
+          setAuthError('Authentication error occurred');
+        }
+      } finally {
+        if (mounted.current) {
+          setLoading(false);
+        }
+      }
+    };
+
+    const initAuth = async () => {
+      try {
+        // Set up auth listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
+        authSubscription.current = subscription;
+
+        // Get initial session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('[AUTH] Session error:', error);
+          if (mounted.current) {
+            setAuthError(`Session error: ${error.message}`);
+            setLoading(false);
+          }
+          return;
+        }
+
+        // Process initial session
+        await handleAuthChange('INITIAL_SESSION', session);
+        
+      } catch (error) {
+        console.error('[AUTH] Auth initialization error:', error);
+        if (mounted.current) {
+          setAuthError('Failed to initialize authentication');
+          setLoading(false);
+        }
+      }
+    };
+
+    initAuth();
+
+    return () => {
+      console.log('[AUTH] Cleaning up auth effect...');
+      mounted.current = false;
+      if (authSubscription.current) {
+        authSubscription.current.unsubscribe();
+        authSubscription.current = null;
+      }
+    };
+  }, []); // Only run once
+
+  // Update mounted ref when component unmounts
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
   }, []);
 
   const isStorageRestricted = customStorage.isUsingMemoryStorage();
 
-  // Memoize the context value to prevent unnecessary re-renders
+  // Memoize context value to prevent unnecessary re-renders
   const value = useMemo(() => ({
     user,
     session,
