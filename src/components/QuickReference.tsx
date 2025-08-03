@@ -5,13 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-
 interface CheatSheetCommand {
   command: string;
   description: string;
   category: string;
 }
-
 interface CheatSheet {
   id: string;
   title: string;
@@ -20,7 +18,6 @@ interface CheatSheet {
   bg_color: string;
   commands: CheatSheetCommand[];
 }
-
 const copyCommand = (command: string) => {
   navigator.clipboard.writeText(command);
   toast({
@@ -28,18 +25,17 @@ const copyCommand = (command: string) => {
     description: `Command "${command}" copied to clipboard.`
   });
 };
-
-const CommandCard = ({ cheatSheet }: { cheatSheet: CheatSheet }) => (
-  <Card className={`${cheatSheet.bg_color} border-border/30`}>
+const CommandCard = ({
+  cheatSheet
+}: {
+  cheatSheet: CheatSheet;
+}) => <Card className={`${cheatSheet.bg_color} border-border/30`}>
     <CardHeader className="pb-3">
       <CardTitle className="text-lg text-foreground">{cheatSheet.title}</CardTitle>
-      {cheatSheet.description && (
-        <p className="text-sm text-muted-foreground">{cheatSheet.description}</p>
-      )}
+      {cheatSheet.description && <p className="text-sm text-muted-foreground">{cheatSheet.description}</p>}
     </CardHeader>
     <CardContent className="space-y-2">
-      {cheatSheet.commands.map((cmd, index) => (
-        <div key={index} className="flex items-center justify-between p-2 rounded bg-muted/20 border border-border/20">
+      {cheatSheet.commands.map((cmd, index) => <div key={index} className="flex items-center justify-between p-2 rounded bg-muted/20 border border-border/20">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <code className="text-sm font-mono text-primary">{cmd.command}</code>
@@ -49,43 +45,33 @@ const CommandCard = ({ cheatSheet }: { cheatSheet: CheatSheet }) => (
             </div>
             <p className="text-xs text-muted-foreground">{cmd.description}</p>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => copyCommand(cmd.command)}
-            className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary"
-          >
+          <Button variant="ghost" size="sm" onClick={() => copyCommand(cmd.command)} className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary">
             <Copy className="w-3 h-3" />
           </Button>
-        </div>
-      ))}
+        </div>)}
     </CardContent>
-  </Card>
-);
-
+  </Card>;
 export const QuickReference = () => {
   const [cheatSheets, setCheatSheets] = useState<CheatSheet[]>([]);
   const [loading, setLoading] = useState(true);
-
   useEffect(() => {
     fetchCheatSheets();
   }, []);
-
   const fetchCheatSheets = async () => {
     try {
-      const { data, error } = await supabase
-        .from('cheat_sheets')
-        .select('*')
-        .order('created_at', { ascending: false });
-
+      const {
+        data,
+        error
+      } = await supabase.from('cheat_sheets').select('*').order('created_at', {
+        ascending: false
+      });
       if (error) throw error;
-      
+
       // Type cast commands from Json to CheatSheetCommand[]
       const typedData = (data || []).map(sheet => ({
         ...sheet,
         commands: sheet.commands as unknown as CheatSheetCommand[]
       }));
-      
       setCheatSheets(typedData);
     } catch (error) {
       console.error('Error fetching cheat sheets:', error);
@@ -98,40 +84,28 @@ export const QuickReference = () => {
       setLoading(false);
     }
   };
-
   if (loading) {
-    return (
-      <div className="space-y-6">
+    return <div className="space-y-6">
         <div className="flex items-center gap-3">
           <h2 className="text-2xl font-bold text-foreground">Quick Reference Cheat Sheets</h2>
         </div>
         <div className="flex justify-center p-8">
           <div className="text-muted-foreground">Loading cheat sheets...</div>
         </div>
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="space-y-6">
+  return <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <h2 className="text-2xl font-bold text-foreground">Quick Reference Cheat Sheets</h2>
+        <h2 className="text-2xl font-bold text-foreground">Cheat Sheets</h2>
       </div>
 
-      {cheatSheets.length === 0 ? (
-        <div className="text-center py-12">
+      {cheatSheets.length === 0 ? <div className="text-center py-12">
           <h3 className="text-lg font-medium mb-2">No Cheat Sheets Available</h3>
           <p className="text-muted-foreground">
             Cheat sheets will appear here once they are created by an administrator.
           </p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {cheatSheets.map((cheatSheet) => (
-            <CommandCard key={cheatSheet.id} cheatSheet={cheatSheet} />
-          ))}
-        </div>
-      )}
-    </div>
-  );
+        </div> : <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {cheatSheets.map(cheatSheet => <CommandCard key={cheatSheet.id} cheatSheet={cheatSheet} />)}
+        </div>}
+    </div>;
 };
