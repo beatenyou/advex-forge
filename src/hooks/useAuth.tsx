@@ -310,12 +310,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Set up auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (mounted) {
-        handleAuthChange('INITIAL_SESSION', session);
+    // Get initial session with enhanced error handling
+    const initSession = async () => {
+      try {
+        // Check URL for auth tokens (for preview environments)
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlHash = window.location.hash;
+        
+        if (urlHash.includes('access_token') || urlParams.has('session_restore')) {
+          console.log('[AUTH] Found auth data in URL, processing...');
+          // Small delay to let Supabase process URL-based auth
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+        
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('[AUTH] Session retrieval error:', error);
+          if (customStorage.isUsingMemoryStorage()) {
+            setAuthError('Browser storage restrictions detected. Authentication may not persist in this preview environment.');
+          } else {
+            setAuthError(`Session error: ${error.message}`);
+          }
+          return;
+        }
+        
+        if (mounted) {
+          if (session?.user) {
+            // Store session indicator for recovery
+            sessionStorage.setItem('auth_session_active', 'true');
+          }
+          handleAuthChange('INITIAL_SESSION', session);
+        }
+      } catch (error) {
+        console.error('[AUTH] Session initialization failed:', error);
+        if (mounted) {
+          setAuthError('Failed to initialize authentication. Please try refreshing the page.');
+        }
       }
-    });
+    };
+    
+    initSession();
 
     // Reset retry count after timeout
     const resetTimer = setTimeout(() => {

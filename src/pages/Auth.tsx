@@ -42,7 +42,7 @@ export default function Auth() {
     setError('');
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -55,10 +55,19 @@ export default function Auth() {
           description: error.message,
         });
       } else {
+        // Mark successful auth for session recovery
+        sessionStorage.setItem('auth_success', 'true');
+        sessionStorage.setItem('auth_session_active', 'true');
+        
         toast({
           title: "Welcome back!",
           description: "Successfully signed in.",
         });
+        
+        // Navigate after a small delay to ensure session is set
+        setTimeout(() => {
+          navigate('/');
+        }, 200);
       }
     } catch (err) {
       setError('An unexpected error occurred');
@@ -87,11 +96,14 @@ export default function Auth() {
     try {
       const redirectUrl = `${window.location.origin}/`;
       
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: redirectUrl
+          emailRedirectTo: redirectUrl,
+          data: {
+            display_name: email.split('@')[0]
+          }
         }
       });
 
@@ -103,10 +115,21 @@ export default function Auth() {
           description: error.message,
         });
       } else {
+        // Mark successful auth for session recovery
+        sessionStorage.setItem('auth_success', 'true');
+        
         toast({
           title: "Account Created!",
           description: "Please check your email to verify your account.",
         });
+        
+        // If user is immediately confirmed (development environment)
+        if (data.user && data.user.email_confirmed_at) {
+          sessionStorage.setItem('auth_session_active', 'true');
+          setTimeout(() => {
+            navigate('/');
+          }, 200);
+        }
       }
     } catch (err) {
       setError('An unexpected error occurred');
