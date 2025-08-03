@@ -237,7 +237,7 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, cardW
   return (
     <>
       <Card 
-        className="group relative overflow-hidden border-border/50 bg-gradient-card backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/30 hover:-translate-y-0.5 cursor-pointer"
+        className="group relative border-border/50 bg-gradient-card backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/30 hover:-translate-y-0.5 cursor-pointer"
         onClick={() => {
           // Track modal open
           const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
