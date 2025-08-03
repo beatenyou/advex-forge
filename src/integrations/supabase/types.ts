@@ -820,7 +820,10 @@ export type Database = {
           display_name: string | null
           email: string | null
           id: string
+          is_pro: boolean | null
+          permissions: string[] | null
           role: string
+          subscription_status: string | null
           updated_at: string
           user_id: string
         }
@@ -829,7 +832,10 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          is_pro?: boolean | null
+          permissions?: string[] | null
           role?: string
+          subscription_status?: string | null
           updated_at?: string
           user_id: string
         }
@@ -838,7 +844,10 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          is_pro?: boolean | null
+          permissions?: string[] | null
           role?: string
+          subscription_status?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1570,6 +1579,21 @@ export type Database = {
       force_clean_user_auth: {
         Args: { target_user_id: string }
         Returns: undefined
+      }
+      get_complete_user_profile: {
+        Args: { target_user_id: string }
+        Returns: {
+          user_id: string
+          email: string
+          display_name: string
+          role: string
+          subscription_status: string
+          is_pro: boolean
+          permissions: string[]
+          ai_usage_current: number
+          ai_quota_limit: number
+          plan_name: string
+        }[]
       }
       get_user_ai_usage_stats: {
         Args: { start_date_param?: string; end_date_param?: string }
