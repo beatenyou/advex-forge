@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Dashboard } from "@/components/Dashboard";
@@ -10,6 +10,7 @@ import { Shield, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 const Index = () => {
   const { user, loading, nuclearReset, authError } = useAuth();
   const navigate = useNavigate();
+  const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -24,7 +25,37 @@ const Index = () => {
           <CardContent className="text-center p-8 space-y-6">
             <div className="flex items-center justify-center space-x-3">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              <span className="text-lg">Loading...</span>
+              <span className="text-lg">Loading authentication...</span>
+            </div>
+            
+            <div className="text-xs text-muted-foreground">
+              <p>Status: {loading ? 'Loading' : 'Ready'}</p>
+              <p>User: {user ? 'Authenticated' : 'Not authenticated'}</p>
+              {showDebug && (
+                <div className="mt-2 p-2 bg-muted/20 rounded text-left">
+                  <pre className="text-xs">
+                    {JSON.stringify({ loading, hasUser: !!user, hasError: !!authError }, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => setShowDebug(!showDebug)}
+                variant="outline"
+                size="sm"
+              >
+                {showDebug ? 'Hide' : 'Show'} Debug
+              </Button>
+              <Button 
+                onClick={() => window.location.reload()}
+                variant="outline"
+                size="sm"
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Refresh
+              </Button>
             </div>
             
             {authError && (
@@ -34,13 +65,22 @@ const Index = () => {
                   <span className="text-sm">Authentication Issue</span>
                 </div>
                 <p className="text-sm text-muted-foreground">{authError}</p>
-                <Button 
-                  onClick={() => navigate("/auth")}
-                  variant="default"
-                  className="w-full"
-                >
-                  Go to Login
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={() => navigate("/auth")}
+                    variant="default"
+                    className="flex-1"
+                  >
+                    Go to Login
+                  </Button>
+                  <Button 
+                    onClick={nuclearReset}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    Reset Auth
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>

@@ -96,10 +96,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     console.log('🔐 Initializing auth...');
     
+    // Emergency timeout to prevent infinite loading
+    const emergencyTimeout = setTimeout(() => {
+      console.warn('⏰ Emergency timeout: Auth loading took too long, forcing resolution');
+      setLoading(false);
+      if (!user && !session) {
+        setAuthError('Authentication timeout - please try refreshing');
+      }
+    }, 10000); // 10 seconds
+
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('🔐 Auth state change:', event, session?.user?.id);
+        
+        // Clear emergency timeout once we get any auth state change
+        clearTimeout(emergencyTimeout);
         
         setSession(session);
         setUser(session?.user ?? null);
@@ -122,21 +134,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // Get initial session (simple, no aggressive validation)
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error('❌ Initial session error:', error);
-        setAuthError('Could not load session');
+    // Get initial session with timeout and retry
+    const getInitialSession = async () => {
+      try {
+        console.log('🔄 Getting initial session...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        // Clear emergency timeout once we get initial session
+        clearTimeout(emergencyTimeout);
+        
+        if (error) {
+          console.error('❌ Initial session error:', error);
+          setAuthError('Could not load session');
+          setLoading(false);
+          return;
+        }
+        
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+        console.log('🔐 Initial auth state loaded:', session?.user?.id ? 'authenticated' : 'not authenticated');
+      } catch (error) {
+        console.error('❌ Session loading failed:', error);
+        clearTimeout(emergencyTimeout);
+        setAuthError('Failed to connect to authentication service');
+        setLoading(false);
       }
-      
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      console.log('🔐 Initial auth state loaded:', session?.user?.id ? 'authenticated' : 'not authenticated');
-    });
+    };
+
+    getInitialSession();
 
     return () => {
       subscription.unsubscribe();
+      clearTimeout(emergencyTimeout);
     };
   }, []);
 
