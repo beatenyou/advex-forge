@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Settings, FileText, Globe, Users, Database, Shield, Target, Rocket, Wrench, BookOpen, Link, Bot, Key, Megaphone, HelpCircle, MessageSquare, Upload, BarChart3, Navigation, FileEdit, Hash } from "lucide-react";
+import { Settings, FileText, Globe, Users, Database, Shield, Target, Rocket, Wrench, BookOpen, Link, Bot, Key, Megaphone, HelpCircle, MessageSquare, Upload, BarChart3, Navigation, FileEdit, Hash, Building2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,6 +23,8 @@ import { AdminNotesManager } from "@/components/admin/AdminNotesManager";
 import { TechniqueAnalytics } from "@/components/admin/TechniqueAnalytics";
 import { TagManager } from "@/components/admin/TagManager";
 import { MaintenanceManager } from "@/components/admin/MaintenanceManager";
+import { OrganizationManager } from "@/components/enterprise/OrganizationManager";
+import { BulkUserManager } from "@/components/enterprise/BulkUserManager";
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -129,6 +131,13 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                 >
                   <Navigation className="w-4 h-4" />
                   Navigation
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="enterprise" 
+                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-accent/10 hover:bg-accent/20 data-[state=active]:text-foreground min-w-[120px]"
+                >
+                  <Building2 className="w-4 h-4" />
+                  Enterprise
                 </TabsTrigger>
               </div>
               
@@ -446,6 +455,28 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                         </Button>
                       </CardContent>
                     </Card>
+
+                    <Card className="bg-card border border-border hover:border-violet-500/50 transition-all duration-200 cursor-pointer group hover:shadow-lg" onClick={() => setActiveTab("enterprise")}>
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-violet-500/10 flex items-center justify-center group-hover:bg-violet-500/20 transition-colors duration-200">
+                            <Building2 className="w-5 h-5 text-violet-400" />
+                          </div>
+                          <CardTitle className="text-lg">Enterprise Management</CardTitle>
+                        </div>
+                      </CardHeader>
+                      <CardContent className="pt-0 space-y-4">
+                        <p className="text-sm text-muted-foreground leading-relaxed">Manage organizations, bulk user operations, and enterprise-level settings</p>
+                        <Button 
+                          variant="outline"
+                          size="sm" 
+                          className="w-full border-violet-500/30 text-violet-400 hover:bg-violet-500/10 hover:border-violet-500/50"
+                          onClick={(e) => { e.stopPropagation(); setActiveTab("enterprise"); }}
+                        >
+                          Enterprise Control →
+                        </Button>
+                      </CardContent>
+                    </Card>
                   </div>
 
                 </CardContent>
@@ -518,6 +549,82 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
 
             <TabsContent value="maintenance" className="space-y-6">
               <MaintenanceManager />
+            </TabsContent>
+
+            <TabsContent value="enterprise" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Building2 className="w-5 h-5" />
+                      Organization Management
+                    </CardTitle>
+                    <CardDescription>
+                      Create and manage organizations, assign users and configure organization settings
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <OrganizationManager />
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="w-5 h-5" />
+                      Bulk User Management
+                    </CardTitle>
+                    <CardDescription>
+                      Invite multiple users at once and manage user access in bulk
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <BulkUserManager />
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <BarChart3 className="w-5 h-5" />
+                      Enterprise Analytics
+                    </CardTitle>
+                    <CardDescription>
+                      Advanced analytics and reporting for enterprise customers
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center py-8">
+                    <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-muted-foreground">
+                      Enterprise analytics dashboard coming soon. 
+                      This will include organization-level usage reports, 
+                      user activity analytics, and compliance reporting.
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Settings className="w-5 h-5" />
+                      Enterprise Settings
+                    </CardTitle>
+                    <CardDescription>
+                      Configure enterprise-wide settings and policies
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center py-8">
+                    <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-muted-foreground">
+                      Enterprise configuration panel coming soon.
+                      This will include SSO settings, security policies,
+                      and organization-wide feature toggles.
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
           </Tabs>
         </div>

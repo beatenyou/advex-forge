@@ -16,6 +16,7 @@ import AdminStats from "./pages/AdminStats";
 import UserPreferences from "./pages/UserPreferences";
 import FullScreenChat from "./pages/FullScreenChat";
 import AttackPlans from "./pages/AttackPlans";
+import EnterpriseManagement from "./pages/EnterpriseManagement";
 // import AuthDebug from "./pages/AuthDebug"; // Removed - using simplified auth
 import NotFound from "./pages/NotFound";
 import { MaintenancePage } from "./pages/MaintenancePage";
@@ -83,6 +84,13 @@ const App = () => (
                   <ProtectedRoute>
                     <RoleGuard requiredRole="admin">
                       <AdminStats />
+                    </RoleGuard>
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/enterprise" element={
+                  <ProtectedRoute>
+                    <RoleGuard requiredRole="admin">
+                      <EnterpriseManagement />
                     </RoleGuard>
                   </ProtectedRoute>
                 } />
