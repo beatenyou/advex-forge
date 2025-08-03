@@ -42,6 +42,14 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
   const [loading, setLoading] = useState(true);
   const { phases: navigationPhases } = useNavigationPhases();
 
+  // Debug navigation phases
+  useEffect(() => {
+    console.log('🔍 TechniquePalette - Navigation phases loaded:', navigationPhases);
+    navigationPhases.forEach(phase => {
+      console.log(`🔍 Phase: ${phase.name} -> Label: ${phase.label}`);
+    });
+  }, [navigationPhases]);
+
   const handlePhaseDragStart = (e: React.DragEvent, phase: any) => {
     e.dataTransfer.setData('application/json', JSON.stringify({
       type: 'phase',
@@ -56,6 +64,8 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
   const loadTechniques = async () => {
     try {
       const data = await fetchTechniquesFromDatabase();
+      console.log('📊 TechniquePalette - Loaded techniques:', data.length);
+      console.log('📊 TechniquePalette - First technique phases:', data[0]?.phases, data[0]?.phase);
       setTechniques(data);
     } catch (error) {
       console.error('Error loading techniques:', error);
