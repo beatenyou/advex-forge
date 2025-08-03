@@ -33,23 +33,30 @@ export function useUser() {
     
     const fetchProfile = async () => {
       try {
-        // First ensure profile exists
-        await supabase
+        // Check if profile exists first
+        const { data: existingProfile } = await supabase
           .from('profiles')
-          .upsert({
-            user_id: user.id,
-            email: user.email || '',
-            display_name: user.email?.split('@')[0] || 'User',
-            role: 'user',
-            role_enum: 'user',
-            permissions: ['user'],
-            is_pro: false,
-            subscription_status: 'free'
-          }, {
-            onConflict: 'user_id'
-          });
+          .select('user_id')
+          .eq('user_id', user.id)
+          .single();
 
-        // Then fetch complete profile
+        // Only create profile if it doesn't exist (for new users)
+        if (!existingProfile) {
+          await supabase
+            .from('profiles')
+            .insert({
+              user_id: user.id,
+              email: user.email || '',
+              display_name: user.email?.split('@')[0] || 'User',
+              role: 'user',
+              role_enum: 'user',
+              permissions: ['user'],
+              is_pro: false,
+              subscription_status: 'free'
+            });
+        }
+
+        // Fetch complete profile using the database function
         const { data, error } = await supabase
           .rpc('get_complete_user_profile', { target_user_id: user.id });
 
