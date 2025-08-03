@@ -46,6 +46,42 @@ export const AttackPlanCanvas: React.FC<AttackPlanCanvasProps> = ({
     event.dataTransfer.dropEffect = 'move';
   };
 
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Delete' || event.key === 'Backspace') {
+      const selectedNodes = nodes.filter(node => node.selected);
+      const selectedEdges = edges.filter(edge => edge.selected);
+      
+      if (selectedNodes.length > 0 || selectedEdges.length > 0) {
+        event.preventDefault();
+        
+        // Remove selected nodes
+        if (selectedNodes.length > 0) {
+          const nodeChanges = selectedNodes.map(node => ({
+            type: 'remove' as const,
+            id: node.id
+          }));
+          onNodesChange(nodeChanges);
+        }
+        
+        // Remove selected edges
+        if (selectedEdges.length > 0) {
+          const edgeChanges = selectedEdges.map(edge => ({
+            type: 'remove' as const,
+            id: edge.id
+          }));
+          onEdgesChange(edgeChanges);
+        }
+      }
+    }
+  };
+
+  React.useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [nodes, edges, onNodesChange, onEdgesChange]);
+
   return (
     <div 
       className="w-full h-full"

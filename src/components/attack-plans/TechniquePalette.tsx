@@ -72,17 +72,14 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
     
     // Map phase labels to actual phase names in the database
     const phaseMap: { [key: string]: string[] } = {
-      'Reconnaissance': ['Reconnaissance', 'recon'],
-      'Weaponization': ['Weaponization', 'weaponization'],
-      'Delivery': ['Delivery', 'delivery'],
-      'Exploitation': ['Exploitation', 'exploitation'],
-      'Installation': ['Installation', 'installation'],
-      'Command & Control': ['Command & Control', 'c2', 'command-control'],
-      'Actions': ['Actions', 'actions', 'actions-on-objectives']
+      'Active Reconnaissance': ['Reconnaissance', 'recon'],
+      'Establish Foothold': ['Weaponization', 'weaponization'],
+      'Deliver Payload': ['Delivery', 'delivery'],
+      'Exploit Target': ['Exploitation', 'exploitation'],
+      'Install Persistence': ['Installation', 'installation'],
+      'Maintain Access': ['Command & Control', 'c2', 'command-control'],
+      'Execute Objectives': ['Actions', 'actions', 'actions-on-objectives']
     };
-    
-    // Debug logging
-    console.log('Filtering - selectedPhase:', selectedPhase, 'technique phase:', technique.phase, 'technique phases:', technique.phases);
     
     // Get possible phase names for the selected phase
     const possiblePhaseNames = phaseMap[selectedPhase] || [selectedPhase];
@@ -123,9 +120,9 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
             {navigationPhases.map(phase => (
               <Button
                 key={phase.name}
-                variant={selectedPhase === phase.name ? "default" : "outline"}
+                variant={selectedPhase === phase.label ? "default" : "outline"}
                 size="sm"
-                onClick={() => setSelectedPhase(phase.name)}
+                onClick={() => setSelectedPhase(phase.label)}
                 draggable
                 onDragStart={(e) => handlePhaseDragStart(e, phase)}
                 className="text-xs cursor-grab active:cursor-grabbing hover:cursor-grab"
