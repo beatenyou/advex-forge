@@ -194,174 +194,87 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
-    let retryTimer: NodeJS.Timeout;
-
-    const handleAuthChange = async (event: string, session: Session | null) => {
+    
+    const handleAuthChange = (event: string, session: Session | null) => {
+      if (!mounted) return;
+      
       console.log(`[AUTH] ${event}:`, session?.user?.email || 'No user', {
         hasSession: !!session,
-        hasUser: !!session?.user,
-        retryCount: authRetryCount
+        hasUser: !!session?.user
       });
 
-      if (!mounted) return;
-
-      // Circuit breaker check
-      if (authRetryCount >= MAX_AUTH_RETRIES) {
-        console.warn('[AUTH] Max retries reached, attempting emergency access');
-        const emergencySuccess = await emergencyAdminAccess();
-        if (!emergencySuccess) {
-          setAuthError('Authentication failed after multiple attempts. Please refresh the page.');
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Clear any previous errors on new auth events
-      if (event !== 'TOKEN_REFRESHED') {
-        setAuthError(null);
-      }
-
+      // Always update core state first
+      setSession(session);
+      setUser(session?.user || null);
+      setAuthError(null);
+      
+      // Handle user profile in a separate effect to prevent loops
       if (session?.user) {
-        console.log('[AUTH] Valid session found, processing user...');
-        setUser(session.user);
-        setSession(session);
-        
-        try {
-          // Ensure profile exists first
-          await ensureProfileExists(session.user);
-          
-          // Then fetch complete profile data with validation
-          const userProfile = await fetchUserProfile(session.user.id);
-          
+        // Defer profile loading to prevent blocking the auth flow
+        setTimeout(() => {
           if (mounted) {
-            if (userProfile) {
-              // Validate profile has required data
-              if (!userProfile.permissions || userProfile.permissions.length === 0) {
-                console.warn('[AUTH] Profile missing permissions, fixing...');
-                
-                // For admin users, ensure they have proper permissions
-                if (userProfile.role === 'admin' || session.user.email === 'beatenyouog@gmail.com') {
-                  userProfile.permissions = ['admin', 'user', 'pro'];
-                  userProfile.is_pro = true;
-                  
-                  // Update the database to fix this permanently
-                  await supabase
-                    .from('profiles')
-                    .update({ 
-                      permissions: ['admin', 'user', 'pro'], 
-                      is_pro: true,
-                      role: 'admin' 
-                    })
-                    .eq('user_id', session.user.id);
-                }
+            fetchUserProfile(session.user.id).then(profile => {
+              if (mounted && profile) {
+                setProfile(profile);
               }
-              
-              setProfile(userProfile);
-              console.log('[AUTH] Profile successfully set with permissions:', userProfile.permissions);
-              
-              // Reset retry count on successful auth
-              authRetryCount = 0;
-            } else {
-              console.error('[AUTH] Failed to load user profile, attempting recovery...');
-              authRetryCount++;
-              
-              if (authRetryCount < MAX_AUTH_RETRIES) {
-                // Attempt session recovery
-                const recovered = await recoverSession();
-                if (!recovered) {
-                  console.log('[AUTH] Recovery failed, will retry...');
-                  retryTimer = setTimeout(() => {
-                    if (mounted) {
-                      handleAuthChange('RETRY_AUTH', session);
-                    }
-                  }, 2000 * authRetryCount);
-                }
-              } else {
-                setAuthError('Unable to load user profile after multiple attempts.');
+            }).catch(error => {
+              console.error('[AUTH] Profile fetch error:', error);
+              if (mounted) {
+                setProfile({
+                  user_id: session.user.id,
+                  email: session.user.email || '',
+                  display_name: session.user.email?.split('@')[0] || 'User',
+                  role: 'user',
+                  permissions: ['user'],
+                  subscription_status: 'free',
+                  is_pro: false,
+                  ai_usage_current: 0,
+                  ai_quota_limit: 50,
+                  plan_name: 'Free'
+                });
               }
-              
-              setProfile(null);
-            }
+            });
           }
-        } catch (error) {
-          console.error('[AUTH] Error in auth change handler:', error);
-          authRetryCount++;
-          
-          if (mounted) {
-            if (authRetryCount >= MAX_AUTH_RETRIES) {
-              setAuthError('Authentication error occurred. Please try signing in again.');
-            }
-            setProfile(null);
-          }
-        }
+        }, 0);
       } else {
-        console.log('[AUTH] No session, clearing auth state');
-        setUser(null);
-        setSession(null);
         setProfile(null);
-        authRetryCount = 0; // Reset on logout
       }
-
-      if (mounted) {
-        setLoading(false);
-      }
+      
+      setLoading(false);
     };
 
     // Set up auth listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
 
-    // Get initial session with enhanced error handling
-    const initSession = async () => {
+    // Get initial session
+    const initializeAuth = async () => {
       try {
-        // Check URL for auth tokens (for preview environments)
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlHash = window.location.hash;
-        
-        if (urlHash.includes('access_token') || urlParams.has('session_restore')) {
-          console.log('[AUTH] Found auth data in URL, processing...');
-          // Small delay to let Supabase process URL-based auth
-          await new Promise(resolve => setTimeout(resolve, 1500));
-        }
-        
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('[AUTH] Session retrieval error:', error);
-          if (customStorage.isUsingMemoryStorage()) {
-            setAuthError('Browser storage restrictions detected. Authentication may not persist in this preview environment.');
-          } else {
-            setAuthError(`Session error: ${error.message}`);
-          }
+          console.error('[AUTH] Session error:', error);
+          setAuthError(`Session error: ${error.message}`);
+          setLoading(false);
           return;
         }
         
         if (mounted) {
-          if (session?.user) {
-            // Store session indicator for recovery
-            sessionStorage.setItem('auth_session_active', 'true');
-          }
           handleAuthChange('INITIAL_SESSION', session);
         }
       } catch (error) {
-        console.error('[AUTH] Session initialization failed:', error);
+        console.error('[AUTH] Auth initialization error:', error);
         if (mounted) {
-          setAuthError('Failed to initialize authentication. Please try refreshing the page.');
+          setAuthError('Failed to initialize authentication');
+          setLoading(false);
         }
       }
     };
     
-    initSession();
-
-    // Reset retry count after timeout
-    const resetTimer = setTimeout(() => {
-      authRetryCount = 0;
-    }, RETRY_RESET_TIME);
+    initializeAuth();
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
-      if (retryTimer) clearTimeout(retryTimer);
-      clearTimeout(resetTimer);
     };
   }, []);
 
