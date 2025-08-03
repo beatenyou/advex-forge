@@ -29,28 +29,34 @@ const CommandCard = ({
   cheatSheet
 }: {
   cheatSheet: CheatSheet;
-}) => <Card className={`${cheatSheet.bg_color} border-border/30`}>
-    <CardHeader className="pb-3">
-      <CardTitle className="text-lg text-foreground">{cheatSheet.title}</CardTitle>
-      {cheatSheet.description && <p className="text-sm text-muted-foreground">{cheatSheet.description}</p>}
-    </CardHeader>
-    <CardContent className="space-y-2">
-      {cheatSheet.commands.map((cmd, index) => <div key={index} className="flex items-center justify-between p-2 rounded bg-muted/20 border border-border/20">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <code className="text-sm font-mono text-primary">{cmd.command}</code>
-              <Badge variant="outline" className="text-xs bg-muted/50 text-muted-foreground">
-                {cmd.category}
-              </Badge>
+}) => {
+  const sectionId = `cheat-sheet-${cheatSheet.title.toLowerCase().replace(/\s+/g, '-')}`;
+  
+  return (
+    <Card id={sectionId} className={`${cheatSheet.bg_color} border-border/30`}>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg text-foreground">{cheatSheet.title}</CardTitle>
+        {cheatSheet.description && <p className="text-sm text-muted-foreground">{cheatSheet.description}</p>}
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {cheatSheet.commands.map((cmd, index) => <div key={index} className="flex items-center justify-between p-2 rounded bg-muted/20 border border-border/20">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <code className="text-sm font-mono text-primary">{cmd.command}</code>
+                <Badge variant="outline" className="text-xs bg-muted/50 text-muted-foreground">
+                  {cmd.category}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">{cmd.description}</p>
             </div>
-            <p className="text-xs text-muted-foreground">{cmd.description}</p>
-          </div>
-          <Button variant="ghost" size="sm" onClick={() => copyCommand(cmd.command)} className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary">
-            <Copy className="w-3 h-3" />
-          </Button>
-        </div>)}
-    </CardContent>
-  </Card>;
+            <Button variant="ghost" size="sm" onClick={() => copyCommand(cmd.command)} className="h-8 w-8 p-0 hover:bg-primary/10 hover:text-primary">
+              <Copy className="w-3 h-3" />
+            </Button>
+          </div>)}
+      </CardContent>
+    </Card>
+  );
+};
 export const QuickReference = () => {
   const [cheatSheets, setCheatSheets] = useState<CheatSheet[]>([]);
   const [loading, setLoading] = useState(true);

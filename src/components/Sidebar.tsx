@@ -41,6 +41,13 @@ interface LinkTab {
   is_active: boolean;
 }
 
+interface CheatSheet {
+  id: string;
+  title: string;
+  description?: string;
+  category: string;
+}
+
 interface SidebarProps {
   techniques: Technique[];
   onTechniqueClick: (technique: Technique) => void;
@@ -69,12 +76,14 @@ export const Sidebar = ({
   const { phases: navigationPhases } = useNavigationPhases();
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [linkTabs, setLinkTabs] = useState<LinkTab[]>([]);
+  const [cheatSheets, setCheatSheets] = useState<CheatSheet[]>([]);
   
   const favoriteItems = techniques.filter(technique => technique.starred);
 
   useEffect(() => {
     fetchScenarios();
     fetchLinkTabs();
+    fetchCheatSheets();
 
     // Set up real-time subscription for scenarios
     const scenariosChannel = supabase
@@ -93,6 +102,23 @@ export const Sidebar = ({
       )
       .subscribe();
 
+    // Set up real-time subscription for cheat sheets
+    const cheatSheetsChannel = supabase
+      .channel('cheat-sheets-sidebar-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'cheat_sheets'
+        },
+        () => {
+          console.log('Cheat sheets table changed, refreshing sidebar...');
+          fetchCheatSheets();
+        }
+      )
+      .subscribe();
+
     // Listen for manual refresh events
     const handleRefreshScenarios = () => {
       fetchScenarios();
@@ -102,6 +128,7 @@ export const Sidebar = ({
 
     return () => {
       supabase.removeChannel(scenariosChannel);
+      supabase.removeChannel(cheatSheetsChannel);
       window.removeEventListener('refresh-scenarios', handleRefreshScenarios);
     };
   }, []);
@@ -133,6 +160,20 @@ export const Sidebar = ({
       setLinkTabs(data || []);
     } catch (error) {
       console.error('Error fetching link tabs:', error);
+    }
+  };
+
+  const fetchCheatSheets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('cheat_sheets')
+        .select('id, title, description, category')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setCheatSheets(data || []);
+    } catch (error) {
+      console.error('Error fetching cheat sheets:', error);
     }
   };
 
@@ -336,62 +377,89 @@ export const Sidebar = ({
           <CardTitle className="text-lg text-foreground">Quick Links</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {/* Cheat Sheets Button */}
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-sm h-8 text-muted-foreground hover:text-foreground hover:bg-muted mb-3"
-            onClick={() => {
-              const element = document.getElementById('cheat-sheets-section');
-              if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }
-            }}
-          >
-            <Hash className="w-4 h-4 mr-2" />
-            Cheat Sheets
-          </Button>
-            {linkTabs.reduce((acc, tab) => {
-              if (!acc[tab.category]) acc[tab.category] = [];
-              acc[tab.category].push(tab);
-              return acc;
-            }, {} as Record<string, LinkTab[]>) && 
-              Object.entries(
-                linkTabs.reduce((acc, tab) => {
-                  if (!acc[tab.category]) acc[tab.category] = [];
-                  acc[tab.category].push(tab);
-                  return acc;
-                }, {} as Record<string, LinkTab[]>)
-              ).map(([category, tabs]) => (
-                <div key={category}>
-                  <h4 className="text-xs font-medium text-primary mb-2 uppercase tracking-wide">
-                    {category}
-                  </h4>
-                  <div className="space-y-1">
-                    {tabs.map(tab => (
-                      <a
-                        key={tab.id}
-                        href={tab.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-start gap-2 p-2 bg-card/60 rounded-md border border-border hover:border-primary/50 hover:bg-primary/10 transition-all duration-200 group text-sm"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
-                        <div className="flex-1 min-w-0">
-                          <span className="font-medium text-foreground group-hover:text-primary transition-colors block truncate text-xs">
-                            {tab.title}
-                          </span>
-                          {tab.description && (
-                            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                              {tab.description}
-                            </p>
-                          )}
-                        </div>
-                      </a>
-                    ))}
-                  </div>
+          {/* Cheat Sheets Section */}
+          {cheatSheets.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-xs font-medium text-primary uppercase tracking-wide">
+                CHEAT SHEETS
+              </h4>
+              <div className="space-y-1">
+                {cheatSheets.map((sheet) => (
+                  <TooltipProvider key={sheet.id}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          className="flex items-start gap-2 p-2 bg-card/60 rounded-md border border-border hover:border-primary/50 hover:bg-primary/10 transition-all duration-200 group text-sm w-full"
+                          onClick={() => {
+                            const sectionId = `cheat-sheet-${sheet.title.toLowerCase().replace(/\s+/g, '-')}`;
+                            const element = document.getElementById(sectionId);
+                            if (element) {
+                              element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                          }}
+                        >
+                          <Hash className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                          <div className="flex-1 min-w-0 text-left">
+                            <span className="font-medium text-foreground group-hover:text-primary transition-colors block truncate text-xs">
+                              {sheet.title}
+                            </span>
+                            {sheet.description && (
+                              <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                                {sheet.description}
+                              </p>
+                            )}
+                          </div>
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" className="max-w-xs">
+                        <p className="text-sm">{sheet.description || sheet.title}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* External Links Section */}
+          {linkTabs.length > 0 && 
+            Object.entries(
+              linkTabs.reduce((acc, tab) => {
+                if (!acc[tab.category]) acc[tab.category] = [];
+                acc[tab.category].push(tab);
+                return acc;
+              }, {} as Record<string, LinkTab[]>)
+            ).map(([category, tabs]) => (
+              <div key={category} className="space-y-2">
+                <h4 className="text-xs font-medium text-primary uppercase tracking-wide">
+                  {category}
+                </h4>
+                <div className="space-y-1">
+                  {tabs.map(tab => (
+                    <a
+                      key={tab.id}
+                      href={tab.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-start gap-2 p-2 bg-card/60 rounded-md border border-border hover:border-primary/50 hover:bg-primary/10 transition-all duration-200 group text-sm"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 text-primary mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform" />
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-foreground group-hover:text-primary transition-colors block truncate text-xs">
+                          {tab.title}
+                        </span>
+                        {tab.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                            {tab.description}
+                          </p>
+                        )}
+                      </div>
+                    </a>
+                  ))}
                 </div>
-              ))
-            }
+              </div>
+            ))
+          }
         </CardContent>
       </Card>
     </aside>
