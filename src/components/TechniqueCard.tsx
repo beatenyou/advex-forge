@@ -220,24 +220,20 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
           setIsModalOpen(true);
         }}
       >
-        <CardHeader className="pb-3">
-          <div className="grid grid-cols-[1fr_auto_auto] items-start gap-2">
-            {/* Title and Badge Area */}
-            <div className="min-w-0">
-              <CardTitle className="text-lg text-foreground group-hover:text-primary transition-colors mb-2 pr-2">
+        <CardHeader className="pb-2">
+          <div className="flex items-start justify-between gap-2 mb-2">
+            <div className="min-w-0 flex-1">
+              <CardTitle className="text-base text-foreground group-hover:text-primary transition-colors leading-tight mb-1">
                 {technique.title}
               </CardTitle>
               {(technique.mitre_id && isValidMitreId(technique.mitre_id)) && (
-                <div className="flex flex-wrap gap-1 mb-2">
-                  <Badge variant="outline" className="text-xs bg-muted/20 text-muted-foreground border-muted/30">
-                    {extractCleanMitreId(technique.mitre_id)}
-                  </Badge>
-                </div>
+                <Badge variant="outline" className="text-xs bg-muted/20 text-muted-foreground border-muted/30">
+                  {extractCleanMitreId(technique.mitre_id)}
+                </Badge>
               )}
             </div>
             
-            {/* Star Button - Always Top Right */}
-            <div className="flex items-start justify-center pt-1">
+            <div className="flex items-center gap-1 flex-shrink-0">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -249,10 +245,10 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                       disabled={isToggling}
                     >
                       {isToggling ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                        <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
                       ) : (
                         <Star 
-                          className={`w-4 h-4 transition-colors ${
+                          className={`w-3 h-3 transition-colors ${
                             technique.starred ? "fill-cyber-orange text-cyber-orange" : "text-muted-foreground hover:text-cyber-orange"
                           }`} 
                         />
@@ -264,10 +260,6 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-            </div>
-            
-            {/* Action Icons */}
-            <div className="flex items-start gap-2 pt-1">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -277,7 +269,7 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                       className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
                       onClick={handleAIChatClick}
                     >
-                      <MessageSquare className="w-4 h-4 text-cyber-purple" />
+                      <MessageSquare className="w-3 h-3 text-cyber-purple" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -285,109 +277,97 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                   </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        
-                        // Track command generation
-                        const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
-                        trackTechniqueCommandGenerated({
-                          techniqueId: technique.id,
-                          techniqueTitle: technique.title,
-                          mitreId: technique.mitre_id,
-                          phase: primaryPhase,
-                          category: technique.category
-                        });
-                        
-                        setIsCommandGenOpen(true);
-                      }}
-                    >
-                      <Bolt className="w-4 h-4 text-cyber-blue" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Generate Commands</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1 cursor-help">
-                      <Zap className="w-4 h-4 text-cyber-orange" />
-                      <span className="text-xs text-muted-foreground">{technique.tools.length} tools</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Available tools</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
             </div>
           </div>
-          <CardDescription className="text-muted-foreground line-clamp-2">
+          <CardDescription className="text-sm text-muted-foreground line-clamp-2 mb-2">
             {technique.description}
           </CardDescription>
         </CardHeader>
 
-        <CardContent>
-          <div className="space-y-3">
+        <CardContent className="pt-0">
+          <div className="space-y-2">
             {/* Tags */}
             <div className="flex flex-wrap gap-1">
-              {technique.tags.slice(0, 3).map(tag => (
+              {technique.tags.slice(0, 2).map(tag => (
                 <Badge 
                   key={tag} 
                   variant="secondary" 
-                  className="text-xs bg-muted/30 text-muted-foreground border-border/50"
+                  className="text-xs bg-muted/30 text-muted-foreground border-border/50 px-1.5 py-0.5"
                 >
                   {tag}
                 </Badge>
               ))}
-              {technique.tags.length > 3 && (
-                <Badge variant="secondary" className="text-xs bg-muted/30 text-muted-foreground">
-                  +{technique.tags.length - 3}
+              {technique.tags.length > 2 && (
+                <Badge variant="secondary" className="text-xs bg-muted/30 text-muted-foreground px-1.5 py-0.5">
+                  +{technique.tags.length - 2}
                 </Badge>
               )}
             </div>
 
-            {/* Tools */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Tools:</span>
-              <div className="flex gap-1">
-                {technique.tools.slice(0, 2).map(tool => (
-                  <span key={tool} className="text-xs font-mono bg-muted/30 px-2 py-1 rounded text-primary">
-                    {tool}
-                  </span>
-                ))}
-                {technique.tools.length > 2 && (
-                  <span className="text-xs text-muted-foreground">+{technique.tools.length - 2}</span>
-                )}
+            {/* Tools - compact display */}
+            {technique.tools.length > 0 && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Zap className="w-3 h-3" />
+                <span>
+                  {technique.tools.slice(0, 2).join(", ")}
+                  {technique.tools.length > 2 && ` +${technique.tools.length - 2} more`}
+                </span>
               </div>
-            </div>
+            )}
 
             {/* Actions */}
             <div className="flex items-center justify-between pt-2 border-t border-border/30">
               <div className="flex flex-wrap gap-1">
-                {getDisplayPhases(technique).map((phase, index) => (
-                    <Badge key={index} variant="outline" className={getPhaseColor(phase)}>
+                {getDisplayPhases(technique).slice(0, 2).map((phase, index) => (
+                    <Badge key={index} variant="outline" className={`text-xs px-1.5 py-0.5 ${getPhaseColor(phase)}`}>
                       {phase}
                     </Badge>
                   ))}
+                {getDisplayPhases(technique).length > 2 && (
+                  <Badge variant="outline" className="text-xs px-1.5 py-0.5">
+                    +{getDisplayPhases(technique).length - 2}
+                  </Badge>
+                )}
               </div>
               <div className="flex items-center gap-1">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          
+                          // Track command generation
+                          const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
+                          trackTechniqueCommandGenerated({
+                            techniqueId: technique.id,
+                            techniqueTitle: technique.title,
+                            mitreId: technique.mitre_id,
+                            phase: primaryPhase,
+                            category: technique.category
+                          });
+                          
+                          setIsCommandGenOpen(true);
+                        }}
+                      >
+                        <Bolt className="w-3 h-3 text-cyber-blue" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Generate Commands</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary"
+                        className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
                         onClick={(e) => {
                           e.stopPropagation();
                           
@@ -404,12 +384,11 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                           setIsModalOpen(true);
                         }}
                       >
-                        <Eye className="w-3 h-3 mr-1" />
-                        View
+                        <Eye className="w-3 h-3" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>View technique details</p>
+                      <p>View details</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>

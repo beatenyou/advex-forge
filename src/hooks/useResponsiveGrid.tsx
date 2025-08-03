@@ -12,8 +12,8 @@ export const useResponsiveGrid = ({
   isChatVisible, 
   isWideScreen = false,
   sidebarVisible = true,
-  minCardWidth = 220, 
-  gap = 16 
+  minCardWidth = 260, 
+  gap = 16
 }: UseResponsiveGridOptions) => {
   const [columnCount, setColumnCount] = useState(4);
   const [isInitialized, setIsInitialized] = useState(false);
