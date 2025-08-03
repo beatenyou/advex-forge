@@ -79,7 +79,7 @@ export const Dashboard = ({
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
   // Get responsive grid classes based on screen size and chat visibility
   const getGridClasses = () => {
-    const baseClasses = "grid gap-4 w-full auto-rows-fr";
+    const baseClasses = "grid gap-4 w-full";
     if (isMobile) {
       return `${baseClasses} grid-cols-1 sm:grid-cols-2`;
     }
