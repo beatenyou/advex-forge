@@ -60,7 +60,9 @@ export default {
 					green: 'hsl(var(--cyber-green))',
 					red: 'hsl(var(--cyber-red))',
 					purple: 'hsl(var(--cyber-purple))',
-					orange: 'hsl(var(--cyber-orange))'
+					orange: 'hsl(var(--cyber-orange))',
+					yellow: 'hsl(var(--cyber-yellow))',
+					cyan: 'hsl(var(--cyber-cyan))'
 				},
 				popover: {
 					DEFAULT: 'hsl(var(--popover))',

@@ -51,6 +51,8 @@
     --cyber-red: 0 84% 60%;
     --cyber-purple: 270 100% 70%;
     --cyber-orange: 38 92% 50%;
+    --cyber-yellow: 45 93% 58%;
+    --cyber-cyan: 180 100% 50%;
 
     /* Gradients for cyber aesthetic */
     --gradient-primary: linear-gradient(135deg, hsl(var(--cyber-blue)) 0%, hsl(var(--cyber-blue-dark)) 100%);

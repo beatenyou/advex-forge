@@ -68,6 +68,28 @@ const generateMitreUrl = (mitreId: string): string => {
   return `https://attack.mitre.org/techniques/${cleanId}/`;
 };
 
+// Phase mapping to translate legacy technique phases to navigation phase labels
+const createPhaseMapping = () => {
+  const mapping: Record<string, string> = {
+    'Reconnaissance': 'Active Reconnaissance',
+    'Command and Control': 'C2',
+    'Initial Access': 'Establish Foothold',
+    'Credential Access': 'Privilege Escalation',
+    'Discovery': 'Enumeration',
+    'Lateral Movement': 'Lateral Movement',
+    'Effects': 'Effects'
+  };
+  return mapping;
+};
+
+const phaseMapping = createPhaseMapping();
+
+// Function to normalize and map phases
+const normalizeAndMapPhase = (phase: string): string => {
+  const normalized = phase?.trim();
+  return phaseMapping[normalized] || normalized;
+};
+
 interface TechniqueCardProps {
   technique: Technique;
   onToggleFavorite: (techniqueId: string) => Promise<void>;
@@ -150,12 +172,30 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
   };
 
   const getPhaseColor = (phase: string) => {
-    switch (phase) {
-      case "Initial Access": return "bg-cyber-blue/20 text-cyber-blue border-cyber-blue/30";
-      case "Reconnaissance": return "bg-cyber-green/20 text-cyber-green border-cyber-green/30";
-      case "Credential Access": return "bg-cyber-purple/20 text-cyber-purple border-cyber-purple/30";
-      case "Lateral Movement": return "bg-cyber-orange/20 text-cyber-orange border-cyber-orange/30";
-      default: return "bg-muted/20 text-muted-foreground border-muted/30";
+    // Handle both legacy and mapped phase names
+    const normalizedPhase = normalizeAndMapPhase(phase);
+    switch (normalizedPhase) {
+      case "Establish Foothold": 
+      case "Initial Access": 
+        return "bg-cyber-blue/20 text-cyber-blue border-cyber-blue/30";
+      case "Active Reconnaissance": 
+      case "Reconnaissance": 
+        return "bg-cyber-green/20 text-cyber-green border-cyber-green/30";
+      case "Privilege Escalation": 
+      case "Credential Access": 
+        return "bg-cyber-purple/20 text-cyber-purple border-cyber-purple/30";
+      case "Lateral Movement": 
+        return "bg-cyber-orange/20 text-cyber-orange border-cyber-orange/30";
+      case "Enumeration": 
+      case "Discovery": 
+        return "bg-cyber-yellow/20 text-cyber-yellow border-cyber-yellow/30";
+      case "Effects": 
+        return "bg-cyber-red/20 text-cyber-red border-cyber-red/30";
+      case "C2": 
+      case "Command and Control": 
+        return "bg-cyber-cyan/20 text-cyber-cyan border-cyber-cyan/30";
+      default: 
+        return "bg-muted/20 text-muted-foreground border-muted/30";
     }
   };
 
@@ -184,11 +224,14 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                 {technique.title}
               </CardTitle>
               <div className="flex flex-wrap gap-1 mb-2">
-                {(technique.phases && technique.phases.length > 0 ? technique.phases : technique.phase ? [technique.phase] : []).map((phase, index) => (
-                  <Badge key={index} variant="outline" className={`text-xs ${getPhaseColor(phase)}`}>
-                    {phase}
-                  </Badge>
-                ))}
+                {(technique.phases && technique.phases.length > 0 ? technique.phases : technique.phase ? [technique.phase] : []).map((phase, index) => {
+                  const mappedPhase = normalizeAndMapPhase(phase);
+                  return (
+                    <Badge key={index} variant="outline" className={`text-xs ${getPhaseColor(phase)}`}>
+                      {mappedPhase}
+                    </Badge>
+                  );
+                })}
                 {(technique.mitre_id && isValidMitreId(technique.mitre_id)) && (
                   <Badge variant="outline" className="text-xs bg-muted/20 text-muted-foreground border-muted/30">
                     {extractCleanMitreId(technique.mitre_id)}
@@ -335,11 +378,14 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
             {/* Actions */}
             <div className="flex items-center justify-between pt-2 border-t border-border/30">
               <div className="flex flex-wrap gap-1">
-                {(technique.phases || [technique.phase]).filter(Boolean).map((phase, index) => (
-                  <Badge key={index} variant="outline" className={getPhaseColor(phase!)}>
-                    {phase}
-                  </Badge>
-                ))}
+                {(technique.phases || [technique.phase]).filter(Boolean).map((phase, index) => {
+                  const mappedPhase = normalizeAndMapPhase(phase!);
+                  return (
+                    <Badge key={index} variant="outline" className={getPhaseColor(phase!)}>
+                      {mappedPhase}
+                    </Badge>
+                  );
+                })}
               </div>
               <div className="flex items-center gap-1">
                 <TooltipProvider>
