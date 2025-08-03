@@ -18,7 +18,8 @@ const Index = () => {
     authInitialized,
     redirecting,
     redirectCount,
-    debugInfo
+    debugInfo,
+    incrementRedirectCount
   } = useAuth();
   const navigate = useNavigate();
   const [showDebug, setShowDebug] = useState(false);
@@ -30,15 +31,19 @@ const Index = () => {
       return;
     }
 
-    // Only redirect if auth is completely initialized and user is not found
+    // Only redirect if ALL conditions are met:
+    // 1. Auth system is fully initialized
+    // 2. Not currently loading
+    // 3. No user authenticated
+    // 4. No authentication errors
+    // 5. System is not stuck
+    // 6. Not already redirecting
     if (authInitialized && !loading && !user && !authError && !isStuck && !redirecting) {
-      console.log('Redirecting to auth page...');
-      // Add a small delay to prevent immediate redirect loops
-      setTimeout(() => {
-        navigate("/auth");
-      }, 100);
+      console.log('All conditions met for redirect to auth page');
+      incrementRedirectCount();
+      navigate("/auth");
     }
-  }, [authInitialized, loading, user, authError, isStuck, redirecting, redirectCount, navigate]);
+  }, [authInitialized, loading, user, authError, isStuck, redirecting, redirectCount, navigate, incrementRedirectCount]);
 
   // Show loading or circuit breaker state
   if (loading || (!user && authInitialized && redirectCount < 3) || redirecting) {

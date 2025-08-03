@@ -20,24 +20,20 @@ export default function Auth() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if user is already logged in
-    const checkAuth = async () => {
+    // REMOVED: Competing auth listener that was causing the infinite loop
+    // The useAuth hook is the single source of truth for auth state
+    // If user is authenticated, they'll be redirected by the routing logic
+    
+    // Just check once on mount without setting up a listener
+    const checkInitialAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
+      if (session?.user) {
+        console.log('User already authenticated, redirecting to dashboard');
         navigate('/');
       }
     };
     
-    checkAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate('/');
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    checkInitialAuth();
   }, [navigate]);
 
   const handleSignIn = async (e: React.FormEvent) => {
