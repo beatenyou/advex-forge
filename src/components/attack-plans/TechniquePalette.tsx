@@ -40,20 +40,39 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPhase, setSelectedPhase] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [forceRenderKey, setForceRenderKey] = useState(Date.now());
   const { phases: navigationPhases, loading: phasesLoading } = useNavigationPhases();
 
-  // Reset selected phase when navigation phases change
+  // Force complete re-render when navigation phases change
   useEffect(() => {
-    setSelectedPhase(null);
-  }, [navigationPhases]);
+    if (!phasesLoading && navigationPhases.length > 0) {
+      console.log('🔄 FORCING COMPLETE RE-RENDER - Navigation phases changed');
+      setSelectedPhase(null);
+      setForceRenderKey(Date.now());
+    }
+  }, [navigationPhases, phasesLoading]);
 
-  // Debug navigation phases
+  // Debug navigation phases and DOM content
   useEffect(() => {
     console.log('🔍 TechniquePalette - Navigation phases loaded:', navigationPhases);
-    navigationPhases.forEach(phase => {
-      console.log(`🔍 Phase: ${phase.name} -> Label: ${phase.label}`);
+    console.log('🔍 Phases loading state:', phasesLoading);
+    console.log('🔍 Force render key:', forceRenderKey);
+    
+    navigationPhases.forEach((phase, index) => {
+      console.log(`🔍 Phase ${index}: ${phase.name} -> Label: ${phase.label} (Icon: ${phase.icon})`);
     });
-  }, [navigationPhases]);
+
+    // Debug actual DOM content vs expected
+    if (!phasesLoading && navigationPhases.length > 0) {
+      setTimeout(() => {
+        const phaseButtons = document.querySelectorAll('.phase-filter-button');
+        console.log('🔍 DOM REALITY CHECK - Found phase buttons:', phaseButtons.length);
+        phaseButtons.forEach((button, index) => {
+          console.log(`🔍 DOM Button ${index}: "${button.textContent}"`);
+        });
+      }, 100);
+    }
+  }, [navigationPhases, phasesLoading, forceRenderKey]);
 
   const handlePhaseDragStart = (e: React.DragEvent, phase: any) => {
     e.dataTransfer.setData('application/json', JSON.stringify({
@@ -112,29 +131,36 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
             />
           </div>
           
-          {/* Phase Filter */}
+          {/* Phase Filter - FORCED RE-RENDER */}
           {!phasesLoading && navigationPhases.length > 0 && (
-            <div className="flex flex-wrap gap-1" key={`phases-${navigationPhases.length}`}>
+            <div 
+              className="flex flex-wrap gap-1" 
+              key={`phases-complete-${forceRenderKey}-${navigationPhases.length}`}
+            >
               <Button
                 variant={selectedPhase === null ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedPhase(null)}
+                className="phase-filter-button"
               >
                 All
               </Button>
-              {navigationPhases.map(phase => (
-                <Button
-                  key={phase.name}
-                  variant={selectedPhase === phase.label ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedPhase(phase.label)}
-                  draggable
-                  onDragStart={(e) => handlePhaseDragStart(e, phase)}
-                  className="text-xs cursor-grab active:cursor-grabbing hover:cursor-grab"
-                >
-                  {phase.icon} {phase.label}
-                </Button>
-              ))}
+              {navigationPhases.map((phase, index) => {
+                console.log(`🔥 RENDERING PHASE BUTTON ${index}: ${phase.name} -> ${phase.label} (${phase.icon})`);
+                return (
+                  <Button
+                    key={`${phase.name}-${forceRenderKey}-${index}`}
+                    variant={selectedPhase === phase.label ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedPhase(phase.label)}
+                    draggable
+                    onDragStart={(e) => handlePhaseDragStart(e, phase)}
+                    className="text-xs cursor-grab active:cursor-grabbing hover:cursor-grab phase-filter-button"
+                  >
+                    {phase.icon} {phase.label}
+                  </Button>
+                );
+              })}
             </div>
           )}
           {phasesLoading && (
