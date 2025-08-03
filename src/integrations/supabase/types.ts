@@ -1927,6 +1927,10 @@ export type Database = {
           plan_name: string
         }[]
       }
+      get_user_organization_ids: {
+        Args: { target_user_id: string }
+        Returns: string[]
+      }
       get_user_organization_role: {
         Args: { target_user_id: string }
         Returns: string
@@ -1934,6 +1938,10 @@ export type Database = {
       get_user_role: {
         Args: { target_user_id: string }
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      get_user_role_for_policy: {
+        Args: { target_user_id: string }
+        Returns: string
       }
       get_user_sessions_with_profiles: {
         Args: {
