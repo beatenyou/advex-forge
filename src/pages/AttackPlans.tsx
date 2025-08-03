@@ -247,78 +247,94 @@ const AttackPlansPage: React.FC = () => {
               body {
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
                 line-height: 1.6;
-                color: #333;
+                color: hsl(210 40% 98%);
                 max-width: 800px;
                 margin: 0 auto;
                 padding: 20px;
-                background-color: #fff;
+                background-color: hsl(215 25% 8%);
               }
               .header {
                 text-align: center;
                 margin-bottom: 30px;
-                border-bottom: 2px solid #e2e8f0;
+                border-bottom: 2px solid hsl(217 30% 18%);
                 padding-bottom: 20px;
               }
               .header h1 {
-                color: #1a202c;
+                color: hsl(195 100% 50%);
                 margin-bottom: 10px;
                 font-size: 2rem;
+                text-shadow: 0 0 10px hsl(195 100% 50% / 0.3);
               }
               .header p {
-                color: #4a5568;
+                color: hsl(215 20% 65%);
                 font-size: 1.1rem;
               }
               .node {
                 margin: 15px 0;
                 padding: 15px;
-                border-radius: 8px;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                border-left: 4px solid #cbd5e0;
+                border-radius: 0.5rem;
+                box-shadow: 0 0 20px hsl(195 100% 50% / 0.1);
+                border: 1px solid hsl(217 30% 18%);
+                background-color: hsl(217 30% 12%);
               }
               .text-node {
-                background-color: #f0f9ff;
-                border-left-color: #3182ce;
+                background-color: hsl(217 30% 12%);
+                border-left: 4px solid hsl(195 100% 50%);
+                box-shadow: 0 0 15px hsl(195 100% 50% / 0.2);
               }
               .technique-node {
-                background-color: #fef3c7;
-                border-left-color: #d69e2e;
+                background-color: hsl(217 30% 12%);
+                border-left: 4px solid hsl(160 100% 45%);
+                box-shadow: 0 0 15px hsl(160 100% 45% / 0.2);
               }
               .phase-node {
-                background-color: #ecfdf5;
-                border-left-color: #38a169;
+                background-color: hsl(195 100% 50%);
+                border-left: 4px solid hsl(195 100% 40%);
+                color: hsl(215 25% 8%);
+                box-shadow: 0 0 20px hsl(195 100% 50% / 0.3);
               }
               .node h3 {
                 margin: 0 0 10px 0;
-                color: #2d3748;
+                color: hsl(195 100% 50%);
                 font-size: 1.2rem;
+                font-weight: 600;
+              }
+              .phase-node h3 {
+                color: hsl(215 25% 8%);
               }
               .node p {
                 margin: 5px 0;
-                color: #4a5568;
+                color: hsl(215 20% 65%);
+              }
+              .phase-node p {
+                color: hsl(215 25% 15%);
               }
               .metadata {
                 font-size: 0.9rem;
-                color: #718096;
+                color: hsl(215 15% 50%);
                 margin-top: 10px;
                 font-style: italic;
               }
               .connections {
                 margin-top: 30px;
                 padding: 20px;
-                background-color: #f7fafc;
-                border-radius: 8px;
+                background-color: hsl(217 30% 15%);
+                border-radius: 0.5rem;
+                border: 1px solid hsl(217 30% 18%);
               }
               .connections h2 {
-                color: #2d3748;
+                color: hsl(195 100% 50%);
                 margin-bottom: 15px;
               }
               .connection {
                 padding: 8px 12px;
                 margin: 5px 0;
-                background-color: #e2e8f0;
+                background-color: hsl(217 30% 20%);
                 border-radius: 4px;
+                border: 1px solid hsl(217 30% 25%);
                 font-family: monospace;
                 font-size: 0.9rem;
+                color: hsl(210 40% 85%);
               }
               @media print {
                 body { max-width: none; margin: 0; padding: 15px; }
