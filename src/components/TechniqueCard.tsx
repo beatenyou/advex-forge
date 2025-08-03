@@ -72,9 +72,11 @@ const generateMitreUrl = (mitreId: string): string => {
 // Helper function to convert navigation phase names to display labels
 const getDisplayPhases = (technique: Technique): string[] => {
   const phaseNameToLabel: Record<string, string> = {
+    // Navigation phases
     'recon': 'Active Reconnaissance',
     'foothold': 'Establish Foothold',
     'enum': 'Enumeration',
+    'enumeration': 'Enumeration',
     'user_persistence': 'User Persistence',
     'pe': 'Privilege Escalation',
     'system_persistence': 'System Persistence',
@@ -82,7 +84,21 @@ const getDisplayPhases = (technique: Technique): string[] => {
     'remote_enum': 'Remote Enumeration',
     'lateral_mvmnt': 'Lateral Movement',
     'c2': 'C2',
-    'effects': 'Effects'
+    'effects': 'Effects',
+    // MITRE ATT&CK phases
+    'initial-access': 'Initial Access',
+    'execution': 'Execution',
+    'persistence': 'Persistence',
+    'privilege-escalation': 'Privilege Escalation',
+    'defense-evasion': 'Defense Evasion',
+    'credential-access': 'Credential Access',
+    'discovery': 'Discovery',
+    'lateral-movement': 'Lateral Movement',
+    'command-and-control': 'Command and Control',
+    'exfiltration': 'Exfiltration',
+    'impact': 'Impact',
+    'reconnaissance': 'Reconnaissance',
+    'resource-development': 'Resource Development'
   };
   
   // Use phases array if available, otherwise fall back to single phase
@@ -90,7 +106,14 @@ const getDisplayPhases = (technique: Technique): string[] => {
     ? technique.phases.filter(phase => phase && phase.trim() !== '')
     : (technique.phase ? [technique.phase] : []);
     
-  return phases.map(phase => phaseNameToLabel[phase] || phase);
+  return phases.map(phase => {
+    // Convert to lowercase for case-insensitive matching
+    const cleanPhase = phase?.toLowerCase()?.trim();
+    return phaseNameToLabel[cleanPhase] || 
+           // Fallback: capitalize first letter and replace hyphens/underscores with spaces
+           phase?.replace(/[-_]/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 
+           'Unknown';
+  }).filter(Boolean);
 };
 
 interface TechniqueCardProps {
