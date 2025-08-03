@@ -77,6 +77,27 @@ export function EnhancedUserManager() {
   const [isAssigningOrg, setIsAssigningOrg] = useState(false);
   const [isBulkAssigning, setIsBulkAssigning] = useState(false);
   const [isMassProvisioning, setIsMassProvisioning] = useState(false);
+  
+  // Edit user dialog state
+  const [editUserDialogOpen, setEditUserDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [editUserCredits, setEditUserCredits] = useState<string>('');
+  const [editUserQuota, setEditUserQuota] = useState<string>('');
+  const [editUserRole, setEditUserRole] = useState<'user' | 'admin'>('user');
+  const [editUserProAccess, setEditUserProAccess] = useState(false);
+  
+  // Credit management dialog state
+  const [creditDialogOpen, setCreditDialogOpen] = useState(false);
+  const [creditUser, setCreditUser] = useState<UserProfile | null>(null);
+  const [newCredits, setNewCredits] = useState<string>('');
+  const [newQuota, setNewQuota] = useState<string>('');
+  
+  // Loading states
+  const [isEditingUser, setIsEditingUser] = useState(false);
+  const [isManagingCredits, setIsManagingCredits] = useState(false);
+  const [isTogglingLock, setIsTogglingLock] = useState(false);
+  const [isDeletingUser, setIsDeletingUser] = useState(false);
+  
   const { toast } = useToast();
   const { user } = useAuth();
   const { currentOrganization, availableOrganizations } = useOrganizationContext();
@@ -413,6 +434,192 @@ export function EnhancedUserManager() {
     }
   };
 
+  // Open edit user dialog
+  const openEditUserDialog = (profile: UserProfile) => {
+    setEditingUser(profile);
+    const billing = userBilling[profile.user_id];
+    setEditUserCredits(billing?.ai_usage_current?.toString() || '0');
+    setEditUserQuota(billing?.ai_quota_limit?.toString() || '50');
+    setEditUserRole(profile.role as 'user' | 'admin');
+    setEditUserProAccess(profile.role === 'pro' || billing?.plan_name?.toLowerCase().includes('pro') || false);
+    setEditUserDialogOpen(true);
+  };
+
+  // Open credit management dialog
+  const openCreditDialog = (profile: UserProfile) => {
+    setCreditUser(profile);
+    const billing = userBilling[profile.user_id];
+    setNewCredits('0');
+    setNewQuota(billing?.ai_quota_limit?.toString() || '50');
+    setCreditDialogOpen(true);
+  };
+
+  // Edit user profile
+  const handleEditUser = async () => {
+    if (!editingUser) return;
+    
+    setIsEditingUser(true);
+    try {
+      // Update profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          role: editUserRole,
+          is_pro: editUserProAccess,
+        })
+        .eq('user_id', editingUser.user_id);
+
+      if (profileError) throw profileError;
+
+      // Update billing if credits/quota changed
+      const currentBilling = userBilling[editingUser.user_id];
+      if (currentBilling && (editUserCredits !== currentBilling.ai_usage_current.toString() || 
+                             editUserQuota !== currentBilling.ai_quota_limit.toString())) {
+        const { error: billingError } = await supabase
+          .from('user_billing')
+          .upsert({
+            user_id: editingUser.user_id,
+            ai_usage_current: parseInt(editUserCredits) || 0,
+            ai_quota_limit: parseInt(editUserQuota) || 50,
+            subscription_status: editUserProAccess ? 'active' : 'free'
+          }, { onConflict: 'user_id' });
+
+        if (billingError) throw billingError;
+      }
+
+      toast({
+        title: "Success",
+        description: "User updated successfully",
+      });
+
+      setEditUserDialogOpen(false);
+      fetchUsers();
+      fetchUserBilling();
+    } catch (error: any) {
+      console.error('Error updating user:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update user",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEditingUser(false);
+    }
+  };
+
+  // Manage credits
+  const handleManageCredits = async () => {
+    if (!creditUser) return;
+    
+    setIsManagingCredits(true);
+    try {
+      const { error } = await supabase
+        .from('user_billing')
+        .upsert({
+          user_id: creditUser.user_id,
+          ai_usage_current: parseInt(newCredits) || 0,
+          ai_quota_limit: parseInt(newQuota) || 50,
+          subscription_status: 'active'
+        }, { onConflict: 'user_id' });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Credits updated successfully",
+      });
+
+      setCreditDialogOpen(false);
+      fetchUserBilling();
+    } catch (error: any) {
+      console.error('Error managing credits:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update credits",
+        variant: "destructive",
+      });
+    } finally {
+      setIsManagingCredits(false);
+    }
+  };
+
+  // Toggle account lock
+  const handleToggleAccountLock = async (userId: string, isLocked: boolean) => {
+    setIsTogglingLock(true);
+    try {
+      const { error } = await supabase
+        .from('user_billing')
+        .upsert({
+          user_id: userId,
+          account_locked: !isLocked,
+          account_lock_date: !isLocked ? new Date().toISOString() : null,
+          account_lock_reason: !isLocked ? 'Admin action' : null
+        }, { onConflict: 'user_id' });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: `Account ${!isLocked ? 'locked' : 'unlocked'} successfully`,
+      });
+
+      fetchUserBilling();
+    } catch (error: any) {
+      console.error('Error toggling account lock:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to toggle account lock",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTogglingLock(false);
+    }
+  };
+
+  // Delete user
+  const handleDeleteUser = async (userId: string) => {
+    setIsDeletingUser(true);
+    try {
+      // Remove from organization first
+      await supabase
+        .from('organization_members')
+        .delete()
+        .eq('user_id', userId);
+
+      // Delete user billing
+      await supabase
+        .from('user_billing')
+        .delete()
+        .eq('user_id', userId);
+
+      // Delete profile
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      });
+
+      fetchUsers();
+      fetchUserBilling();
+      fetchUserOrganizations();
+    } catch (error: any) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete user",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingUser(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -517,7 +724,7 @@ export function EnhancedUserManager() {
                 </SelectContent>
               </Select>
             </div>
-            {newUserOrgId && (
+            {newUserOrgId && newUserOrgId !== 'none' && (
               <div>
                 <Label htmlFor="orgRole">Organization Role</Label>
                 <Select value={newUserOrgRole} onValueChange={setNewUserOrgRole}>
@@ -627,15 +834,20 @@ export function EnhancedUserManager() {
                           <span className="text-sm">{orgMembership.organization.name}</span>
                         </div>
                       ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openAssignOrgDialog(profile.user_id, profile.email)}
-                          className="h-6 px-2 text-xs"
-                        >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Assign
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs">
+                            Personal
+                          </Badge>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openAssignOrgDialog(profile.user_id, profile.email)}
+                            className="h-6 px-2 text-xs"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Assign
+                          </Button>
+                        </div>
                       )}
                     </TableCell>
                     <TableCell>
@@ -656,20 +868,99 @@ export function EnhancedUserManager() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openAssignOrgDialog(profile.user_id, profile.email)}
-                        >
-                          <Building2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
+                      <div className="flex gap-1">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openEditUserDialog(profile)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Edit User</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => openCreditDialog(profile)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Gift className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Manage Credits</TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleToggleAccountLock(profile.user_id, billing?.account_locked || false)}
+                                disabled={isTogglingLock}
+                                className="h-8 w-8 p-0"
+                              >
+                                {billing?.account_locked ? (
+                                  <Unlock className="h-4 w-4" />
+                                ) : (
+                                  <Lock className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {billing?.account_locked ? 'Unlock Account' : 'Lock Account'}
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+
+                        <AlertDialog>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                                    disabled={profile.user_id === user?.id}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                              </TooltipTrigger>
+                              <TooltipContent>Delete User</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete User</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete {profile.email}? This action cannot be undone and will remove all associated data.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteUser(profile.user_id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                disabled={isDeletingUser}
+                              >
+                                {isDeletingUser ? 'Deleting...' : 'Delete User'}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -811,6 +1102,120 @@ export function EnhancedUserManager() {
             </Button>
             <Button onClick={handleMassProvisionOrganization} disabled={isMassProvisioning}>
               {isMassProvisioning ? 'Provisioning...' : 'Mass Provision'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={editUserDialogOpen} onOpenChange={setEditUserDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Modify user profile, role, and access settings for {editingUser?.email}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editRole">System Role</Label>
+              <Select value={editUserRole} onValueChange={(value: 'user' | 'admin') => setEditUserRole(value)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">User</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="editProAccess"
+                checked={editUserProAccess}
+                onChange={(e) => setEditUserProAccess(e.target.checked)}
+                className="rounded border-border"
+              />
+              <Label htmlFor="editProAccess">Pro Access</Label>
+            </div>
+            <div>
+              <Label htmlFor="editCredits">Current AI Usage</Label>
+              <Input
+                id="editCredits"
+                type="number"
+                value={editUserCredits}
+                onChange={(e) => setEditUserCredits(e.target.value)}
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editQuota">AI Quota Limit</Label>
+              <Input
+                id="editQuota"
+                type="number"
+                value={editUserQuota}
+                onChange={(e) => setEditUserQuota(e.target.value)}
+                placeholder="50"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setEditUserDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditUser} disabled={isEditingUser}>
+              {isEditingUser ? 'Updating...' : 'Update User'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Credit Management Dialog */}
+      <Dialog open={creditDialogOpen} onOpenChange={setCreditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Manage Credits</DialogTitle>
+            <DialogDescription>
+              Provision or modify AI credits for {creditUser?.email}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="resetCredits">Reset Current Usage To</Label>
+              <Input
+                id="resetCredits"
+                type="number"
+                value={newCredits}
+                onChange={(e) => setNewCredits(e.target.value)}
+                placeholder="0"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Set to 0 to provision fresh credits
+              </p>
+            </div>
+            <div>
+              <Label htmlFor="newQuota">New Quota Limit</Label>
+              <Select value={newQuota} onValueChange={setNewQuota}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="50">50 interactions</SelectItem>
+                  <SelectItem value="100">100 interactions</SelectItem>
+                  <SelectItem value="250">250 interactions</SelectItem>
+                  <SelectItem value="500">500 interactions</SelectItem>
+                  <SelectItem value="1000">1000 interactions</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setCreditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleManageCredits} disabled={isManagingCredits}>
+              {isManagingCredits ? 'Updating...' : 'Update Credits'}
             </Button>
           </div>
         </DialogContent>
