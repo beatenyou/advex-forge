@@ -5,10 +5,10 @@ import { Dashboard } from "@/components/Dashboard";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Shield, Loader2 } from "lucide-react";
+import { Shield, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 
 const Index = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, clearAuthState, authError } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,12 +19,56 @@ const Index = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="border-border/50 shadow-lg shadow-primary/5">
-          <CardContent className="flex items-center justify-center p-8">
-            <div className="flex items-center space-x-3">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="border-border/50 shadow-lg shadow-primary/5 max-w-md w-full">
+          <CardContent className="text-center p-8 space-y-6">
+            <div className="flex items-center justify-center space-x-3">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
               <span className="text-lg">Loading...</span>
+            </div>
+            
+            {authError && (
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2 text-destructive">
+                  <AlertTriangle className="h-5 w-5" />
+                  <span className="text-sm">Authentication Issue Detected</span>
+                </div>
+                <p className="text-sm text-muted-foreground">{authError}</p>
+                <div className="flex flex-col space-y-2">
+                  <Button 
+                    onClick={() => {
+                      clearAuthState();
+                      window.location.reload();
+                    }}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Reset & Continue
+                  </Button>
+                  <Button 
+                    onClick={() => navigate("/auth")}
+                    variant="default"
+                    className="w-full"
+                  >
+                    Go to Login
+                  </Button>
+                </div>
+              </div>
+            )}
+            
+            <div className="mt-6">
+              <Button 
+                onClick={() => {
+                  clearAuthState();
+                  navigate("/auth");
+                }}
+                variant="outline"
+                size="sm"
+                className="text-xs"
+              >
+                Having trouble? Reset Authentication
+              </Button>
             </div>
           </CardContent>
         </Card>

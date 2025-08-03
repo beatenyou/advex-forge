@@ -1506,6 +1506,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      force_clean_user_auth: {
+        Args: { target_user_id: string }
+        Returns: undefined
+      }
       get_user_ai_usage_stats: {
         Args: { start_date_param?: string; end_date_param?: string }
         Returns: {
