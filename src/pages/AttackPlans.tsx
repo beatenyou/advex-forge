@@ -22,7 +22,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { Crown, Save, Download, Plus, FileText, FileSpreadsheet, Lock, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { TechniquePalette } from '@/components/attack-plans/TechniquePalette';
+import TechniquePaletteV2 from '@/components/attack-plans/TechniquePaletteV2';
 import { TechniqueDetailsPanel } from '@/components/attack-plans/TechniqueDetailsPanel';
 import { AttackPlanCanvas } from '@/components/attack-plans/AttackPlanCanvas';
 
@@ -361,7 +361,7 @@ const AttackPlansPage: React.FC = () => {
       <div className="flex-1 flex">
         {/* Left Sidebar - Technique Palette */}
         <div className="w-80 border-r bg-card">
-          <TechniquePalette onAddTechnique={(technique) => {
+          <TechniquePaletteV2 onAddTechnique={(technique) => {
             console.log('Adding technique to canvas:', technique.title);
             
             // Calculate position in the center of the current viewport
