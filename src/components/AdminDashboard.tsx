@@ -546,73 +546,33 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
             </TabsContent>
 
             <TabsContent value="enterprise" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Building2 className="w-5 h-5" />
-                      Organization Management
-                    </CardTitle>
-                    <CardDescription>
-                      Create and manage organizations, assign users and configure organization settings
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl font-bold tracking-tight">Enterprise Management</h2>
+                  <p className="text-muted-foreground">
+                    Manage organizations, bulk user operations, and enterprise analytics.
+                  </p>
+                </div>
+                
+                <Tabs defaultValue="organizations" className="space-y-6">
+                  <TabsList className="grid w-full grid-cols-3">
+                    <TabsTrigger value="organizations">Organizations</TabsTrigger>
+                    <TabsTrigger value="bulk-users">Bulk Users</TabsTrigger>
+                    <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="organizations" className="space-y-0">
                     <OrganizationManager />
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Users className="w-5 h-5" />
-                      Bulk User Management
-                    </CardTitle>
-                    <CardDescription>
-                      Invite multiple users at once and manage user access in bulk
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
+                  </TabsContent>
+                  
+                  <TabsContent value="bulk-users" className="space-y-0">
                     <BulkUserManager />
-                  </CardContent>
-                </Card>
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5" />
-                      Enterprise Analytics
-                    </CardTitle>
-                    <CardDescription>
-                      Organization metrics, user analytics, and usage reporting
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
+                  </TabsContent>
+                  
+                  <TabsContent value="analytics" className="space-y-0">
                     <EnterpriseAnalytics />
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Settings className="w-5 h-5" />
-                      Enterprise Settings
-                    </CardTitle>
-                    <CardDescription>
-                      Configure enterprise-wide settings and policies
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="text-center py-8">
-                    <Settings className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-muted-foreground">
-                      Enterprise configuration panel coming soon.
-                      This will include SSO settings, security policies,
-                      and organization-wide feature toggles.
-                    </p>
-                  </CardContent>
-                </Card>
+                  </TabsContent>
+                </Tabs>
               </div>
             </TabsContent>
           </Tabs>
