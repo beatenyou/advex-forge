@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Handle, Position, NodeResizer, useReactFlow } from '@xyflow/react';
 import { Edit3, Trash2, Bold, Italic, List, Type } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import TextareaAutosize from 'react-textarea-autosize';
 import { MarkdownRenderer } from '@/components/MarkdownRenderer';
 import { cn } from '@/lib/utils';
 
@@ -26,6 +26,20 @@ export const TextNode: React.FC<TextNodeProps> = ({ id, data, selected }) => {
   const [fontSize, setFontSize] = useState(data.fontSize || 'base');
   const [fontWeight, setFontWeight] = useState(data.fontWeight || 'normal');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  
+  // Calculate dynamic width based on content
+  const getContentWidth = (text: string) => {
+    const lines = text.split('\n');
+    const maxLineLength = Math.max(...lines.map(line => line.length));
+    // Base width + character width estimation
+    return Math.max(150, Math.min(400, maxLineLength * 8 + 40));
+  };
+  
+  const getContentHeight = (text: string) => {
+    const lines = text.split('\n');
+    const lineHeight = 24;
+    return Math.max(80, lines.length * lineHeight + 40);
+  };
 
   // Sync local state with node data changes (for loading saved plans)
   useEffect(() => {
@@ -125,9 +139,20 @@ export const TextNode: React.FC<TextNodeProps> = ({ id, data, selected }) => {
     bold: 'font-bold'
   };
 
+  const dynamicWidth = getContentWidth(content);
+  const dynamicHeight = getContentHeight(content);
+
   return (
-    <div className="bg-background border border-border rounded-lg shadow-lg min-w-[200px] min-h-[100px] relative group">
-      <NodeResizer minWidth={200} minHeight={100} isVisible={selected} />
+    <div 
+      className="bg-background border border-border rounded-lg shadow-lg relative group"
+      style={{ 
+        width: dynamicWidth,
+        height: dynamicHeight,
+        minWidth: 150,
+        minHeight: 80
+      }}
+    >
+      <NodeResizer minWidth={150} minHeight={80} isVisible={selected} />
       
       {/* Toolbar - visible when selected or editing */}
       {(selected || isEditing) && (
@@ -221,28 +246,41 @@ export const TextNode: React.FC<TextNodeProps> = ({ id, data, selected }) => {
       )}
 
       {/* Content */}
-      <div className="p-3 h-full">
+      <div className="p-3 h-full flex-1">
         {isEditing ? (
-          <Textarea
+          <TextareaAutosize
             ref={textareaRef}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={handleKeyDown}
             className={cn(
-              "w-full h-full min-h-[60px] resize-none border-none bg-transparent p-0 focus:ring-0 focus:outline-none",
+              "w-full resize-none border-none bg-transparent p-0 focus:ring-0 focus:outline-none",
+              "whitespace-pre-wrap overflow-hidden",
               fontSizeClasses[fontSize],
               fontWeightClasses[fontWeight]
             )}
             placeholder="Enter your text here... (Supports Markdown)"
+            minRows={2}
+            maxRows={15}
+            style={{ 
+              lineHeight: '1.5',
+              whiteSpace: 'pre-wrap',
+              wordWrap: 'break-word'
+            }}
           />
         ) : (
           <div 
             className={cn(
-              "w-full h-full overflow-auto cursor-pointer",
+              "w-full h-full overflow-auto cursor-pointer whitespace-pre-wrap",
               fontSizeClasses[fontSize],
               fontWeightClasses[fontWeight]
             )}
             onClick={() => setIsEditing(true)}
+            style={{ 
+              whiteSpace: 'pre-wrap',
+              wordWrap: 'break-word',
+              lineHeight: '1.5'
+            }}
           >
             <MarkdownRenderer content={content} />
           </div>
