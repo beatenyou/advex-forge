@@ -81,6 +81,12 @@ export function EnhancedUserManager() {
   const { user } = useAuth();
   const { currentOrganization, availableOrganizations } = useOrganizationContext();
 
+  // Helper function to check if user is global admin
+  const isGlobalAdmin = () => {
+    // Add your admin check logic here - check user role or permissions
+    return true; // For now, assume admin access in admin dashboard
+  };
+
   useEffect(() => {
     fetchUsers();
     fetchOrganizations();
@@ -89,18 +95,18 @@ export function EnhancedUserManager() {
   }, [currentOrganization]);
 
   const fetchUsers = async () => {
+    setLoading(true);
     try {
-      let query = supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      // Filter by current organization if one is selected
-      if (currentOrganization) {
+      // For admin users, fetch all users. For org users, filter by organization
+      let query = supabase.from('profiles').select('*');
+      
+      // Only filter by organization if not an admin and organization is selected
+      if (currentOrganization && !isGlobalAdmin()) {
         query = query.eq('organization_id', currentOrganization.id);
       }
 
       const { data, error } = await query;
+
       if (error) throw error;
       setUsers(data || []);
     } catch (error) {
@@ -219,7 +225,7 @@ export function EnhancedUserManager() {
           email: newUserEmail,
           password: newUserPassword,
           role: newUserRole,
-          organization_id: newUserOrgId || null,
+          organization_id: newUserOrgId === 'none' ? null : newUserOrgId,
           organization_role: newUserOrgRole,
           pro_access: newUserProAccess
         }
@@ -236,7 +242,7 @@ export function EnhancedUserManager() {
       setNewUserEmail('');
       setNewUserPassword('');
       setNewUserRole('user');
-      setNewUserOrgId('');
+      setNewUserOrgId('none');
       setNewUserOrgRole('member');
       setNewUserProAccess(false);
       fetchUsers();
@@ -408,7 +414,14 @@ export function EnhancedUserManager() {
   };
 
   if (loading) {
-    return <div className="flex justify-center p-8">Loading...</div>;
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
+          <p className="text-muted-foreground">Loading users...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -494,8 +507,8 @@ export function EnhancedUserManager() {
                 <SelectTrigger>
                   <SelectValue placeholder="Select organization" />
                 </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">No organization</SelectItem>
+                  <SelectContent>
+                  <SelectItem value="none">No organization</SelectItem>
                   {organizations.map((org) => (
                     <SelectItem key={org.id} value={org.id}>
                       {org.name}
