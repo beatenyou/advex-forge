@@ -17,9 +17,9 @@ export const useResponsiveCardGrid = (options: UseResponsiveCardGridOptions = {}
     maxColumns = 6
   } = options;
 
-  const [columnCount, setColumnCount] = useState(1);
-  const [cardWidth, setCardWidth] = useState('wide');
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [columnCount, setColumnCount] = useState(isMobile ? 1 : 3);
+  const [cardWidth, setCardWidth] = useState(isMobile ? 'full' : 'medium');
+  const [isInitialized, setIsInitialized] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const calculateLayout = useCallback((containerWidth: number) => {
@@ -64,18 +64,13 @@ export const useResponsiveCardGrid = (options: UseResponsiveCardGridOptions = {}
   }, [isChatVisible, isWideScreen, isMobile, minCardWidth, maxColumns]);
 
   const updateLayout = useCallback(() => {
-    if (!containerRef.current) return;
-
-    const rect = containerRef.current.getBoundingClientRect();
-    const { columns, width } = calculateLayout(rect.width);
+    const rect = containerRef.current?.getBoundingClientRect();
+    const containerWidth = rect?.width || window.innerWidth;
+    const { columns, width } = calculateLayout(containerWidth);
     
     setColumnCount(columns);
     setCardWidth(width);
-    
-    if (!isInitialized) {
-      setIsInitialized(true);
-    }
-  }, [calculateLayout, isInitialized]);
+  }, [calculateLayout]);
 
   useEffect(() => {
     const handleResize = () => updateLayout();

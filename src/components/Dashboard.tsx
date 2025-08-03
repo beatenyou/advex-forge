@@ -489,7 +489,7 @@ Can you help me understand this scenario and provide guidance on the techniques,
               ref={containerRef}
               className={cn(getGridClasses(), getCardContextClasses())}
             >
-              {isInitialized && filteredTechniques.map(technique => (
+              {filteredTechniques.map(technique => (
                 <TechniqueCard 
                   key={technique.id} 
                   technique={technique} 
