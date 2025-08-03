@@ -6,9 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  error: string | null;
   signOut: () => Promise<void>;
-  retry: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -17,83 +15,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let mounted = true;
-    
-    console.log('AuthProvider: Starting initialization');
-    
-    // Absolute emergency timeout - force resolution after 3 seconds NO MATTER WHAT
-    const emergencyTimeout = setTimeout(() => {
-      if (mounted) {
-        console.warn('AuthProvider: EMERGENCY TIMEOUT - Force resolving auth state');
-        setLoading(false);
-        setError('Authentication system is temporarily unavailable. You can continue using the app.');
-      }
-    }, 3000); // 3 second absolute timeout
-
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (!mounted) return;
-        
-        console.log('AuthProvider: Auth state change:', event, 'Session exists:', !!session, 'User ID:', session?.user?.id);
-        
-        // FORCE RESOLUTION - no more hanging
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
-        setError(null);
         
-        // Clear timeout since auth resolved
-        clearTimeout(emergencyTimeout);
-        
-        // Skip activity logging to prevent issues
+        // Defer database operations to prevent infinite loops
+        if (session?.user && event === 'SIGNED_IN') {
+          setTimeout(async () => {
+            try {
+              await supabase.from('user_activity_log').insert({
+                user_id: session.user.id,
+                activity_type: 'sign_in',
+                description: 'User signed in',
+                user_agent: navigator.userAgent,
+              });
+            } catch (error) {
+              console.error('Error logging sign in activity:', error);
+            }
+          }, 0);
+        } else if (event === 'SIGNED_OUT') {
+          // Store previous user ID before state changes
+          const previousUserId = user?.id;
+          setTimeout(async () => {
+            if (previousUserId) {
+              try {
+                await supabase.from('user_activity_log').insert({
+                  user_id: previousUserId,
+                  activity_type: 'sign_out',
+                  description: 'User signed out',
+                  user_agent: navigator.userAgent,
+                });
+              } catch (error) {
+                console.error('Error logging sign out activity:', error);
+              }
+            }
+          }, 0);
+        }
       }
     );
 
-    // Simple session check with timeout
-    const checkSession = async () => {
-      try {
-        console.log('AuthProvider: Checking existing session...');
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (!mounted) return;
-        
-        if (error) {
-          console.error('AuthProvider: Error getting session:', error);
-        }
-        
-        console.log('AuthProvider: Session check complete:', !!session, session?.user?.id);
-        
-        // FORCE RESOLUTION - no more hanging
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        setError(null);
-        
-        clearTimeout(emergencyTimeout);
-      } catch (err) {
-        if (!mounted) return;
-        
-        console.error('AuthProvider: Failed to get session:', err);
-        setLoading(false);
-        setError('Authentication temporarily unavailable');
-        clearTimeout(emergencyTimeout);
-      }
-    };
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
 
-    // Immediate session check
-    checkSession();
-
-    return () => {
-      console.log('AuthProvider: Cleanup called');
-      mounted = false;
-      clearTimeout(emergencyTimeout);
-      subscription.unsubscribe();
-    };
-  }, []);
+    return () => subscription.unsubscribe();
+  }, []); // Remove problematic dependency that was causing infinite loop
 
   const signOut = async () => {
     // Log the sign out activity before signing out
@@ -112,33 +86,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const retry = () => {
-    console.log('AuthProvider: Manual retry triggered');
-    setLoading(true);
-    setError(null);
-    
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      console.log('AuthProvider: Retry result:', !!session, error?.message);
-      if (error) {
-        setError(`Retry failed: ${error.message}`);
-      }
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    }).catch((err) => {
-      console.error('AuthProvider: Retry error:', err);
-      setError('Retry failed - please try signing in manually');
-      setLoading(false);
-    });
-  };
-
   const value = {
     user,
     session,
     loading,
-    error,
     signOut,
-    retry,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

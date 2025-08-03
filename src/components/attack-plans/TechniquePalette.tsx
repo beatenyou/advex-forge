@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { fetchTechniquesFromDatabase } from '@/lib/techniqueDataMigration';
 import { useNavigationPhases } from '@/hooks/useNavigationPhases';
 import { Search, Plus } from 'lucide-react';
@@ -34,45 +35,36 @@ interface TechniquePaletteProps {
   onAddTechnique: (technique: Technique) => void;
 }
 
+// Function to map database phase names to Quick Navigation labels
+const mapPhaseToQuickNavLabel = (phaseName: string): string => {
+  const phaseMapping: { [key: string]: string } = {
+    'Reconnaissance': 'Active Reconnaissance',
+    'recon': 'Active Reconnaissance',
+    'Weaponization': 'Establish Foothold',
+    'weaponization': 'Establish Foothold',
+    'Delivery': 'Deliver Payload',
+    'delivery': 'Deliver Payload',
+    'Exploitation': 'Exploit Target',
+    'exploitation': 'Exploit Target',
+    'Installation': 'Install Persistence',
+    'installation': 'Install Persistence',
+    'Command & Control': 'Maintain Access',
+    'c2': 'Maintain Access',
+    'command-control': 'Maintain Access',
+    'Actions': 'Execute Objectives',
+    'actions': 'Execute Objectives',
+    'actions-on-objectives': 'Execute Objectives'
+  };
+  
+  return phaseMapping[phaseName] || phaseName;
+};
 
 export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechnique }) => {
   const [techniques, setTechniques] = useState<Technique[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPhase, setSelectedPhase] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [forceRenderKey, setForceRenderKey] = useState(Date.now());
-  const { phases: navigationPhases, loading: phasesLoading } = useNavigationPhases();
-
-  // Force complete re-render when navigation phases change
-  useEffect(() => {
-    if (!phasesLoading && navigationPhases.length > 0) {
-      console.log('🔄 FORCING COMPLETE RE-RENDER - Navigation phases changed');
-      setSelectedPhase(null);
-      setForceRenderKey(Date.now());
-    }
-  }, [navigationPhases, phasesLoading]);
-
-  // Debug navigation phases and DOM content
-  useEffect(() => {
-    console.log('🔍 TechniquePalette - Navigation phases loaded:', navigationPhases);
-    console.log('🔍 Phases loading state:', phasesLoading);
-    console.log('🔍 Force render key:', forceRenderKey);
-    
-    navigationPhases.forEach((phase, index) => {
-      console.log(`🔍 Phase ${index}: ${phase.name} -> Label: ${phase.label} (Icon: ${phase.icon})`);
-    });
-
-    // Debug actual DOM content vs expected
-    if (!phasesLoading && navigationPhases.length > 0) {
-      setTimeout(() => {
-        const phaseButtons = document.querySelectorAll('.phase-filter-button');
-        console.log('🔍 DOM REALITY CHECK - Found phase buttons:', phaseButtons.length);
-        phaseButtons.forEach((button, index) => {
-          console.log(`🔍 DOM Button ${index}: "${button.textContent}"`);
-        });
-      }, 100);
-    }
-  }, [navigationPhases, phasesLoading, forceRenderKey]);
+  const { phases: navigationPhases } = useNavigationPhases();
 
   const handlePhaseDragStart = (e: React.DragEvent, phase: any) => {
     e.dataTransfer.setData('application/json', JSON.stringify({
@@ -88,8 +80,6 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
   const loadTechniques = async () => {
     try {
       const data = await fetchTechniquesFromDatabase();
-      console.log('📊 TechniquePalette - Loaded techniques:', data.length);
-      console.log('📊 TechniquePalette - First technique phases:', data[0]?.phases, data[0]?.phase);
       setTechniques(data);
     } catch (error) {
       console.error('Error loading techniques:', error);
@@ -104,13 +94,24 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
     
     if (!selectedPhase) return matchesSearch;
     
-    // Find the selected navigation phase
-    const selectedNavigationPhase = navigationPhases.find(phase => phase.label === selectedPhase);
-    if (!selectedNavigationPhase) return matchesSearch;
+    // Map phase labels to actual phase names in the database
+    const phaseMap: { [key: string]: string[] } = {
+      'Active Reconnaissance': ['Reconnaissance', 'recon'],
+      'Establish Foothold': ['Weaponization', 'weaponization'],
+      'Deliver Payload': ['Delivery', 'delivery'],
+      'Exploit Target': ['Exploitation', 'exploitation'],
+      'Install Persistence': ['Installation', 'installation'],
+      'Maintain Access': ['Command & Control', 'c2', 'command-control'],
+      'Execute Objectives': ['Actions', 'actions', 'actions-on-objectives']
+    };
     
-    // Check if technique matches the selected phase name
-    const matchesPhase = technique.phases?.includes(selectedNavigationPhase.name) || 
-                        technique.phase === selectedNavigationPhase.name;
+    // Get possible phase names for the selected phase
+    const possiblePhaseNames = phaseMap[selectedPhase] || [selectedPhase];
+    
+    // Check if any of the possible phase names match
+    const matchesPhase = possiblePhaseNames.some(phaseName => 
+      technique.phases?.includes(phaseName) || technique.phase === phaseName
+    );
     
     return matchesSearch && matchesPhase;
   });
@@ -131,43 +132,29 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
             />
           </div>
           
-          {/* Phase Filter - FORCED RE-RENDER */}
-          {!phasesLoading && navigationPhases.length > 0 && (
-            <div 
-              className="flex flex-wrap gap-1" 
-              key={`phases-complete-${forceRenderKey}-${navigationPhases.length}`}
+          {/* Phase Filter */}
+          <div className="flex flex-wrap gap-1">
+            <Button
+              variant={selectedPhase === null ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedPhase(null)}
             >
+              All
+            </Button>
+            {navigationPhases.map(phase => (
               <Button
-                variant={selectedPhase === null ? "default" : "outline"}
+                key={phase.name}
+                variant={selectedPhase === phase.label ? "default" : "outline"}
                 size="sm"
-                onClick={() => setSelectedPhase(null)}
-                className="phase-filter-button"
+                onClick={() => setSelectedPhase(phase.label)}
+                draggable
+                onDragStart={(e) => handlePhaseDragStart(e, phase)}
+                className="text-xs cursor-grab active:cursor-grabbing hover:cursor-grab"
               >
-                All
+                {phase.icon} {phase.label}
               </Button>
-              {navigationPhases.map((phase, index) => {
-                console.log(`🔥 RENDERING PHASE BUTTON ${index}: ${phase.name} -> ${phase.label} (${phase.icon})`);
-                return (
-                  <Button
-                    key={`${phase.name}-${forceRenderKey}-${index}`}
-                    variant={selectedPhase === phase.label ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setSelectedPhase(phase.label)}
-                    draggable
-                    onDragStart={(e) => handlePhaseDragStart(e, phase)}
-                    className="text-xs cursor-grab active:cursor-grabbing hover:cursor-grab phase-filter-button"
-                  >
-                    {phase.icon} {phase.label}
-                  </Button>
-                );
-              })}
-            </div>
-          )}
-          {phasesLoading && (
-            <div className="text-center py-2 text-muted-foreground text-sm">
-              Loading phases...
-            </div>
-          )}
+            ))}
+          </div>
         </div>
       </CardHeader>
       
@@ -190,11 +177,7 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
                         </p>
                         <div className="flex items-center gap-2 mt-2">
                           <Badge variant="secondary" className="text-xs">
-                            {(() => {
-                              const phaseName = technique.phases?.[0] || technique.phase;
-                              const navPhase = navigationPhases.find(phase => phase.name === phaseName);
-                              return navPhase ? navPhase.label : phaseName;
-                            })()}
+                            {mapPhaseToQuickNavLabel(technique.phases?.[0] || technique.phase)}
                           </Badge>
                           <Badge variant="outline" className="text-xs">
                             {technique.category}
