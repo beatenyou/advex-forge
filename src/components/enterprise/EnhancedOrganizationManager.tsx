@@ -815,6 +815,37 @@ export function EnhancedOrganizationManager() {
         </Dialog>
       </div>
 
+      {/* Workflow Information Banner */}
+      <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mb-4">
+        <div className="flex items-start gap-3">
+          <Building2 className="h-5 w-5 text-primary mt-0.5" />
+          <div>
+            <h3 className="font-semibold text-sm mb-2">Enterprise Workflow</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+              <div>
+                <p className="font-medium text-foreground mb-1">Enterprise Signups:</p>
+                <ol className="list-decimal list-inside space-y-1">
+                  <li>Create organization first</li>
+                  <li>Add users to organization</li>
+                  <li>Enterprise billed on seat purchases + AI credits</li>
+                </ol>
+              </div>
+              <div>
+                <p className="font-medium text-foreground mb-1">Individual Signups:</p>
+                <ol className="list-decimal list-inside space-y-1">
+                  <li>Add users to Pro or Free accounts</li>
+                  <li>Manually allocate AI credits if purchased</li>
+                  <li>Pro access = more credits + advanced features</li>
+                </ol>
+              </div>
+            </div>
+            <p className="text-xs mt-2 text-muted-foreground">
+              💡 User role changes are handled in the <strong>User Management</strong> tab for detailed profile management.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Edit Seats Dialog */}
       <Dialog open={isEditSeatsDialogOpen} onOpenChange={setIsEditSeatsDialogOpen}>
         <DialogContent>
