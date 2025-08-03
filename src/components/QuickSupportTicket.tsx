@@ -100,7 +100,7 @@ Submitted via Quick Support Ticket`;
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Sign in to suggest improvements</p>
+            <p>Suggestions</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -125,7 +125,7 @@ Submitted via Quick Support Ticket`;
             </Button>
           </TooltipTrigger>
           <TooltipContent side="top" className="bg-popover border border-border shadow-lg">
-            <p className="text-sm font-medium">Suggest improvement for this technique card</p>
+            <p className="text-sm font-medium">Suggestions</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
