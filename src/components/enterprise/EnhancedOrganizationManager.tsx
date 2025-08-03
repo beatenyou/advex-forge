@@ -1128,119 +1128,184 @@ export function EnhancedOrganizationManager() {
       </Dialog>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Organizations List */}
+        {/* Organizations List - Enhanced Interactive Cards */}
         <Card>
           <CardHeader>
-            <CardTitle>Organizations</CardTitle>
-            <CardDescription>Select an organization to manage</CardDescription>
+            <CardTitle className="flex items-center justify-between">
+              Organizations
+              <Badge variant="secondary" className="text-xs">
+                {organizations.length} Total
+              </Badge>
+            </CardTitle>
+            <CardDescription>Click on an organization to manage or use the action buttons</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-3">
             {organizations.map((org) => {
               const seatUtilization = getSeatUtilization(org);
+              const creditsRemaining = org.ai_credits_pool - org.ai_credits_used;
+              
               return (
-                <div
+                <Card
                   key={org.id}
-                  className={`p-4 rounded-lg cursor-pointer transition-all border ${
+                  className={`cursor-pointer transition-all hover:shadow-md ${
                     selectedOrg === org.id
-                      ? 'bg-primary/10 border-primary shadow-sm'
-                      : 'hover:bg-muted border-border'
+                      ? 'ring-2 ring-primary ring-offset-2 bg-primary/5'
+                      : 'hover:bg-muted/50'
                   }`}
                   onClick={() => setSelectedOrg(org.id)}
                 >
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4" />
-                        <div>
-                          <h4 className="font-semibold text-sm">{org.name}</h4>
-                          <p className="text-xs text-muted-foreground">{org.domain || 'No domain'}</p>
+                  <CardContent className="p-4">
+                    <div className="space-y-4">
+                      {/* Header with Organization Info */}
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 rounded-lg bg-primary/10">
+                            <Building2 className="h-4 w-4 text-primary" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold">{org.name}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {org.domain || 'No domain set'}
+                            </p>
+                            <Badge variant="outline" className="text-xs mt-1">
+                              {org.subscription_plan} Plan
+                            </Badge>
+                          </div>
+                        </div>
+                        
+                        {/* Quick Action Buttons */}
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditOrgDialog(org);
+                            }}
+                            title="Edit Organization Details"
+                          >
+                            <Edit3 className="h-3 w-3 mr-1" />
+                            Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openDeleteOrgDialog(org);
+                            }}
+                            title="Delete Organization"
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3 mr-1" />
+                            Delete
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEditOrgDialog(org);
-                          }}
-                          title="Edit Organization"
-                        >
-                          <Edit3 className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openDeleteOrgDialog(org);
-                          }}
-                          title="Delete Organization"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    {/* Seat Utilization */}
-                    <div className="space-y-1">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-muted-foreground">Seats</span>
-                        <span className="text-xs font-medium">{org.seat_used}/{org.seat_limit}</span>
-                      </div>
-                      <div className="w-full bg-muted rounded-full h-1.5">
-                        <div 
-                          className={`h-1.5 rounded-full transition-all ${seatUtilization.colorClass}`}
-                          style={{ width: `${Math.min(seatUtilization.percentage, 100)}%` }}
-                        />
-                      </div>
-                    </div>
 
-                    {/* Credits */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-1">
-                        <Zap className="h-3 w-3 text-yellow-500" />
-                        <span className="text-xs text-muted-foreground">Credits</span>
-                      </div>
-                      <span className="text-xs font-medium">{org.ai_credits_pool - org.ai_credits_used}</span>
-                    </div>
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Seat Utilization */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium">Seats</span>
+                            <span className="text-sm text-muted-foreground">
+                              {org.seat_used}/{org.seat_limit}
+                            </span>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-2">
+                            <div 
+                              className={`h-2 rounded-full transition-all ${seatUtilization.colorClass}`}
+                              style={{ width: `${Math.min(seatUtilization.percentage, 100)}%` }}
+                            />
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-full text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              openEditSeatsDialog(org);
+                            }}
+                          >
+                            Edit Seat Limit
+                          </Button>
+                        </div>
 
-                    <div className="flex justify-between items-center">
-                      <Badge variant="outline" className="text-xs">{org.default_member_access_level}</Badge>
-                      <div className="flex gap-1">
+                        {/* Credits */}
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-1">
+                              <Zap className="h-3 w-3 text-yellow-500" />
+                              <span className="text-sm font-medium">Credits</span>
+                            </div>
+                            <span className="text-sm text-muted-foreground">
+                              {creditsRemaining.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Used: {org.ai_credits_used} / Pool: {org.ai_credits_pool}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="h-6 w-full text-xs"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedOrg(org.id);
+                              setIsBulkCreditDialogOpen(true);
+                            }}
+                          >
+                            Add Credits
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2 pt-2 border-t">
                         <Button
                           size="sm"
-                          variant="outline"
-                          className="h-6 px-2 text-xs"
+                          variant="default"
+                          className="flex-1"
                           onClick={(e) => {
                             e.stopPropagation();
                             setSelectedOrg(org.id);
                             setIsAddUsersDialogOpen(true);
                           }}
-                          title="Add Users"
                         >
-                          <UserPlus className="h-3 w-3" />
+                          <UserPlus className="h-3 w-3 mr-1" />
+                          Add Users
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
-                          className="h-6 px-2 text-xs"
                           onClick={(e) => {
                             e.stopPropagation();
-                            openEditSeatsDialog(org);
+                            setSelectedOrg(org.id);
                           }}
-                          title="Edit Seats"
                         >
-                          {org.seat_limit}
+                          View Details
                         </Button>
                       </div>
+                      
+                      {selectedOrg === org.id && (
+                        <div className="text-xs text-primary font-medium">
+                          ← Selected for management
+                        </div>
+                      )}
                     </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               );
             })}
+            
+            {organizations.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <Building2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>No organizations found</p>
+                <p className="text-sm">Create your first organization to get started</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
