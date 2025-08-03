@@ -400,7 +400,7 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary"
+                          className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
                           onClick={(e) => {
                             e.stopPropagation();
                             
