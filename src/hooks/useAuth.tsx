@@ -46,9 +46,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isRecovering, setIsRecovering] = useState(false);
-  const [initialized, setInitialized] = useState(false);
 
-  console.log('[AUTH_PROVIDER] Component render, initialized:', initialized);
+  console.log('[AUTH_PROVIDER] Component render');
 
   const fetchUserProfile = async (userId: string, retryCount = 0): Promise<UserProfile | null> => {
     try {
@@ -196,14 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Prevent multiple initializations
-    if (initialized) {
-      console.log('[AUTH] Already initialized, skipping...');
-      return;
-    }
-
     console.log('[AUTH] Starting authentication initialization...');
-    setInitialized(true);
     
     let mounted = true;
     let authSubscription: { unsubscribe: () => void } | null = null;
@@ -304,7 +296,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authSubscription.unsubscribe();
       }
     };
-  }, [initialized]); // Depend on initialized flag
+  }, []); // Empty deps - run only once
 
   const clearAuthState = () => {
     console.log('[AUTH] Clearing auth state and browser storage');
