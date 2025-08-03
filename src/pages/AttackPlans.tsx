@@ -234,6 +234,10 @@ const AttackPlansPage: React.FC = () => {
 
   const exportToHTML = (planData: any) => {
     try {
+      // Preserve current state before export
+      const currentNodes = [...nodes];
+      const currentEdges = [...edges];
+      
       const printContent = generatePrintableContent(planData);
       
       const htmlContent = `
@@ -269,23 +273,21 @@ const AttackPlansPage: React.FC = () => {
                 color: hsl(215 20% 65%);
                 font-size: 1.1rem;
               }
+              .footer {
+                text-align: center;
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 2px solid hsl(217 30% 18%);
+                color: hsl(215 15% 50%);
+                font-size: 0.9rem;
+              }
               .node {
-                margin: 15px 0;
+                background-color: hsl(217 30% 15%);
+                border: 1px solid hsl(217 30% 25%);
+                border-radius: 8px;
                 padding: 15px;
-                border-radius: 0.5rem;
-                box-shadow: 0 0 20px hsl(195 100% 50% / 0.1);
-                border: 1px solid hsl(217 30% 18%);
-                background-color: hsl(217 30% 12%);
-              }
-              .text-node {
-                background-color: hsl(217 30% 12%);
-                border-left: 4px solid hsl(195 100% 50%);
-                box-shadow: 0 0 15px hsl(195 100% 50% / 0.2);
-              }
-              .technique-node {
-                background-color: hsl(217 30% 12%);
-                border-left: 4px solid hsl(160 100% 45%);
-                box-shadow: 0 0 15px hsl(160 100% 45% / 0.2);
+                margin: 15px 0;
+                box-shadow: 0 4px 6px hsl(215 25% 8% / 0.3);
               }
               .phase-node {
                 background-color: hsl(195 100% 50%);
@@ -318,20 +320,25 @@ const AttackPlansPage: React.FC = () => {
               .connections {
                 margin-top: 30px;
                 padding: 20px;
-                background-color: hsl(217 30% 15%);
-                border-radius: 0.5rem;
-                border: 1px solid hsl(217 30% 18%);
+                background-color: hsl(217 30% 12%);
+                border-radius: 8px;
+                border: 1px solid hsl(217 30% 20%);
               }
-              .connections h2 {
+              .connections h3 {
                 color: hsl(195 100% 50%);
                 margin-bottom: 15px;
               }
               .connection {
-                padding: 8px 12px;
-                margin: 5px 0;
-                background-color: hsl(217 30% 20%);
+                background-color: hsl(217 30% 18%);
+                padding: 10px;
+                margin: 8px 0;
+                border-radius: 6px;
+                border-left: 3px solid hsl(195 100% 50%);
+              }
+              .connection code {
+                background-color: hsl(217 30% 25%);
+                padding: 2px 6px;
                 border-radius: 4px;
-                border: 1px solid hsl(217 30% 25%);
                 font-family: monospace;
                 font-size: 0.9rem;
                 color: hsl(210 40% 85%);
@@ -377,17 +384,38 @@ const AttackPlansPage: React.FC = () => {
         </html>
       `;
 
-      const blob = new Blob([htmlContent], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${planData.title.replace(/\s+/g, '-').toLowerCase()}-attack-plan.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      // Use setTimeout to defer the download and prevent state clearing
+      setTimeout(() => {
+        const blob = new Blob([htmlContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${planData.title.replace(/\s+/g, '-').toLowerCase()}-attack-plan.html`;
+        a.style.display = 'none'; // Hide the link element
+        
+        // Prevent any potential focus events
+        a.addEventListener('click', (e) => {
+          e.stopPropagation();
+        }, { once: true });
+        
+        document.body.appendChild(a);
+        a.click();
+        
+        // Clean up with a slight delay to ensure download starts
+        setTimeout(() => {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          
+          // Restore state if somehow it got cleared (defensive programming)
+          if (nodes.length === 0 && currentNodes.length > 0) {
+            setNodes(currentNodes);
+            setEdges(currentEdges);
+          }
+        }, 100);
+        
+        toast.success('HTML file downloaded successfully');
+      }, 10);
       
-      toast.success('HTML file downloaded successfully');
     } catch (error) {
       console.error('HTML export error:', error);
       toast.error('Failed to export HTML');
