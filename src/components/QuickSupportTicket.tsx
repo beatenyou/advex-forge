@@ -92,7 +92,7 @@ Submitted via Quick Support Ticket`;
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-7 px-2 text-xs opacity-50 cursor-not-allowed"
+              className="h-6 w-6 p-0 opacity-50 cursor-not-allowed"
               disabled
               onClick={(e) => e.stopPropagation()}
             >
@@ -115,7 +115,7 @@ Submitted via Quick Support Ticket`;
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-7 px-2 text-xs hover:bg-primary/10 hover:text-primary"
+              className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
               onClick={(e) => {
                 e.stopPropagation();
                 setOpen(true);

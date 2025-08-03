@@ -3,6 +3,7 @@ import { Search, Shield, Users, Settings, Star, Hash, Filter, LogOut, UserCog, M
 import { useAuth } from "@/hooks/useAuth";
 import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useNavigationPhases } from "@/hooks/useNavigationPhases";
+import { useResponsiveCardGrid } from '@/hooks/useResponsiveCardGrid';
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -21,6 +22,7 @@ import { QuickReference } from "./QuickReference";
 import { AdminDashboard } from "./AdminDashboard";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
 import { TagSelector } from "./TagSelector";
+import { cn } from '@/lib/utils';
 
 import { ParsedTechnique } from "@/lib/markdownParser";
 import { supabase } from "@/integrations/supabase/client";
@@ -66,6 +68,23 @@ export const Dashboard = ({
   } = useToast();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  
+  // Responsive grid hook
+  const { 
+    containerRef, 
+    columnCount, 
+    cardWidth, 
+    isInitialized, 
+    getGridClasses,
+    getCardContextClasses 
+  } = useResponsiveCardGrid({
+    isChatVisible: isChatVisible,
+    isWideScreen: isWideScreen,
+    isMobile: isMobile,
+    minCardWidth: 280,
+    maxColumns: 6
+  });
+  
   const [techniques, setTechniques] = useState<any[]>([]);
   const [userFavorites, setUserFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,20 +96,6 @@ export const Dashboard = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
-  // Get responsive grid classes based on screen size and chat visibility
-  const getGridClasses = () => {
-    const baseClasses = "grid gap-4 w-full";
-    if (isMobile) {
-      return `${baseClasses} grid-cols-1 sm:grid-cols-2`;
-    }
-    
-    // Desktop responsive grid - more columns on wider screens
-    if (isChatVisible) {
-      return `${baseClasses} grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`;
-    }
-    
-    return `${baseClasses} grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6`;
-  };
 
   // Initialize selectedPhase when navigation phases load
   useEffect(() => {
@@ -479,14 +484,19 @@ Can you help me understand this scenario and provide guidance on the techniques,
               </Badge>
             </div>
 
-            {/* Technique Cards Grid - Multi-column responsive layout */}
-            <div className={getGridClasses()}>
-              {filteredTechniques.map(technique => (
+            {/* Technique Cards Grid - Fully responsive multi-column layout */}
+            <div 
+              ref={containerRef}
+              className={cn(getGridClasses(), getCardContextClasses())}
+            >
+              {isInitialized && filteredTechniques.map(technique => (
                 <TechniqueCard 
                   key={technique.id} 
                   technique={technique} 
                   onToggleFavorite={toggleFavorite} 
-                  onOpenAIChat={onOpenChatWithPrompt} 
+                  onOpenAIChat={onOpenChatWithPrompt}
+                  cardWidth={cardWidth}
+                  columnCount={columnCount}
                 />
               ))}
             </div>
