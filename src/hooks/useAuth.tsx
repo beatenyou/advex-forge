@@ -94,105 +94,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    let isResolved = false;
-    let timeoutId: NodeJS.Timeout;
-
-    // Emergency timeout - force resolution after 2 seconds
-    const emergencyTimeout = setTimeout(() => {
-      if (!isResolved) {
-        console.warn('🚨 Auth taking too long, forcing resolution');
-        setAuthError('Authentication timeout - please try nuclear reset');
-        setLoading(false);
-        isResolved = true;
-      }
-    }, 2000);
-
-    // Set up auth state listener FIRST
+    console.log('🔐 Initializing auth...');
+    
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('🔐 Auth state change:', event, session?.user?.id);
         
-        if (!isResolved) {
-          setSession(session);
-          setUser(session?.user ?? null);
-          setAuthError(null);
-          setLoading(false);
-          isResolved = true;
-          clearTimeout(emergencyTimeout);
-        }
+        setSession(session);
+        setUser(session?.user ?? null);
+        setAuthError(null);
+        setLoading(false);
         
         // Handle specific auth events
-        if (event === 'TOKEN_REFRESHED' && !session) {
-          console.warn('⚠️ Token refresh failed, triggering nuclear reset');
-          await nuclearReset();
-          return;
-        }
-        
         if (event === 'SIGNED_OUT') {
           console.log('👋 User signed out');
           setSession(null);
           setUser(null);
           setAuthError(null);
         }
+        
+        // Only trigger nuclear reset for critical failures
+        if (event === 'TOKEN_REFRESHED' && !session) {
+          console.warn('⚠️ Token refresh failed - this may require nuclear reset');
+          setAuthError('Session expired - please sign in again');
+        }
       }
     );
 
-    // THEN check for existing session with validation
-    const validateSession = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('❌ Session validation error:', error);
-          setAuthError('Session validation failed');
-          await nuclearReset();
-          return;
-        }
-
-        // Additional session validation
-        if (session) {
-          try {
-            // Test if session is actually valid by making a simple request
-            const { error: testError } = await supabase.from('profiles').select('user_id').limit(1);
-            if (testError && testError.message.includes('JWT')) {
-              console.warn('⚠️ Invalid session detected, clearing');
-              await nuclearReset();
-              return;
-            }
-          } catch (validationError) {
-            console.warn('⚠️ Session validation failed, clearing');
-            await nuclearReset();
-            return;
-          }
-        }
-
-        if (!isResolved) {
-          setSession(session);
-          setUser(session?.user ?? null);
-          setAuthError(null);
-          setLoading(false);
-          isResolved = true;
-          clearTimeout(emergencyTimeout);
-        }
-      } catch (error) {
-        console.error('💥 Session check failed:', error);
-        if (!isResolved) {
-          setAuthError('Failed to validate session');
-          await nuclearReset();
-          isResolved = true;
-          clearTimeout(emergencyTimeout);
-        }
+    // Get initial session (simple, no aggressive validation)
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('❌ Initial session error:', error);
+        setAuthError('Could not load session');
       }
-    };
-
-    validateSession();
+      
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+      console.log('🔐 Initial auth state loaded:', session?.user?.id ? 'authenticated' : 'not authenticated');
+    });
 
     return () => {
       subscription.unsubscribe();
-      clearTimeout(emergencyTimeout);
-      if (timeoutId) clearTimeout(timeoutId);
     };
-  }, []); // No dependencies to prevent infinite loops
+  }, []);
 
   const signOut = async () => {
     try {

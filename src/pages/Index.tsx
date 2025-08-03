@@ -31,46 +31,18 @@ const Index = () => {
               <div className="space-y-4">
                 <div className="flex items-center space-x-2 text-destructive">
                   <AlertTriangle className="h-5 w-5" />
-                  <span className="text-sm">Authentication Issue Detected</span>
+                  <span className="text-sm">Authentication Issue</span>
                 </div>
                 <p className="text-sm text-muted-foreground">{authError}</p>
-                <div className="flex flex-col space-y-2">
-                  <Button 
-                    onClick={nuclearReset}
-                    variant="destructive"
-                    className="w-full"
-                  >
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                    Nuclear Reset & Fix
-                  </Button>
-                  <Button 
-                    onClick={() => navigate("/auth")}
-                    variant="default"
-                    className="w-full"
-                  >
-                    Go to Login
-                  </Button>
-                  <Button 
-                    onClick={() => navigate("/auth-debug")}
-                    variant="outline"
-                    className="w-full"
-                  >
-                    Enhanced Debug
-                  </Button>
-                </div>
+                <Button 
+                  onClick={() => navigate("/auth")}
+                  variant="default"
+                  className="w-full"
+                >
+                  Go to Login
+                </Button>
               </div>
             )}
-            
-            <div className="mt-6">
-              <Button 
-                onClick={nuclearReset}
-                variant="outline"
-                size="sm"
-                className="text-xs"
-              >
-                Having trouble? Nuclear Reset
-              </Button>
-            </div>
           </CardContent>
         </Card>
       </div>
