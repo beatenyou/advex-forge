@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useProfile } from '@/hooks/useProfile';
-import { useAuth } from '@/hooks/useAuth';
+import { useProfile } from './useProfile';
+import { useAuth } from './useAuth';
 
 interface MaintenanceData {
   id: string;
