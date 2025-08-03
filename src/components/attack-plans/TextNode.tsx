@@ -27,59 +27,6 @@ export const TextNode: React.FC<TextNodeProps> = ({ id, data, selected }) => {
   const [fontWeight, setFontWeight] = useState(data.fontWeight || 'normal');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   
-  // Enhanced size calculation based on content, font settings, and markdown
-  const getContentWidth = (text: string) => {
-    const lines = text.split('\n');
-    let maxLineLength = 0;
-    
-    lines.forEach(line => {
-      // Account for markdown list items (numbered/bulleted)
-      if (line.trim().match(/^\d+\.\s/) || line.trim().match(/^[-*+]\s/)) {
-        maxLineLength = Math.max(maxLineLength, line.length + 4); // Extra space for bullets/numbers
-      } else {
-        maxLineLength = Math.max(maxLineLength, line.length);
-      }
-    });
-    
-    // Character width based on font size
-    const charWidths = { sm: 7, base: 8, lg: 9, xl: 10 };
-    const charWidth = charWidths[fontSize] || 8;
-    
-    // Font weight adjustment
-    const weightMultiplier = fontWeight === 'bold' ? 1.1 : 1;
-    
-    // Calculate width with proper padding and toolbar space
-    const calculatedWidth = maxLineLength * charWidth * weightMultiplier + 80;
-    return Math.max(200, Math.min(600, calculatedWidth));
-  };
-  
-  const getContentHeight = (text: string) => {
-    const lines = text.split('\n');
-    
-    // Account for wrapped lines and list items
-    let totalLines = 0;
-    const maxWidthChars = Math.floor((getContentWidth(text) - 80) / 8);
-    
-    lines.forEach(line => {
-      if (line.length === 0) {
-        totalLines += 1;
-      } else if (line.length > maxWidthChars) {
-        totalLines += Math.ceil(line.length / maxWidthChars);
-      } else {
-        totalLines += 1;
-      }
-    });
-    
-    // Line height based on font size
-    const lineHeights = { sm: 20, base: 24, lg: 28, xl: 32 };
-    const lineHeight = lineHeights[fontSize] || 24;
-    
-    // Add space for toolbar (when visible) and padding
-    const toolbarHeight = (selected || isEditing) ? 50 : 0;
-    const calculatedHeight = totalLines * lineHeight + 60 + toolbarHeight;
-    
-    return Math.max(120, Math.min(800, calculatedHeight));
-  };
 
   // Sync local state with node data changes (for loading saved plans)
   useEffect(() => {
@@ -96,26 +43,6 @@ export const TextNode: React.FC<TextNodeProps> = ({ id, data, selected }) => {
     }
   }, [isEditing]);
 
-  // Update node dimensions when content, fontSize, or fontWeight changes
-  useEffect(() => {
-    const newWidth = getContentWidth(content);
-    const newHeight = getContentHeight(content);
-    
-    setNodes((nodes) =>
-      nodes.map((node) =>
-        node.id === id
-          ? { 
-              ...node, 
-              style: {
-                ...node.style,
-                width: newWidth,
-                height: newHeight
-              }
-            }
-          : node
-      )
-    );
-  }, [content, fontSize, fontWeight, selected, isEditing, id, setNodes]);
 
   const handleSave = () => {
     setIsEditing(false);
@@ -200,15 +127,12 @@ export const TextNode: React.FC<TextNodeProps> = ({ id, data, selected }) => {
     bold: 'font-bold'
   };
 
-  const dynamicWidth = getContentWidth(content);
-  const dynamicHeight = getContentHeight(content);
-
   return (
     <div 
       className="bg-background border border-border rounded-lg shadow-lg relative group"
       style={{ 
-        width: dynamicWidth,
-        height: dynamicHeight,
+        width: 300,
+        height: 200,
         minWidth: 150,
         minHeight: 80
       }}
