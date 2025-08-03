@@ -83,32 +83,60 @@ export function OrganizationManager() {
 
   const fetchMembers = async (orgId: string) => {
     try {
-      // Since we can't query auth.users directly, we'll need to modify this approach
-      const { data, error } = await supabase
+      console.log('Fetching members for organization:', orgId);
+      
+      // First, get organization members
+      const { data: membersData, error: membersError } = await supabase
         .from('organization_members')
         .select('*')
         .eq('organization_id', orgId)
         .eq('is_active', true);
 
-      if (error) throw error;
+      if (membersError) {
+        console.error('Error fetching members:', membersError);
+        throw membersError;
+      }
       
-      // For now, we'll set members without profile data
-      // In a production system, you'd need to implement a proper join or function
-      const membersWithProfiles = (data || []).map(member => ({
-        ...member,
-        profiles: {
-          email: `user-${member.user_id.slice(0, 8)}@company.com`,
-          display_name: `User ${member.user_id.slice(0, 8)}`
-        }
-      }));
+      console.log('Fetched members data:', membersData);
+      
+      if (!membersData || membersData.length === 0) {
+        setMembers([]);
+        return;
+      }
+
+      // Then get profile data for each member
+      const userIds = membersData.map(member => member.user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, email, display_name')
+        .in('user_id', userIds);
+
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        // Continue with placeholder data if profiles fail
+      }
+      
+      // Combine members with profile data
+      const membersWithProfiles = membersData.map(member => {
+        const profile = profilesData?.find(p => p.user_id === member.user_id);
+        return {
+          ...member,
+          profiles: profile || {
+            email: `user-${member.user_id.slice(0, 8)}@company.com`,
+            display_name: `User ${member.user_id.slice(0, 8)}`
+          }
+        };
+      });
       
       setMembers(membersWithProfiles);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Failed to fetch organization members:', error);
       toast({
         title: 'Error',
-        description: 'Failed to fetch organization members',
+        description: `Failed to fetch organization members: ${error.message}`,
         variant: 'destructive',
       });
+      setMembers([]); // Clear members on error
     }
   };
 
