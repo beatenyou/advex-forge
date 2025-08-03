@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { fetchTechniquesFromDatabase } from '@/lib/techniqueDataMigration';
 import { useNavigationPhases } from '@/hooks/useNavigationPhases';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Target, Key, Shield, Activity, Zap, Eye, Grid3X3, Users, Wifi, Server, Database, Network, Globe, Settings, Lock } from 'lucide-react';
 
 interface Technique {
   id: string;
@@ -35,6 +35,30 @@ interface TechniquePaletteProps {
   onAddTechnique: (technique: Technique) => void;
 }
 
+// Icon mapping for navigation phases
+const getIconComponent = (iconName: string) => {
+  const iconMap: { [key: string]: React.ComponentType<any> } = {
+    'Target': Target,
+    'Key': Key,
+    'Shield': Shield,
+    'Activity': Activity,
+    'Zap': Zap,
+    'Eye': Eye,
+    'Grid3X3': Grid3X3,
+    'Users': Users,
+    'Wifi': Wifi,
+    'Server': Server,
+    'Database': Database,
+    'Network': Network,
+    'Globe': Globe,
+    'Settings': Settings,
+    'Lock': Lock,
+    'Search': Search
+  };
+  
+  return iconMap[iconName] || Target; // Default to Target if icon not found
+};
+
 // Function to get phase label from navigation phases
 const getPhaseLabel = (phaseName: string, navigationPhases: any[]): string => {
   const phase = navigationPhases.find(p => p.name === phaseName);
@@ -46,7 +70,12 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPhase, setSelectedPhase] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const { phases: navigationPhases } = useNavigationPhases();
+  const { phases: navigationPhases, refetch } = useNavigationPhases();
+
+  // Filter out phases that shouldn't appear in the filter (like "all" or "All Techniques")
+  const displayPhases = navigationPhases.filter(phase => 
+    phase.name !== 'all' && phase.label.toLowerCase() !== 'all techniques'
+  );
 
   const handlePhaseDragStart = (e: React.DragEvent, phase: any) => {
     e.dataTransfer.setData('application/json', JSON.stringify({
@@ -112,19 +141,23 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
             >
               All
             </Button>
-            {navigationPhases.map(phase => (
-              <Button
-                key={phase.name}
-                variant={selectedPhase === phase.label ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSelectedPhase(phase.label)}
-                draggable
-                onDragStart={(e) => handlePhaseDragStart(e, phase)}
-                className="text-xs cursor-grab active:cursor-grabbing hover:cursor-grab"
-              >
-                {phase.icon} {phase.label}
-              </Button>
-            ))}
+            {displayPhases.map(phase => {
+              const IconComponent = getIconComponent(phase.icon);
+              return (
+                <Button
+                  key={phase.name}
+                  variant={selectedPhase === phase.label ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedPhase(phase.label)}
+                  draggable
+                  onDragStart={(e) => handlePhaseDragStart(e, phase)}
+                  className="text-xs cursor-grab active:cursor-grabbing hover:cursor-grab flex items-center gap-1"
+                >
+                  <IconComponent className="w-3 h-3" />
+                  {phase.label}
+                </Button>
+              );
+            })}
           </div>
         </div>
       </CardHeader>
