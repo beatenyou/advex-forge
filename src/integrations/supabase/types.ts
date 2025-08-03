@@ -1913,6 +1913,22 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      bulk_create_and_assign_users: {
+        Args: {
+          org_id: string
+          user_emails: string[]
+          default_role?: string
+          access_level?: string
+          admin_user_id?: string
+        }
+        Returns: {
+          email: string
+          status: string
+          message: string
+          user_id: string
+          temp_password: string
+        }[]
+      }
       bulk_invite_users: {
         Args: {
           org_id: string
@@ -2032,6 +2048,15 @@ export type Database = {
           quota_used: number
           quota_limit: number
           plan_name: string
+        }[]
+      }
+      get_user_organization_context: {
+        Args: { target_user_id: string }
+        Returns: {
+          organization_id: string
+          organization_name: string
+          organization_role: string
+          is_admin: boolean
         }[]
       }
       get_user_organization_ids: {
