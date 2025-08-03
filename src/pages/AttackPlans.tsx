@@ -22,8 +22,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import { Crown, Save, Download, Plus, FileText, FileSpreadsheet, Lock, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import PhaseNavigationSidebar from '@/components/attack-plans/PhaseNavigationSidebar';
-import TechniqueQuickAccess from '@/components/attack-plans/TechniqueQuickAccess';
+import { TechniquePalette } from '@/components/attack-plans/TechniquePalette';
 import { TechniqueDetailsPanel } from '@/components/attack-plans/TechniqueDetailsPanel';
 import { AttackPlanCanvas } from '@/components/attack-plans/AttackPlanCanvas';
 
@@ -43,7 +42,6 @@ const AttackPlansPage: React.FC = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
-  const [selectedPhase, setSelectedPhase] = useState<string | null>(null);
   const [planTitle, setPlanTitle] = useState('Untitled Attack Plan');
   const [planDescription, setPlanDescription] = useState('');
   const [savedPlans, setSavedPlans] = useState<AttackPlan[]>([]);
@@ -361,71 +359,46 @@ const AttackPlansPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex">
-        {/* Left Sidebar - Phase Navigation */}
-        <PhaseNavigationSidebar
-          selectedPhase={selectedPhase}
-          onPhaseSelect={setSelectedPhase}
-        />
+        {/* Left Sidebar - Technique Palette */}
+        <div className="w-80 border-r bg-card">
+          <TechniquePalette onAddTechnique={(technique) => {
+            console.log('Adding technique to canvas:', technique.title);
+            
+            // Calculate position in the center of the current viewport
+            let x = 300; // Default fallback
+            let y = 300; // Default fallback
+            
+            if (reactFlowInstance) {
+              const viewport = reactFlowInstance.getViewport();
+              const canvasCenter = reactFlowInstance.screenToFlowPosition({
+                x: window.innerWidth / 2,
+                y: window.innerHeight / 2,
+              });
+              
+              // Add slight offset to prevent nodes from stacking exactly on top of each other
+              const offset = (nodeCounter.current % 5) * 50;
+              x = canvasCenter.x + offset;
+              y = canvasCenter.y + offset;
+            }
+            
+            const newNode: Node = {
+              id: `technique-${Date.now()}-${nodeCounter.current}`,
+              type: 'technique',
+              position: { x, y },
+              data: { 
+                label: technique.title,
+                technique: technique
+              }
+            };
+            
+            nodeCounter.current += 1;
+            setNodes((nds) => [...nds, newNode]);
+            toast.success(`Added ${technique.title} to canvas`);
+          }} />
+        </div>
 
         {/* Center - Canvas */}
-        <div className="flex-1 relative flex flex-col">
-          {/* Technique Quick Access Toolbar */}
-          <div className="border-b bg-card px-4 py-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <TechniqueQuickAccess
-                  selectedPhase={selectedPhase}
-                  onAddTechnique={(technique) => {
-                    console.log('Adding technique to canvas:', technique.title);
-                    
-                    // Calculate position in the center of the current viewport
-                    let x = 300; // Default fallback
-                    let y = 300; // Default fallback
-                    
-                    if (reactFlowInstance) {
-                      const viewport = reactFlowInstance.getViewport();
-                      const canvasCenter = reactFlowInstance.screenToFlowPosition({
-                        x: window.innerWidth / 2,
-                        y: window.innerHeight / 2,
-                      });
-                      
-                      // Add slight offset to prevent nodes from stacking exactly on top of each other
-                      const offset = (nodeCounter.current % 5) * 50;
-                      x = canvasCenter.x + offset;
-                      y = canvasCenter.y + offset;
-                    }
-                    
-                    const newNode: Node = {
-                      id: `technique-${Date.now()}-${nodeCounter.current}`,
-                      type: 'technique',
-                      position: { x, y },
-                      data: { 
-                        label: technique.title,
-                        technique: technique
-                      }
-                    };
-                    
-                    nodeCounter.current += 1;
-                    setNodes((nds) => [...nds, newNode]);
-                    toast.success(`Added ${technique.title} to canvas`);
-                  }}
-                />
-                
-                {selectedPhase && (
-                  <div className="text-sm text-muted-foreground">
-                    Techniques filtered by selected phase
-                  </div>
-                )}
-              </div>
-              
-              <div className="text-sm text-muted-foreground">
-                Drag phases from sidebar to add visual organizers
-              </div>
-            </div>
-          </div>
-          
-          {/* Canvas */}
-          <div className="flex-1">
+        <div className="flex-1 relative">
             <AttackPlanCanvas
               nodes={nodes}
               edges={edges}
@@ -436,7 +409,6 @@ const AttackPlansPage: React.FC = () => {
               onInit={setReactFlowInstance}
               onDrop={handleCanvasDrop}
             />
-          </div>
         </div>
 
         {/* Right Sidebar - Technique Details */}
