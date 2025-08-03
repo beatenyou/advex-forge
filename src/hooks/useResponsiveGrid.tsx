@@ -12,8 +12,8 @@ export const useResponsiveGrid = ({
   isChatVisible, 
   isWideScreen = false,
   sidebarVisible = true,
-  minCardWidth = 320, 
-  gap = 32 
+  minCardWidth = 280, 
+  gap = 24 
 }: UseResponsiveGridOptions) => {
   const [columnCount, setColumnCount] = useState(2);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -22,31 +22,32 @@ export const useResponsiveGrid = ({
   const calculateColumns = useCallback((containerWidth: number) => {
     if (containerWidth === 0) return 1;
     
-    // Calculate effective card width including gap
-    const effectiveCardWidth = minCardWidth + gap;
-    const maxPossibleColumns = Math.floor(containerWidth / effectiveCardWidth);
+    // More aggressive column calculation for better space utilization
+    const availableWidth = containerWidth - (gap * 2); // Account for container padding
+    const maxPossibleColumns = Math.floor(availableWidth / minCardWidth);
     
     let columns;
     
-    // Enhanced responsive breakpoints with layout context
-    if (containerWidth < 640) {
+    // Optimized responsive breakpoints for better multi-column layout
+    if (containerWidth < 480) {
       columns = 1; // Mobile: always 1 column
-    } else if (containerWidth < 900) {
-      columns = Math.min(2, maxPossibleColumns); // Small screens: max 2 columns
-    } else if (containerWidth < 1200) {
+    } else if (containerWidth < 800) {
+      columns = Math.min(2, maxPossibleColumns); // Small tablets: max 2 columns
+    } else if (containerWidth < 1100) {
       columns = Math.min(3, maxPossibleColumns); // Medium screens: max 3 columns  
-    } else if (containerWidth < 1600) {
+    } else if (containerWidth < 1400) {
       columns = Math.min(4, maxPossibleColumns); // Large screens: max 4 columns
     } else {
-      columns = Math.min(6, maxPossibleColumns); // XL screens: max 6 columns
+      columns = Math.min(5, maxPossibleColumns); // XL screens: max 5 columns
     }
     
-    // Ensure minimum of 1 column
-    columns = Math.max(1, columns);
+    // Ensure minimum of 1 column and prefer more columns when possible
+    columns = Math.max(1, Math.min(columns, maxPossibleColumns));
     
     console.log('🔄 Grid calculation:', {
       containerWidth,
-      effectiveCardWidth,
+      availableWidth,
+      minCardWidth,
       maxPossibleColumns,
       finalColumns: columns,
       isChatVisible,
@@ -62,11 +63,14 @@ export const useResponsiveGrid = ({
     if (!container) return;
 
     const updateColumns = () => {
-      // Multiple methods to get container width for better reliability
+      // Multiple methods to get container width with enhanced reliability
       const rect = container.getBoundingClientRect();
-      const containerWidth = rect.width || container.offsetWidth || container.clientWidth;
+      const computedStyle = window.getComputedStyle(container);
+      const paddingLeft = parseFloat(computedStyle.paddingLeft) || 0;
+      const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
+      const containerWidth = (rect.width || container.offsetWidth || container.clientWidth) - paddingLeft - paddingRight;
       
-      if (containerWidth > 0) {
+      if (containerWidth > 200) {
         const newColumnCount = calculateColumns(containerWidth);
         
         console.log('📏 Container measurements:', {

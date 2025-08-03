@@ -474,8 +474,8 @@ Can you help me understand this scenario and provide guidance on the techniques,
         {!isMobile && <Sidebar techniques={techniques} onTechniqueClick={openTechniqueModal} selectedPhase={selectedPhase} onPhaseSelect={setSelectedPhase} onClearAllFavorites={clearAllFavorites} selectedScenario={selectedScenario} onScenarioSelect={handleScenarioSelect} onOpenChatWithScenario={handleOpenChatWithScenario} />}
 
         {/* Main Content - Optimized container for multi-column grid */}
-        <main className="flex-1 w-full min-w-0">
-          <div className={`${isMobile ? 'p-4' : 'p-8 lg:p-12'} w-full`}>
+        <main className="flex-1 w-full min-w-0 overflow-hidden">
+          <div className={`${isMobile ? 'p-4' : 'p-6'} w-full h-full overflow-y-auto`}>
           {/* Phase Section */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-6">
@@ -491,7 +491,7 @@ Can you help me understand this scenario and provide guidance on the techniques,
             <div 
               ref={containerRef} 
               style={gridStyle} 
-              className="mb-8 w-full min-w-0"
+              className="w-full"
             >
               {filteredTechniques.map(technique => (
                 <TechniqueCard 
