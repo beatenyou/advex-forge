@@ -4,7 +4,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchTechniquesFromDatabase } from '@/lib/techniqueDataMigration';
+import { useNavigationPhases } from '@/hooks/useNavigationPhases';
 import { Search, Plus } from 'lucide-react';
 
 interface Technique {
@@ -25,8 +26,7 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPhase, setSelectedPhase] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const phases = ['Reconnaissance', 'Weaponization', 'Delivery', 'Exploitation', 'Installation', 'Command & Control', 'Actions'];
+  const { phases: navigationPhases } = useNavigationPhases();
 
   useEffect(() => {
     loadTechniques();
@@ -34,14 +34,8 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
 
   const loadTechniques = async () => {
     try {
-      const { data, error } = await supabase
-        .from('techniques')
-        .select('id, title, description, phase, category, tags')
-        .eq('is_active', true)
-        .order('title');
-
-      if (error) throw error;
-      setTechniques(data || []);
+      const data = await fetchTechniquesFromDatabase();
+      setTechniques(data);
     } catch (error) {
       console.error('Error loading techniques:', error);
     } finally {
@@ -80,15 +74,15 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
             >
               All
             </Button>
-            {phases.map(phase => (
+            {navigationPhases.map(phase => (
               <Button
-                key={phase}
-                variant={selectedPhase === phase ? "default" : "outline"}
+                key={phase.name}
+                variant={selectedPhase === phase.name ? "default" : "outline"}
                 size="sm"
-                onClick={() => setSelectedPhase(phase)}
+                onClick={() => setSelectedPhase(phase.name)}
                 className="text-xs"
               >
-                {phase.split(' ')[0]}
+                {phase.label}
               </Button>
             ))}
           </div>

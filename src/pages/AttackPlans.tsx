@@ -24,7 +24,8 @@ import {
   NodeTypes
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { Crown, Save, Download, Plus, FileText, FileSpreadsheet, Lock } from 'lucide-react';
+import { Crown, Save, Download, Plus, FileText, FileSpreadsheet, Lock, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { TechniquePalette } from '@/components/attack-plans/TechniquePalette';
 import { TechniqueDetailsPanel } from '@/components/attack-plans/TechniqueDetailsPanel';
 
@@ -40,6 +41,7 @@ interface AttackPlan {
 const AttackPlansPage: React.FC = () => {
   const { isProUser, loading: proLoading } = useProPlanCheck();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
@@ -189,6 +191,15 @@ const AttackPlansPage: React.FC = () => {
       <div className="border-b bg-card px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Main
+            </Button>
             <div className="flex items-center gap-2">
               <Crown className="w-5 h-5 text-yellow-500" />
               <h1 className="text-2xl font-bold">Attack Plans</h1>
