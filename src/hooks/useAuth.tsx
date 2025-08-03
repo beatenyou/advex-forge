@@ -105,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }, 10000); // 10 seconds
 
-    // Set up auth state listener
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log('🔐 Auth state change:', event, session?.user?.id);
@@ -113,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Clear emergency timeout once we get any auth state change
         clearTimeout(emergencyTimeout);
         
+        // Only update state synchronously - no async operations here
         setSession(session);
         setUser(session?.user ?? null);
         setAuthError(null);

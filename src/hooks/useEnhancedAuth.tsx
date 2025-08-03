@@ -356,10 +356,13 @@ export function useEnhancedAuth() {
     return validation;
   };
 
-  // Start monitoring when user logs in
+  // Start monitoring when user logs in - defer to prevent blocking auth
   useEffect(() => {
     if (user && !loading && !isMonitoring) {
-      startMonitoring();
+      // Defer enhanced auth to prevent blocking main auth flow
+      setTimeout(() => {
+        startMonitoring();
+      }, 1000);
     }
 
     return () => {
@@ -369,19 +372,21 @@ export function useEnhancedAuth() {
     };
   }, [user, loading]);
 
-  // Log authentication state changes
+  // Log authentication state changes - defer to prevent blocking auth
   useEffect(() => {
     if (!loading) {
-      if (user) {
-        logAuthEvent('auth_state_authenticated', {
-          userId: user.id,
-          email: user.email
-        });
-      } else {
-        logAuthEvent('auth_state_unauthenticated', {
-          previousSession: !!session
-        });
-      }
+      setTimeout(() => {
+        if (user) {
+          logAuthEvent('auth_state_authenticated', {
+            userId: user.id,
+            email: user.email
+          });
+        } else {
+          logAuthEvent('auth_state_unauthenticated', {
+            previousSession: !!session
+          });
+        }
+      }, 500);
     }
   }, [user, loading]);
 
