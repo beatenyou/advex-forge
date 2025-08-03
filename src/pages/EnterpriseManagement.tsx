@@ -1,45 +1,62 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { EnhancedOrganizationManager } from '@/components/enterprise/EnhancedOrganizationManager';
 import { EnhancedBulkUserManager } from '@/components/enterprise/EnhancedBulkUserManager';
-import { Building2, Users, Settings, BarChart3 } from 'lucide-react';
+import { EnhancedUserManager } from '@/components/EnhancedUserManager';
+import { OrganizationSelector } from '@/components/OrganizationSelector';
+import { OrganizationProvider } from '@/hooks/useOrganizationContext';
+import { Building2, Users, Settings, BarChart3, UserCheck } from 'lucide-react';
 
 export default function EnterpriseManagement() {
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold">Enterprise Management</h1>
-        <p className="text-muted-foreground">
-          Manage organizations, users, and enterprise features at scale
-        </p>
-      </div>
+    <OrganizationProvider>
+      <div className="container mx-auto p-6">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold">Enterprise Management</h1>
+          <p className="text-muted-foreground">
+            Manage organizations, users, and enterprise features at scale
+          </p>
+          
+          {/* Organization Context Selector */}
+          <div className="mt-4 p-4 bg-muted/50 rounded-lg">
+            <OrganizationSelector />
+          </div>
+        </div>
 
-      <Tabs defaultValue="organizations" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="organizations" className="flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
-            Organizations
-          </TabsTrigger>
-          <TabsTrigger value="bulk-users" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Bulk Users
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4" />
-            Analytics
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="flex items-center gap-2">
-            <Settings className="h-4 w-4" />
-            Settings
-          </TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="organizations" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="organizations" className="flex items-center gap-2">
+              <Building2 className="h-4 w-4" />
+              Organizations
+            </TabsTrigger>
+            <TabsTrigger value="user-management" className="flex items-center gap-2">
+              <UserCheck className="h-4 w-4" />
+              User Management
+            </TabsTrigger>
+            <TabsTrigger value="bulk-users" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Bulk Users
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              Settings
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="organizations" className="space-y-6">
-          <EnhancedOrganizationManager />
-        </TabsContent>
+          <TabsContent value="organizations" className="space-y-6">
+            <EnhancedOrganizationManager />
+          </TabsContent>
 
-        <TabsContent value="bulk-users" className="space-y-6">
-          <EnhancedBulkUserManager />
-        </TabsContent>
+          <TabsContent value="user-management" className="space-y-6">
+            <EnhancedUserManager />
+          </TabsContent>
+
+          <TabsContent value="bulk-users" className="space-y-6">
+            <EnhancedBulkUserManager />
+          </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">
           <div className="text-center py-12">
@@ -62,7 +79,8 @@ export default function EnterpriseManagement() {
             </p>
           </div>
         </TabsContent>
-      </Tabs>
-    </div>
+        </Tabs>
+      </div>
+    </OrganizationProvider>
   );
 }
