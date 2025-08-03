@@ -213,7 +213,22 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, cardW
 
   return (
     <>
-      <Card className="group relative overflow-hidden border-border/50 bg-gradient-card backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/30 hover:-translate-y-0.5 cursor-pointer">
+      <Card 
+        className="group relative overflow-hidden border-border/50 bg-gradient-card backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/30 hover:-translate-y-0.5 cursor-pointer"
+        onClick={() => {
+          // Track modal open
+          const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
+          trackTechniqueModalOpened({
+            techniqueId: technique.id,
+            techniqueTitle: technique.title,
+            mitreId: technique.mitre_id,
+            phase: primaryPhase,
+            category: technique.category
+          });
+          
+          setIsModalOpen(true);
+        }}
+      >
         <CardContent className="p-4 h-full flex flex-col">
           {/* Header */}
           <div className="flex items-start justify-between gap-3 mb-3">
@@ -380,41 +395,12 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, cardW
 
           {/* Footer with action buttons - bottom right only */}
           <div className="flex items-center justify-end gap-1 pt-2 border-t border-border/30 min-h-[28px]">
-            {/* View Details */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary flex-shrink-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      
-                      // Track modal open
-                      const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
-                      trackTechniqueModalOpened({
-                        techniqueId: technique.id,
-                        techniqueTitle: technique.title,
-                        mitreId: technique.mitre_id,
-                        phase: primaryPhase,
-                        category: technique.category
-                      });
-                      
-                      setIsModalOpen(true);
-                    }}
-                  >
-                    <Eye className="w-3 h-3" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>View details</p>
-                </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              {/* Support Ticket */}
-              {showSecondaryActions && <QuickSupportTicket technique={technique} />}
+            {/* Support Ticket */}
+            {showSecondaryActions && (
+              <div onClick={(e) => e.stopPropagation()}>
+                <QuickSupportTicket technique={technique} />
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
