@@ -12,37 +12,37 @@ export const useResponsiveGrid = ({
   isChatVisible, 
   isWideScreen = false,
   sidebarVisible = true,
-  minCardWidth = 280, 
-  gap = 24 
+  minCardWidth = 240, 
+  gap = 20 
 }: UseResponsiveGridOptions) => {
-  const [columnCount, setColumnCount] = useState(2);
+  const [columnCount, setColumnCount] = useState(3);
   const [isInitialized, setIsInitialized] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const calculateColumns = useCallback((containerWidth: number) => {
-    if (containerWidth === 0) return 1;
+    if (containerWidth === 0) return 3;
     
-    // More aggressive column calculation for better space utilization
-    const availableWidth = containerWidth - (gap * 2); // Account for container padding
+    // Aggressive column calculation for maximum space utilization
+    const availableWidth = containerWidth - 40; // Account for container padding
     const maxPossibleColumns = Math.floor(availableWidth / minCardWidth);
     
     let columns;
     
-    // Optimized responsive breakpoints for better multi-column layout
-    if (containerWidth < 480) {
+    // Optimized breakpoints for better multi-column layout
+    if (containerWidth < 400) {
       columns = 1; // Mobile: always 1 column
-    } else if (containerWidth < 800) {
-      columns = Math.min(2, maxPossibleColumns); // Small tablets: max 2 columns
-    } else if (containerWidth < 1100) {
-      columns = Math.min(3, maxPossibleColumns); // Medium screens: max 3 columns  
-    } else if (containerWidth < 1400) {
-      columns = Math.min(4, maxPossibleColumns); // Large screens: max 4 columns
+    } else if (containerWidth < 720) {
+      columns = Math.max(2, Math.min(3, maxPossibleColumns)); // Small screens: 2-3 columns
+    } else if (containerWidth < 1000) {
+      columns = Math.max(3, Math.min(4, maxPossibleColumns)); // Medium screens: 3-4 columns  
+    } else if (containerWidth < 1300) {
+      columns = Math.max(4, Math.min(5, maxPossibleColumns)); // Large screens: 4-5 columns
     } else {
-      columns = Math.min(5, maxPossibleColumns); // XL screens: max 5 columns
+      columns = Math.max(5, Math.min(6, maxPossibleColumns)); // XL screens: 5-6 columns
     }
     
-    // Ensure minimum of 1 column and prefer more columns when possible
-    columns = Math.max(1, Math.min(columns, maxPossibleColumns));
+    // Force minimum columns based on available space
+    columns = Math.max(Math.min(3, maxPossibleColumns), Math.min(columns, maxPossibleColumns));
     
     console.log('🔄 Grid calculation:', {
       containerWidth,
@@ -70,7 +70,7 @@ export const useResponsiveGrid = ({
       const paddingRight = parseFloat(computedStyle.paddingRight) || 0;
       const containerWidth = (rect.width || container.offsetWidth || container.clientWidth) - paddingLeft - paddingRight;
       
-      if (containerWidth > 200) {
+      if (containerWidth > 100) {
         const newColumnCount = calculateColumns(containerWidth);
         
         console.log('📏 Container measurements:', {
@@ -79,7 +79,9 @@ export const useResponsiveGrid = ({
           clientWidth: container.clientWidth,
           finalWidth: containerWidth,
           calculatedColumns: newColumnCount,
-          currentColumns: columnCount
+          currentColumns: columnCount,
+          minCardWidth,
+          maxPossible: Math.floor((containerWidth - 40) / minCardWidth)
         });
         
         if (newColumnCount !== columnCount) {
@@ -90,9 +92,12 @@ export const useResponsiveGrid = ({
           setIsInitialized(true);
         }
       } else {
-        console.warn('⚠️ Container width is 0, retrying...');
-        // Retry after DOM updates with longer delay
-        setTimeout(() => requestAnimationFrame(updateColumns), 50);
+        console.warn('⚠️ Container width too small, forcing 3 columns...');
+        // Force 3 columns as fallback
+        if (columnCount !== 3) {
+          setColumnCount(3);
+        }
+        setTimeout(() => requestAnimationFrame(updateColumns), 100);
       }
     };
 
@@ -102,9 +107,11 @@ export const useResponsiveGrid = ({
 
     resizeObserver.observe(container);
     
-    // Initial calculation
+    // Initial calculation with multiple attempts
     updateColumns();
     requestAnimationFrame(updateColumns);
+    setTimeout(updateColumns, 100);
+    setTimeout(updateColumns, 300);
     
     return () => {
       resizeObserver.disconnect();

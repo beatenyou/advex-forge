@@ -83,9 +83,11 @@ export const Dashboard = ({
     gridStyle,
     isInitialized
   } = useResponsiveGrid({
-    isChatVisible,
-    isWideScreen,
-    sidebarVisible: !isMobile
+    isChatVisible: isChatVisible || false,
+    isWideScreen: isWideScreen || false,
+    sidebarVisible: !isMobile,
+    minCardWidth: 240,
+    gap: 20
   });
 
   // Force grid recalculation after layout changes
