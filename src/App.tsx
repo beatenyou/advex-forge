@@ -18,10 +18,12 @@ import AttackPlans from "./pages/AttackPlans";
 import NotFound from "./pages/NotFound";
 import { MaintenancePage } from "./pages/MaintenancePage";
 
-// Component to initialize tracking
+// Component to initialize tracking (without immediate auth dependency)
 function AnalyticsProvider({ children }: { children: React.ReactNode }) {
-  useAnalytics();
-  usePerformanceMonitoring();
+  const analytics = useAnalytics();
+  const performance = usePerformanceMonitoring();
+  
+  // Don't use the returned values to prevent re-renders
   return <>{children}</>;
 }
 

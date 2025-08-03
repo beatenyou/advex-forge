@@ -23,7 +23,9 @@ interface SessionData {
 }
 
 export function useAnalytics() {
-  const { user } = useAuth();
+  const authContext = useAuth();
+  // Use a ref to avoid re-renders when auth changes
+  const userRef = useRef(authContext.user);
   const sessionId = useRef<string>();
   const sessionStart = useRef<Date>();
   const pageCount = useRef<number>(0);
@@ -41,12 +43,17 @@ export function useAnalytics() {
     }
   }, []);
 
+  // Update user ref when auth changes
+  useEffect(() => {
+    userRef.current = authContext.user;
+  }, [authContext.user]);
+
   // Create user session when user is authenticated
   useEffect(() => {
-    if (user && sessionId.current && sessionStart.current) {
+    if (userRef.current && sessionId.current && sessionStart.current) {
       createUserSession();
     }
-  }, [user]);
+  }, [authContext.user]); // Only depend on user changes
 
   // Track activity and update session
   useEffect(() => {
@@ -134,14 +141,14 @@ export function useAnalytics() {
   };
 
   const createUserSession = async () => {
-    if (!sessionId.current || !sessionStart.current || !user) return;
+    if (!sessionId.current || !sessionStart.current || !userRef.current) return;
 
     try {
       const analyticsData = getAnalyticsData();
       
       await supabase.from('user_sessions').insert({
         id: sessionId.current,
-        user_id: user.id,
+        user_id: userRef.current.id,
         session_start: sessionStart.current.toISOString(),
         pages_visited: pageCount.current,
         referrer: analyticsData.referrer,
@@ -173,11 +180,11 @@ export function useAnalytics() {
   };
 
   const trackActivity = async (activityType: string, description?: string) => {
-    if (!user) return;
+    if (!userRef.current) return;
 
     try {
       await supabase.from('user_activity_log').insert({
-        user_id: user.id,
+        user_id: userRef.current.id,
         activity_type: activityType,
         description,
         user_agent: navigator.userAgent,
