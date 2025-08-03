@@ -83,20 +83,22 @@ export const Dashboard = ({
     gridStyle,
     isInitialized
   } = useResponsiveGrid({
-    isChatVisible
+    isChatVisible,
+    isWideScreen,
+    sidebarVisible: !isMobile
   });
 
-  // Force grid recalculation after navigation transitions
+  // Force grid recalculation after layout changes
   useEffect(() => {
     const timer = setTimeout(() => {
       if (containerRef.current) {
         // Trigger a resize event to recalculate grid
         window.dispatchEvent(new Event('resize'));
       }
-    }, 100);
+    }, 150);
     
     return () => clearTimeout(timer);
-  }, [isChatVisible, containerRef]);
+  }, [isChatVisible, isWideScreen, containerRef]);
 
   // Initialize selectedPhase when navigation phases load
   useEffect(() => {
@@ -471,9 +473,9 @@ Can you help me understand this scenario and provide guidance on the techniques,
         {/* Desktop Sidebar */}
         {!isMobile && <Sidebar techniques={techniques} onTechniqueClick={openTechniqueModal} selectedPhase={selectedPhase} onPhaseSelect={setSelectedPhase} onClearAllFavorites={clearAllFavorites} selectedScenario={selectedScenario} onScenarioSelect={handleScenarioSelect} onOpenChatWithScenario={handleOpenChatWithScenario} />}
 
-        {/* Main Content - Better container structure for responsive grid */}
-        <main className="flex-1 max-w-none w-full">
-          <div className={`${isMobile ? 'p-4' : 'p-8 lg:p-12'} max-w-full mx-auto`}>
+        {/* Main Content - Optimized container for multi-column grid */}
+        <main className="flex-1 w-full min-w-0">
+          <div className={`${isMobile ? 'p-4' : 'p-8 lg:p-12'} w-full`}>
           {/* Phase Section */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-6">
@@ -485,11 +487,11 @@ Can you help me understand this scenario and provide guidance on the techniques,
               </Badge>
             </div>
 
-            {/* Technique Cards Grid - Dynamic responsive columns */}
+            {/* Technique Cards Grid - Multi-column responsive layout */}
             <div 
               ref={containerRef} 
               style={gridStyle} 
-              className="mb-8 w-full"
+              className="mb-8 w-full min-w-0"
             >
               {filteredTechniques.map(technique => (
                 <TechniqueCard 
