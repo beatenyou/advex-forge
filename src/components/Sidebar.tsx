@@ -112,12 +112,16 @@ export const Sidebar = ({
           schema: 'public',
           table: 'cheat_sheets'
         },
-        () => {
-          console.log('Cheat sheets table changed, refreshing sidebar...');
+        (payload) => {
+          console.log('🔄 [Sidebar] Cheat sheets real-time update received:', payload);
+          console.log('🔄 [Sidebar] Event type:', payload.eventType);
+          console.log('🔄 [Sidebar] Refreshing cheat sheets...');
           fetchCheatSheets();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 [Sidebar] Cheat sheets channel status:', status);
+      });
 
     // Listen for manual refresh events
     const handleRefreshScenarios = () => {

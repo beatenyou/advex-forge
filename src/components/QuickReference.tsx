@@ -73,12 +73,16 @@ export const QuickReference = () => {
           schema: 'public',
           table: 'cheat_sheets'
         },
-        () => {
-          console.log('Cheat sheets table changed, refreshing...');
+        (payload) => {
+          console.log('🔄 [QuickReference] Cheat sheets real-time update received:', payload);
+          console.log('🔄 [QuickReference] Event type:', payload.eventType);
+          console.log('🔄 [QuickReference] Refreshing cheat sheets...');
           fetchCheatSheets();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 [QuickReference] Cheat sheets channel status:', status);
+      });
 
     return () => {
       supabase.removeChannel(cheatSheetsChannel);
