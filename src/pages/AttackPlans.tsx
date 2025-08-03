@@ -336,6 +336,35 @@ const AttackPlansPage: React.FC = () => {
                 font-size: 0.9rem;
                 color: hsl(210 40% 85%);
               }
+              .tool-tag {
+                background-color: hsl(217 30% 20%);
+                color: hsl(195 100% 50%);
+                padding: 2px 8px;
+                margin: 2px;
+                border-radius: 4px;
+                border: 1px solid hsl(195 100% 50% / 0.3);
+                display: inline-block;
+                font-size: 0.85rem;
+                font-weight: 500;
+              }
+              .command-block {
+                background-color: hsl(217 30% 15%);
+                color: hsl(210 40% 90%);
+                padding: 12px;
+                margin: 8px 0;
+                border-radius: 6px;
+                border: 1px solid hsl(217 30% 25%);
+                overflow-x: auto;
+                font-family: 'Courier New', Consolas, monospace;
+                font-size: 0.9rem;
+                line-height: 1.4;
+              }
+              .command-block code {
+                color: inherit;
+                background: none;
+                padding: 0;
+                font-family: inherit;
+              }
               @media print {
                 body { max-width: none; margin: 0; padding: 15px; }
                 .node { break-inside: avoid; }
@@ -445,14 +474,14 @@ const AttackPlansPage: React.FC = () => {
             ` : ''}
             
             ${technique.tools && technique.tools.length > 0 ? `
-              <p><strong>Tools:</strong> ${technique.tools.map((tool: string) => `<span style="background: #f0f0f0; padding: 2px 6px; margin: 2px; border-radius: 4px; display: inline-block;">${tool}</span>`).join(' ')}</p>
+              <p><strong>Tools:</strong> ${technique.tools.map((tool: string) => `<span class="tool-tag">${tool}</span>`).join(' ')}</p>
             ` : ''}
             
             ${technique.commands && technique.commands.length > 0 ? `
               <div><strong>Commands:</strong></div>
               ${technique.commands.map((cmd: any) => {
                 const command = typeof cmd === 'string' ? cmd : cmd.command || cmd.text || JSON.stringify(cmd);
-                return `<pre style="background: #f5f5f5; padding: 8px; margin: 4px 0; border-radius: 4px; overflow-x: auto;"><code>${command}</code></pre>`;
+                return `<pre class="command-block"><code>${command}</code></pre>`;
               }).join('')}
             ` : ''}
           </div>
