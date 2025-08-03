@@ -46,6 +46,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isRecovering, setIsRecovering] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  console.log('[AUTH_PROVIDER] Component render, initialized:', initialized);
 
   const fetchUserProfile = async (userId: string, retryCount = 0): Promise<UserProfile | null> => {
     try {
@@ -193,10 +196,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // Prevent multiple initializations
+    if (initialized) {
+      console.log('[AUTH] Already initialized, skipping...');
+      return;
+    }
+
+    console.log('[AUTH] Starting authentication initialization...');
+    setInitialized(true);
+    
     let mounted = true;
+    let authSubscription: { unsubscribe: () => void } | null = null;
     
     const handleAuthChange = (event: string, session: Session | null) => {
-      if (!mounted) return;
+      if (!mounted) {
+        console.log('[AUTH] Component unmounted, ignoring auth change');
+        return;
+      }
       
       console.log(`[AUTH] ${event}:`, session?.user?.email || 'No user', {
         hasSession: !!session,
@@ -208,7 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user || null);
       setAuthError(null);
       
-      // Handle user profile in a separate effect to prevent loops
+      // Handle user profile loading
       if (session?.user) {
         // Defer profile loading to prevent blocking the auth flow
         setTimeout(() => {
@@ -216,10 +232,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             fetchUserProfile(session.user.id).then(profile => {
               if (mounted && profile) {
                 setProfile(profile);
+                console.log('[AUTH] Profile loaded successfully');
               }
             }).catch(error => {
               console.error('[AUTH] Profile fetch error:', error);
               if (mounted) {
+                // Create a basic profile as fallback
                 setProfile({
                   user_id: session.user.id,
                   email: session.user.email || '',
@@ -235,7 +253,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               }
             });
           }
-        }, 0);
+        }, 100);
       } else {
         setProfile(null);
       }
@@ -243,18 +261,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     };
 
-    // Set up auth listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
-
-    // Get initial session
     const initializeAuth = async () => {
       try {
+        console.log('[AUTH] Setting up auth listener...');
+        
+        // Set up auth listener FIRST
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(handleAuthChange);
+        authSubscription = subscription;
+        
+        console.log('[AUTH] Getting initial session...');
+        
+        // THEN get initial session
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
           console.error('[AUTH] Session error:', error);
-          setAuthError(`Session error: ${error.message}`);
-          setLoading(false);
+          if (mounted) {
+            setAuthError(`Session error: ${error.message}`);
+            setLoading(false);
+          }
           return;
         }
         
@@ -273,10 +298,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initializeAuth();
 
     return () => {
+      console.log('[AUTH] Cleaning up auth effect...');
       mounted = false;
-      subscription.unsubscribe();
+      if (authSubscription) {
+        authSubscription.unsubscribe();
+      }
     };
-  }, []);
+  }, [initialized]); // Depend on initialized flag
 
   const clearAuthState = () => {
     console.log('[AUTH] Clearing auth state and browser storage');
