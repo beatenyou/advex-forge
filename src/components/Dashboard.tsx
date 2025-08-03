@@ -512,7 +512,7 @@ Can you help me understand this scenario and provide guidance on the techniques,
             <div 
               ref={containerRef} 
               style={gridStyle} 
-              className="mb-8 w-full px-6"
+              className="mb-8 w-full"
             >
               {filteredTechniques.map(technique => (
                 <TechniqueCard 

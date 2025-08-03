@@ -80,22 +80,29 @@ export const QuickReference = () => {
   }, []);
   const fetchCheatSheets = async () => {
     try {
-      const {
-        data,
-        error
-      } = await supabase.from('cheat_sheets').select('*').order('created_at', {
-        ascending: false
-      });
-      if (error) throw error;
+      console.log('🔄 Fetching cheat sheets...');
+      const { data, error } = await supabase
+        .from('cheat_sheets')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      // Type cast commands from Json to CheatSheetCommand[]
-      const typedData = (data || []).map(sheet => ({
+      if (error) {
+        console.error('❌ Supabase error:', error);
+        throw error;
+      }
+
+      console.log('✅ Raw cheat sheets data:', data);
+
+      // Type assertion for commands field
+      const typedData = data?.map(sheet => ({
         ...sheet,
         commands: sheet.commands as unknown as CheatSheetCommand[]
-      }));
+      })) || [];
+
+      console.log('✅ Processed cheat sheets:', typedData);
       setCheatSheets(typedData);
     } catch (error) {
-      console.error('Error fetching cheat sheets:', error);
+      console.error('❌ Error fetching cheat sheets:', error);
       toast({
         title: "Error",
         description: "Failed to load cheat sheets",

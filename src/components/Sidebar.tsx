@@ -330,15 +330,16 @@ export const Sidebar = ({
         </CardContent>
       </Card>
 
-      {/* Page Sections */}
+      {/* Quick Links */}
       <Card className="bg-muted/20 border-border/30">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg text-foreground">Page Sections</CardTitle>
+          <CardTitle className="text-lg text-foreground">Quick Links</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-3">
+          {/* Cheat Sheets Button */}
           <Button
             variant="ghost"
-            className="w-full justify-start text-sm h-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+            className="w-full justify-start text-sm h-8 text-muted-foreground hover:text-foreground hover:bg-muted mb-3"
             onClick={() => {
               const element = document.getElementById('cheat-sheets-section');
               if (element) {
@@ -349,16 +350,6 @@ export const Sidebar = ({
             <Hash className="w-4 h-4 mr-2" />
             Cheat Sheets
           </Button>
-        </CardContent>
-      </Card>
-
-      {/* Quick Links */}
-      {linkTabs.length > 0 && (
-        <Card className="bg-muted/20 border-border/30">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg text-foreground">Quick Links</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
             {linkTabs.reduce((acc, tab) => {
               if (!acc[tab.category]) acc[tab.category] = [];
               acc[tab.category].push(tab);
@@ -401,9 +392,8 @@ export const Sidebar = ({
                 </div>
               ))
             }
-          </CardContent>
-        </Card>
-      )}
+        </CardContent>
+      </Card>
     </aside>
   );
 };
