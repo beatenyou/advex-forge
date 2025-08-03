@@ -232,12 +232,19 @@ const AttackPlansPage: React.FC = () => {
   };
 
   const exportToPDF = (planData: any) => {
-    // Create a printable version
-    const printContent = generatePrintableContent(planData);
-    
-    // Open print dialog
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
+    try {
+      // Create a printable version
+      const printContent = generatePrintableContent(planData);
+      
+      // Open print dialog
+      const printWindow = window.open('', '_blank');
+      
+      if (!printWindow) {
+        toast.error('Please allow popups to export PDF');
+        return;
+      }
+      
+      // Write content to new window
       printWindow.document.write(`
         <html>
           <head>
@@ -258,9 +265,41 @@ const AttackPlansPage: React.FC = () => {
         </html>
       `);
       printWindow.document.close();
-      printWindow.print();
+      
+      // Handle print operation
+      printWindow.focus();
+      
+      // Clean up if window is closed without printing
+      const checkClosed = setInterval(() => {
+        if (printWindow.closed) {
+          clearInterval(checkClosed);
+        }
+      }, 1000);
+      
+      // Trigger print and clean up after print dialog
+      setTimeout(() => {
+        try {
+          printWindow.print();
+          // Close the window after printing or if user cancels
+          setTimeout(() => {
+            if (!printWindow.closed) {
+              printWindow.close();
+            }
+            clearInterval(checkClosed);
+          }, 1000);
+        } catch (printError) {
+          console.error('Print error:', printError);
+          printWindow.close();
+          clearInterval(checkClosed);
+        }
+      }, 500);
+      
+      toast.success('PDF export opened');
+      
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Failed to export PDF');
     }
-    toast.success('PDF export opened in new window');
   };
 
   const exportToMarkdown = (planData: any) => {
