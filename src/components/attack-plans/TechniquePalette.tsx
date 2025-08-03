@@ -10,12 +10,24 @@ import { Search, Plus } from 'lucide-react';
 
 interface Technique {
   id: string;
+  mitre_id?: string;
   title: string;
   description: string;
   phase: string;
-  phases?: string[]; // Array of phases from database
+  phases?: string[];
   category: string;
   tags: string[];
+  tools: string[];
+  when_to_use: string[];
+  how_to_use: string[];
+  commands: any;
+  detection: string[];
+  mitigation: string[];
+  reference_links: any;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  created_by?: string;
 }
 
 interface TechniquePaletteProps {
@@ -50,14 +62,27 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
     
     if (!selectedPhase) return matchesSearch;
     
-    // Debug logging
-    if (technique.title.toLowerCase().includes('reconnaissance')) {
-      console.log('Debug technique:', technique.title, 'phases:', technique.phases, 'phase:', technique.phase, 'selectedPhase:', selectedPhase);
-    }
+    // Map phase labels to actual phase names in the database
+    const phaseMap: { [key: string]: string[] } = {
+      'Reconnaissance': ['Reconnaissance', 'recon'],
+      'Weaponization': ['Weaponization', 'weaponization'],
+      'Delivery': ['Delivery', 'delivery'],
+      'Exploitation': ['Exploitation', 'exploitation'],
+      'Installation': ['Installation', 'installation'],
+      'Command & Control': ['Command & Control', 'c2', 'command-control'],
+      'Actions': ['Actions', 'actions', 'actions-on-objectives']
+    };
     
-    // Check if the selected phase name is in the technique's phases array
-    const matchesPhase = technique.phases?.includes(selectedPhase) || 
-                        technique.phase === selectedPhase; // fallback for techniques with single phase
+    // Debug logging
+    console.log('Filtering - selectedPhase:', selectedPhase, 'technique phase:', technique.phase, 'technique phases:', technique.phases);
+    
+    // Get possible phase names for the selected phase
+    const possiblePhaseNames = phaseMap[selectedPhase] || [selectedPhase];
+    
+    // Check if any of the possible phase names match
+    const matchesPhase = possiblePhaseNames.some(phaseName => 
+      technique.phases?.includes(phaseName) || technique.phase === phaseName
+    );
     
     return matchesSearch && matchesPhase;
   });
@@ -131,7 +156,11 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
                         size="sm"
                         variant="ghost"
                         className="ml-2 p-1 h-6 w-6"
-                        onClick={() => onAddTechnique(technique)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          console.log('Button clicked for technique:', technique.title);
+                          onAddTechnique(technique);
+                        }}
                       >
                         <Plus className="w-3 h-3" />
                       </Button>

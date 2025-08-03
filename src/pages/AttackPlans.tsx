@@ -320,6 +320,7 @@ const AttackPlansPage: React.FC = () => {
         {/* Left Sidebar - Technique Palette */}
         <div className="w-80 border-r bg-card">
           <TechniquePalette onAddTechnique={(technique) => {
+            console.log('Adding technique to canvas:', technique.title);
             const newNode: Node = {
               id: `technique-${Date.now()}`,
               type: 'default',
@@ -330,6 +331,7 @@ const AttackPlansPage: React.FC = () => {
               }
             };
             setNodes((nds) => [...nds, newNode]);
+            toast.success(`Added ${technique.title} to canvas`);
           }} />
         </div>
 
