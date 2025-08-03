@@ -186,6 +186,7 @@ body {
   min-width: 0; /* Prevent grid items from overflowing */
   width: 100%;
 }
+}
 
 /* React Flow Dark Theme Styling */
 .react-flow {
