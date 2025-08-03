@@ -1984,6 +1984,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_organization_admin: {
+        Args: { target_user_id: string; target_org_id: string }
+        Returns: boolean
+      }
       log_audit_event: {
         Args: {
           p_action: string
