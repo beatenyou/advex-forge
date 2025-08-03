@@ -1,7 +1,10 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useMemo, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { customStorage } from '@/lib/customStorage';
+
+// Global flag to prevent multiple auth initializations
+let authInitialized = false;
 
 // Circuit breaker to prevent infinite auth loops
 let authRetryCount = 0;
@@ -47,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authError, setAuthError] = useState<string | null>(null);
   const [isRecovering, setIsRecovering] = useState(false);
 
-  console.log('[AUTH_PROVIDER] Component render');
+  console.log('[AUTH_PROVIDER] Component render, authInitialized:', authInitialized);
 
   const fetchUserProfile = async (userId: string, retryCount = 0): Promise<UserProfile | null> => {
     try {
@@ -195,7 +198,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // Prevent multiple auth initializations globally
+    if (authInitialized) {
+      console.log('[AUTH] Already initialized globally, skipping...');
+      return;
+    }
+    
     console.log('[AUTH] Starting authentication initialization...');
+    authInitialized = true;
     
     let mounted = true;
     let authSubscription: { unsubscribe: () => void } | null = null;
@@ -295,6 +305,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (authSubscription) {
         authSubscription.unsubscribe();
       }
+      // Don't reset authInitialized here to prevent re-initialization
     };
   }, []); // Empty deps - run only once
 
@@ -309,7 +320,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     sessionStorage.clear();
   };
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     try {
       setLoading(true);
       console.log('[AUTH] Signing out user');
@@ -322,32 +333,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const isAdmin = profile?.role === 'admin';
-  const isProUser = profile?.is_pro || isAdmin;
-  
-  const hasPermission = (permission: string): boolean => {
-    return profile?.permissions?.includes(permission) || false;
-  };
+  }, []);
 
   const isStorageRestricted = customStorage.isUsingMemoryStorage();
 
-  const value = {
+  // Memoize the context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     user,
     session,
     profile,
     loading,
     signOut,
-    isAdmin,
-    isProUser,
-    hasPermission,
+    isAdmin: profile?.role === 'admin',
+    isProUser: profile?.is_pro || profile?.role === 'admin',
+    hasPermission: (permission: string): boolean => {
+      return profile?.permissions?.includes(permission) || false;
+    },
     authError,
     isRecovering,
     recoverSession,
     emergencyAdminAccess,
     isStorageRestricted,
-  };
+  }), [user, session, profile, loading, authError, isRecovering, signOut]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
