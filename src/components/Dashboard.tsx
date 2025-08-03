@@ -512,9 +512,7 @@ Can you help me understand this scenario and provide guidance on the techniques,
             <div 
               ref={containerRef} 
               style={gridStyle} 
-              className="mb-8 w-full grid-container"
-              data-columns={columnCount}
-              data-initialized={isInitialized}
+              className="mb-8 w-full px-6"
             >
               {filteredTechniques.map(technique => (
                 <TechniqueCard 
