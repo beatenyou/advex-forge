@@ -33,6 +33,7 @@ interface DashboardProps {
   onOpenChatWithPrompt?: (prompt: string) => void;
   isChatVisible?: boolean;
   isWideScreen?: boolean;
+  onClearFocusedTechnique?: () => void;
 }
 interface Scenario {
   id: string;
@@ -49,7 +50,8 @@ export const Dashboard = ({
   onToggleChat,
   onOpenChatWithPrompt,
   isChatVisible = false,
-  isWideScreen = false
+  isWideScreen = false,
+  onClearFocusedTechnique
 }: DashboardProps) => {
   const {
     user,
@@ -96,6 +98,7 @@ export const Dashboard = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
+  const [focusedTechniqueId, setFocusedTechniqueId] = useState<string | null>(null);
 
   // Initialize selectedPhase when navigation phases load
   useEffect(() => {
@@ -269,8 +272,18 @@ export const Dashboard = ({
         })
       );
     }
+
+    // Move focused technique to top if it exists and is in filtered results
+    if (focusedTechniqueId) {
+      const focusedIndex = filtered.findIndex(t => t.id === focusedTechniqueId);
+      if (focusedIndex > 0) {
+        const focusedTechnique = filtered[focusedIndex];
+        filtered = [focusedTechnique, ...filtered.filter(t => t.id !== focusedTechniqueId)];
+      }
+    }
+
     setFilteredTechniques(filtered);
-  }, [searchQuery, selectedPhase, selectedTags, techniques]);
+  }, [searchQuery, selectedPhase, selectedTags, techniques, focusedTechniqueId]);
   const toggleTag = (tag: string) => {
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
@@ -365,6 +378,20 @@ Can you help me understand this scenario and provide guidance on the techniques,
       onToggleChat();
     }
   };
+
+  const handleOpenChatWithPromptAndFocus = (prompt: string, techniqueId: string) => {
+    setFocusedTechniqueId(techniqueId);
+    if (onOpenChatWithPrompt) {
+      onOpenChatWithPrompt(prompt);
+    }
+  };
+
+  // Clear focused technique when chat closes
+  useEffect(() => {
+    if (!isChatVisible && focusedTechniqueId) {
+      setFocusedTechniqueId(null);
+    }
+  }, [isChatVisible, focusedTechniqueId]);
   // Add debug logging
   console.log('Dashboard render:', {
     navigationPhases: navigationPhases.length,
@@ -495,8 +522,10 @@ Can you help me understand this scenario and provide guidance on the techniques,
                   technique={technique} 
                   onToggleFavorite={toggleFavorite} 
                   onOpenAIChat={onOpenChatWithPrompt}
+                  onOpenAIChatWithFocus={handleOpenChatWithPromptAndFocus}
                   cardWidth={cardWidth}
                   columnCount={columnCount}
+                  isFocused={technique.id === focusedTechniqueId}
                 />
               ))}
             </div>

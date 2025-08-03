@@ -120,11 +120,13 @@ interface TechniqueCardProps {
   technique: Technique;
   onToggleFavorite: (techniqueId: string) => Promise<void>;
   onOpenAIChat?: (prompt: string) => void;
+  onOpenAIChatWithFocus?: (prompt: string, techniqueId: string) => void;
   cardWidth?: string;
   columnCount?: number;
+  isFocused?: boolean;
 }
 
-export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, cardWidth = 'medium', columnCount = 3 }: TechniqueCardProps) => {
+export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, onOpenAIChatWithFocus, cardWidth = 'medium', columnCount = 3, isFocused = false }: TechniqueCardProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCommandGenOpen, setIsCommandGenOpen] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
@@ -188,19 +190,22 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, cardW
 
   const handleAIChatClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (onOpenAIChat) {
-      const prompt = `Tell me more about the ${technique.title} attack technique${technique.mitre_id && isValidMitreId(technique.mitre_id) ? ` (${extractCleanMitreId(technique.mitre_id)})` : ''}. Please provide additional details about its usage, tools, and methods to employ this strategy.`;
-      
-      // Track AI query
-      const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
-      trackTechniqueAIQuery({
-        techniqueId: technique.id,
-        techniqueTitle: technique.title,
-        mitreId: technique.mitre_id,
-        phase: primaryPhase,
-        category: technique.category
-      });
-      
+    const prompt = `Tell me more about the ${technique.title} attack technique${technique.mitre_id && isValidMitreId(technique.mitre_id) ? ` (${extractCleanMitreId(technique.mitre_id)})` : ''}. Please provide additional details about its usage, tools, and methods to employ this strategy.`;
+    
+    // Track AI query
+    const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
+    trackTechniqueAIQuery({
+      techniqueId: technique.id,
+      techniqueTitle: technique.title,
+      mitreId: technique.mitre_id,
+      phase: primaryPhase,
+      category: technique.category
+    });
+    
+    // Use the focus-aware function if available, otherwise use the regular one
+    if (onOpenAIChatWithFocus) {
+      onOpenAIChatWithFocus(prompt, technique.id);
+    } else if (onOpenAIChat) {
       onOpenAIChat(prompt);
     }
   };
@@ -237,7 +242,10 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, cardW
   return (
     <>
       <Card 
-        className="group relative border-border/50 bg-gradient-card backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/30 hover:-translate-y-0.5 cursor-pointer"
+        className={cn(
+          "group relative border-border/50 bg-gradient-card backdrop-blur-sm transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:border-primary/30 hover:-translate-y-0.5 cursor-pointer",
+          isFocused && "border-primary shadow-primary/20 shadow-lg ring-1 ring-primary/30 -translate-y-0.5"
+        )}
         onClick={() => {
           // Track modal open
           const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
