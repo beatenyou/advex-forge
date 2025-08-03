@@ -418,12 +418,10 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, cardW
 
           {/* Footer with action buttons - bottom right only */}
           <div className="flex items-center justify-end gap-1 pt-2 border-t border-border/30 min-h-[28px]">
-            {/* Support Ticket */}
-            {showSecondaryActions && (
-              <div onClick={(e) => e.stopPropagation()}>
-                <QuickSupportTicket technique={technique} />
-              </div>
-            )}
+            {/* Support Ticket - always visible */}
+            <div onClick={(e) => e.stopPropagation()}>
+              <QuickSupportTicket technique={technique} />
+            </div>
           </div>
         </CardContent>
       </Card>
