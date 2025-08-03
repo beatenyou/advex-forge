@@ -401,9 +401,9 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, cardW
             </div>
           )}
 
-          {/* Tools - always show indicator */}
-          {technique.tools && technique.tools.length > 0 && (
-            <div className="mb-4">
+          {/* Tools and Suggestion - combined row */}
+          <div className="flex items-center justify-between mb-4">
+            {technique.tools && technique.tools.length > 0 ? (
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Zap className="w-3 h-3" />
                 <span>
@@ -413,11 +413,9 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, cardW
                   }
                 </span>
               </div>
-            </div>
-          )}
-
-          {/* Footer with action buttons - bottom right only */}
-          <div className="flex items-center justify-end gap-1 pt-2 border-t border-border/30 min-h-[28px]">
+            ) : (
+              <div></div>
+            )}
             {/* Support Ticket - always visible */}
             <div onClick={(e) => e.stopPropagation()}>
               <QuickSupportTicket technique={technique} />
