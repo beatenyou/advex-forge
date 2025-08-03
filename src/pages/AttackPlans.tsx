@@ -472,7 +472,7 @@ const AttackPlansPage: React.FC = () => {
   };
 
   const generateCSVContent = (planData: any) => {
-    const headers = ['Type', 'Name', 'Description', 'Phase', 'Category', 'Tags', 'How to Use', 'When to Use', 'Tools', 'Commands', 'Content', 'Position Y', 'Position X'];
+    const headers = ['Type', 'Name', 'Description', 'Phase', 'Category', 'Tags', 'How to Use', 'When to Use', 'Tools', 'Commands', 'Content'];
     const rows = [headers.join(',')];
     
     // Sort all nodes by canvas position (Y first, then X)
@@ -496,9 +496,7 @@ const AttackPlansPage: React.FC = () => {
           technique?.commands ? technique.commands.map((cmd: any) => 
             typeof cmd === 'string' ? cmd : cmd.command || cmd.text || JSON.stringify(cmd)
           ).join('; ') : '',
-          '',
-          node.position.y.toString(),
-          node.position.x.toString()
+          ''
         ].map(field => `"${(field || '').toString().replace(/"/g, '""')}"`);
         
         rows.push(row.join(','));
@@ -514,9 +512,7 @@ const AttackPlansPage: React.FC = () => {
           '',
           '',
           '',
-          node.type === 'text' ? (node.data.content || '') : '',
-          node.position.y.toString(),
-          node.position.x.toString()
+          node.type === 'text' ? (node.data.content || '') : ''
         ].map(field => `"${(field || '').toString().replace(/"/g, '""')}"`);
         
         rows.push(row.join(','));
