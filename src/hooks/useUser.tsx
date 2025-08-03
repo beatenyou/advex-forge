@@ -4,7 +4,7 @@ import { useAuth } from './useAuth';
 
 export type UserRole = 'user' | 'pro' | 'admin';
 
-interface UserProfile {
+export interface UserProfile {
   user_id: string;
   email: string;
   display_name: string;
@@ -16,6 +16,10 @@ interface UserProfile {
   ai_usage_current: number;
   ai_quota_limit: number;
   plan_name: string;
+  organization_id?: string;
+  organization_name?: string;
+  organization_role?: string;
+  teams?: any[];
 }
 
 export function useUser() {
@@ -56,9 +60,9 @@ export function useUser() {
             });
         }
 
-        // Fetch complete profile using the database function
+        // Fetch complete profile using the enterprise database function
         const { data, error } = await supabase
-          .rpc('get_complete_user_profile', { target_user_id: user.id });
+          .rpc('get_enterprise_user_profile', { target_user_id: user.id });
 
         if (error) {
           console.error('Error fetching profile:', error);
@@ -79,7 +83,8 @@ export function useUser() {
         } else if (data && data.length > 0) {
           setProfile({
             ...data[0],
-            role_enum: data[0].role as UserRole
+            role_enum: data[0].role as UserRole,
+            teams: Array.isArray(data[0].teams) ? data[0].teams : []
           });
         }
       } catch (error) {

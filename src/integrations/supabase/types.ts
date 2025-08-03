@@ -1831,6 +1831,19 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      bulk_invite_users: {
+        Args: {
+          org_id: string
+          user_emails: string[]
+          default_role?: string
+          invited_by_user_id?: string
+        }
+        Returns: {
+          email: string
+          status: string
+          message: string
+        }[]
+      }
       calculate_auth_health_metrics: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -1880,6 +1893,25 @@ export type Database = {
           plan_name: string
         }[]
       }
+      get_enterprise_user_profile: {
+        Args: { target_user_id: string }
+        Returns: {
+          user_id: string
+          email: string
+          display_name: string
+          role: string
+          subscription_status: string
+          is_pro: boolean
+          permissions: string[]
+          ai_usage_current: number
+          ai_quota_limit: number
+          plan_name: string
+          organization_id: string
+          organization_name: string
+          organization_role: string
+          teams: Json
+        }[]
+      }
       get_user_ai_usage_stats: {
         Args: { start_date_param?: string; end_date_param?: string }
         Returns: {
@@ -1894,6 +1926,10 @@ export type Database = {
           quota_limit: number
           plan_name: string
         }[]
+      }
+      get_user_organization_role: {
+        Args: { target_user_id: string }
+        Returns: string
       }
       get_user_role: {
         Args: { target_user_id: string }
@@ -1939,6 +1975,16 @@ export type Database = {
           session_id_param?: string
         }
         Returns: boolean
+      }
+      log_audit_event: {
+        Args: {
+          p_action: string
+          p_resource_type: string
+          p_resource_id?: string
+          p_old_values?: Json
+          p_new_values?: Json
+        }
+        Returns: undefined
       }
       log_auth_event: {
         Args: {
