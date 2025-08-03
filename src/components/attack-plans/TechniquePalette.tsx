@@ -35,28 +35,10 @@ interface TechniquePaletteProps {
   onAddTechnique: (technique: Technique) => void;
 }
 
-// Function to map database phase names to Quick Navigation labels
-const mapPhaseToQuickNavLabel = (phaseName: string): string => {
-  const phaseMapping: { [key: string]: string } = {
-    'Reconnaissance': 'Active Reconnaissance',
-    'recon': 'Active Reconnaissance',
-    'Weaponization': 'Establish Foothold',
-    'weaponization': 'Establish Foothold',
-    'Delivery': 'Deliver Payload',
-    'delivery': 'Deliver Payload',
-    'Exploitation': 'Exploit Target',
-    'exploitation': 'Exploit Target',
-    'Installation': 'Install Persistence',
-    'installation': 'Install Persistence',
-    'Command & Control': 'Maintain Access',
-    'c2': 'Maintain Access',
-    'command-control': 'Maintain Access',
-    'Actions': 'Execute Objectives',
-    'actions': 'Execute Objectives',
-    'actions-on-objectives': 'Execute Objectives'
-  };
-  
-  return phaseMapping[phaseName] || phaseName;
+// Function to get phase label from navigation phases
+const getPhaseLabel = (phaseName: string, navigationPhases: any[]): string => {
+  const phase = navigationPhases.find(p => p.name === phaseName);
+  return phase ? phase.label : phaseName;
 };
 
 export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechnique }) => {
@@ -94,24 +76,13 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
     
     if (!selectedPhase) return matchesSearch;
     
-    // Map phase labels to actual phase names in the database
-    const phaseMap: { [key: string]: string[] } = {
-      'Active Reconnaissance': ['Reconnaissance', 'recon'],
-      'Establish Foothold': ['Weaponization', 'weaponization'],
-      'Deliver Payload': ['Delivery', 'delivery'],
-      'Exploit Target': ['Exploitation', 'exploitation'],
-      'Install Persistence': ['Installation', 'installation'],
-      'Maintain Access': ['Command & Control', 'c2', 'command-control'],
-      'Execute Objectives': ['Actions', 'actions', 'actions-on-objectives']
-    };
+    // Find the selected navigation phase to get its name
+    const selectedNavigationPhase = navigationPhases.find(p => p.label === selectedPhase);
+    if (!selectedNavigationPhase) return matchesSearch;
     
-    // Get possible phase names for the selected phase
-    const possiblePhaseNames = phaseMap[selectedPhase] || [selectedPhase];
-    
-    // Check if any of the possible phase names match
-    const matchesPhase = possiblePhaseNames.some(phaseName => 
-      technique.phases?.includes(phaseName) || technique.phase === phaseName
-    );
+    // Check if technique phase matches the selected navigation phase name
+    const matchesPhase = technique.phases?.includes(selectedNavigationPhase.name) || 
+                        technique.phase === selectedNavigationPhase.name;
     
     return matchesSearch && matchesPhase;
   });
@@ -177,7 +148,7 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
                         </p>
                         <div className="flex items-center gap-2 mt-2">
                           <Badge variant="secondary" className="text-xs">
-                            {mapPhaseToQuickNavLabel(technique.phases?.[0] || technique.phase)}
+                            {getPhaseLabel(technique.phases?.[0] || technique.phase, navigationPhases)}
                           </Badge>
                           <Badge variant="outline" className="text-xs">
                             {technique.category}
