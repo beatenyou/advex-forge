@@ -321,6 +321,36 @@ export type Database = {
         }
         Relationships: []
       }
+      attack_plans: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          plan_data: Json
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          plan_data?: Json
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          plan_data?: Json
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       billing_plans: {
         Row: {
           ai_quota_monthly: number | null

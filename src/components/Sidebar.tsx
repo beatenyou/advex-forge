@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronRight, Star, Hash, X, ExternalLink, MessageSquare } from "lucide-react";
+import { ChevronRight, Star, Hash, X, ExternalLink, MessageSquare, Crown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigationPhases } from "@/hooks/useNavigationPhases";
+import { useProPlanCheck } from "@/hooks/useProPlanCheck";
+import { Link } from "react-router-dom";
 
 interface Technique {
   id: string;
@@ -74,6 +76,7 @@ export const Sidebar = ({
   console.log('First technique:', techniques[0]);
   
   const { phases: navigationPhases } = useNavigationPhases();
+  const { isProUser } = useProPlanCheck();
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [linkTabs, setLinkTabs] = useState<LinkTab[]>([]);
   const [cheatSheets, setCheatSheets] = useState<CheatSheet[]>([]);
@@ -203,6 +206,22 @@ export const Sidebar = ({
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="space-y-2">
+            {/* Pro Feature - Attack Plans */}
+            {isProUser && (
+              <Link to="/attack-plans">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-sm h-8 text-muted-foreground hover:text-foreground hover:bg-muted group"
+                >
+                  <Crown className="w-4 h-4 mr-2 text-yellow-500 group-hover:scale-110 transition-transform" />
+                  Attack Plans
+                  <Badge variant="secondary" className="ml-auto text-xs bg-yellow-100 text-yellow-800">
+                    Pro
+                  </Badge>
+                </Button>
+              </Link>
+            )}
+            
             {navigationPhases.map((phase) => (
               <Button
                 key={phase.name}

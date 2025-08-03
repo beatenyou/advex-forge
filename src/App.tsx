@@ -13,6 +13,7 @@ import Auth from "./pages/Auth";
 import AdminStats from "./pages/AdminStats";
 import UserPreferences from "./pages/UserPreferences";
 import FullScreenChat from "./pages/FullScreenChat";
+import AttackPlans from "./pages/AttackPlans";
 import NotFound from "./pages/NotFound";
 import { MaintenancePage } from "./pages/MaintenancePage";
 
@@ -66,6 +67,7 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/preferences" element={<UserPreferences />} />
                 <Route path="/admin/stats" element={<AdminStats />} />
+                <Route path="/attack-plans" element={<AttackPlans />} />
                 <Route path="/chat" element={<FullScreenChat />} />
                 <Route path="/chat/:sessionId" element={<FullScreenChat />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
