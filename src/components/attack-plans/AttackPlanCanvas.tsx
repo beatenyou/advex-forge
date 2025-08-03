@@ -92,7 +92,15 @@ export const AttackPlanCanvas: React.FC<AttackPlanCanvasProps> = ({
   };
 
   const handleKeyDown = (event: KeyboardEvent) => {
-    if (event.key === 'Delete' || event.key === 'Backspace') {
+    // Don't handle delete/backspace if user is editing text in an input or textarea
+    const target = event.target as HTMLElement;
+    const isEditingText = target && (
+      target.tagName === 'INPUT' || 
+      target.tagName === 'TEXTAREA' || 
+      target.contentEditable === 'true'
+    );
+    
+    if ((event.key === 'Delete' || event.key === 'Backspace') && !isEditingText) {
       const selectedNodes = nodes.filter(node => node.selected);
       const selectedEdges = edges.filter(edge => edge.selected);
       

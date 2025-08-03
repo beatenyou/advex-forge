@@ -27,6 +27,14 @@ export const TextNode: React.FC<TextNodeProps> = ({ id, data, selected }) => {
   const [fontWeight, setFontWeight] = useState(data.fontWeight || 'normal');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Sync local state with node data changes (for loading saved plans)
+  useEffect(() => {
+    setContent(data.content || 'Enter your text here...');
+    setFontSize(data.fontSize || 'base');
+    setFontWeight(data.fontWeight || 'normal');
+    setIsEditing(data.isEditing || false);
+  }, [data.content, data.fontSize, data.fontWeight, data.isEditing]);
+
   useEffect(() => {
     if (isEditing && textareaRef.current) {
       textareaRef.current.focus();
@@ -61,11 +69,15 @@ export const TextNode: React.FC<TextNodeProps> = ({ id, data, selected }) => {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Stop propagation to prevent global keydown handlers from interfering
+    e.stopPropagation();
+    
     if (e.key === 'Escape') {
       handleCancel();
     } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       handleSave();
     }
+    // Allow backspace and delete to work normally in text input
   };
 
   const insertMarkdown = (syntax: string, wrap: boolean = false) => {
