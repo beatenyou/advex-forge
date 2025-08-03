@@ -115,7 +115,7 @@ Submitted via Quick Support Ticket`;
             <Button 
               variant="ghost" 
               size="sm" 
-              className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
+              className="h-6 w-6 p-0 bg-muted/30 hover:bg-primary/20 hover:text-primary border border-border/50 hover:border-primary/50 transition-all"
               onClick={(e) => {
                 e.stopPropagation();
                 setOpen(true);

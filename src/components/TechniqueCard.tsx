@@ -323,7 +323,7 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, cardW
                     <Button 
                       variant="ghost" 
                       size="sm" 
-                      className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
+                      className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary border border-cyber-red hover:border-cyber-red/80 transition-all"
                       onClick={handleAIChatClick}
                     >
                       <MessageSquare className="w-3 h-3" />
