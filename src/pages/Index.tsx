@@ -29,23 +29,34 @@ const Index = () => {
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 <span className="text-lg">Loading...</span>
               </div>
-              {error && (
-                <div className="text-center space-y-3">
-                  <p className="text-sm text-destructive max-w-md">{error}</p>
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button onClick={retry} variant="outline" size="sm">
-                      Try Again
-                    </Button>
-                    <Button 
-                      onClick={() => navigate('/auth')} 
-                      variant="default" 
-                      size="sm"
-                    >
-                      Sign In Manually
-                    </Button>
-                  </div>
+              <div className="text-center space-y-3">
+                {error && <p className="text-sm text-destructive max-w-md">{error}</p>}
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button onClick={retry} variant="outline" size="sm">
+                    Try Again
+                  </Button>
+                  <Button 
+                    onClick={() => navigate('/auth')} 
+                    variant="default" 
+                    size="sm"
+                  >
+                    Sign In
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      // Emergency escape - clear storage and force auth page
+                      localStorage.clear();
+                      sessionStorage.clear();
+                      window.location.href = '/auth';
+                    }} 
+                    variant="outline" 
+                    size="sm"
+                    className="text-xs"
+                  >
+                    Reset & Continue
+                  </Button>
                 </div>
-              )}
+              </div>
             </div>
           </CardContent>
         </Card>
