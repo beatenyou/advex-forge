@@ -221,9 +221,9 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
         }}
       >
         <CardHeader className="pb-2">
-          <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex items-start justify-between gap-2 mb-1">
             <div className="min-w-0 flex-1">
-              <CardTitle className="text-base text-foreground group-hover:text-primary transition-colors leading-tight mb-1">
+              <CardTitle className="text-sm text-foreground group-hover:text-primary transition-colors leading-tight mb-1">
                 {technique.title}
               </CardTitle>
               {(technique.mitre_id && isValidMitreId(technique.mitre_id)) && (
@@ -279,13 +279,13 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
               </TooltipProvider>
             </div>
           </div>
-          <CardDescription className="text-sm text-muted-foreground line-clamp-2 mb-2">
+          <CardDescription className="text-xs text-muted-foreground line-clamp-2 mb-1">
             {technique.description}
           </CardDescription>
         </CardHeader>
 
         <CardContent className="pt-0">
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {/* Tags */}
             <div className="flex flex-wrap gap-1">
               {technique.tags.slice(0, 2).map(tag => (

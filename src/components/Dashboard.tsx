@@ -21,7 +21,7 @@ import { QuickReference } from "./QuickReference";
 import { AdminDashboard } from "./AdminDashboard";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
 import { TagSelector } from "./TagSelector";
-import { useResponsiveGrid } from "@/hooks/useResponsiveGrid";
+
 import { ParsedTechnique } from "@/lib/markdownParser";
 import { supabase } from "@/integrations/supabase/client";
 import { fetchTechniquesFromDatabase, fetchUserFavorites, toggleTechniqueFavorite } from "@/lib/techniqueDataMigration";
@@ -77,30 +77,20 @@ export const Dashboard = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const [selectedScenario, setSelectedScenario] = useState<Scenario | null>(null);
-  const {
-    containerRef,
-    columnCount,
-    gridStyle,
-    isInitialized
-  } = useResponsiveGrid({
-    isChatVisible: isChatVisible || false,
-    isWideScreen: isWideScreen || false,
-    sidebarVisible: !isMobile,
-    minCardWidth: 220,
-    gap: 16
-  });
-
-  // Force grid recalculation after layout changes
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (containerRef.current) {
-        // Trigger a resize event to recalculate grid
-        window.dispatchEvent(new Event('resize'));
-      }
-    }, 150);
+  // Get responsive grid classes based on screen size and chat visibility
+  const getGridClasses = () => {
+    const baseClasses = "grid gap-4 w-full auto-rows-fr";
+    if (isMobile) {
+      return `${baseClasses} grid-cols-1 sm:grid-cols-2`;
+    }
     
-    return () => clearTimeout(timer);
-  }, [isChatVisible, isWideScreen, containerRef]);
+    // Desktop responsive grid - more columns on wider screens
+    if (isChatVisible) {
+      return `${baseClasses} grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`;
+    }
+    
+    return `${baseClasses} grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6`;
+  };
 
   // Initialize selectedPhase when navigation phases load
   useEffect(() => {
@@ -490,11 +480,7 @@ Can you help me understand this scenario and provide guidance on the techniques,
             </div>
 
             {/* Technique Cards Grid - Multi-column responsive layout */}
-            <div 
-              ref={containerRef} 
-              style={gridStyle} 
-              className="w-full min-w-0"
-            >
+            <div className={getGridClasses()}>
               {filteredTechniques.map(technique => (
                 <TechniqueCard 
                   key={technique.id} 
