@@ -6,7 +6,9 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  error: string | null;
   signOut: () => Promise<void>;
+  retry: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -15,14 +17,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+    
+    // Add timeout fallback to prevent infinite loading
+    const loadingTimeout = setTimeout(() => {
+      if (mounted && loading) {
+        console.warn('Auth initialization timed out, setting loading to false');
+        setLoading(false);
+        setError('Authentication initialization timed out');
+      }
+    }, 10000); // 10 second timeout
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        if (!mounted) return;
+        
+        console.log('Auth state change:', event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        setError(null);
+        
+        // Clear timeout since auth resolved
+        clearTimeout(loadingTimeout);
         
         // Defer database operations to prevent infinite loops
         if (session?.user && event === 'SIGNED_IN') {
@@ -60,13 +81,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (!mounted) return;
+      
+      if (error) {
+        console.error('Error getting session:', error);
+        setError(error.message);
+      }
+      
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      // Clear timeout since we got a response
+      clearTimeout(loadingTimeout);
+    }).catch((err) => {
+      if (!mounted) return;
+      
+      console.error('Failed to get session:', err);
+      setError('Failed to initialize authentication');
+      setLoading(false);
+      clearTimeout(loadingTimeout);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(loadingTimeout);
+      subscription.unsubscribe();
+    };
   }, []); // Remove problematic dependency that was causing infinite loop
 
   const signOut = async () => {
@@ -86,11 +128,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const retry = () => {
+    setLoading(true);
+    setError(null);
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        setError(error.message);
+      }
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+  };
+
   const value = {
     user,
     session,
     loading,
+    error,
     signOut,
+    retry,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
