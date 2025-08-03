@@ -39,8 +39,32 @@ const AttackPlansPage: React.FC = () => {
   const { isProUser, loading: proLoading } = usePermissions();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  
+  // Session storage key for state persistence
+  const sessionKey = `attack-plan-draft-${user?.id || 'anonymous'}`;
+  
+  // Function to restore state from session storage
+  const getInitialNodes = (): Node[] => {
+    try {
+      const saved = sessionStorage.getItem(sessionKey);
+      return saved ? JSON.parse(saved).nodes || [] : [];
+    } catch {
+      return [];
+    }
+  };
+  
+  const getInitialEdges = (): Edge[] => {
+    try {
+      const saved = sessionStorage.getItem(sessionKey);
+      return saved ? JSON.parse(saved).edges || [] : [];
+    } catch {
+      return [];
+    }
+  };
+  
+  // Initialize state with session storage restoration
+  const [nodes, setNodes, onNodesChange] = useNodesState(getInitialNodes());
+  const [edges, setEdges, onEdgesChange] = useEdgesState(getInitialEdges());
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [planTitle, setPlanTitle] = useState('Untitled Attack Plan');
   const [planDescription, setPlanDescription] = useState('');
@@ -49,6 +73,23 @@ const AttackPlansPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const nodeCounter = useRef(0);
+
+  // Session storage persistence for state
+  useEffect(() => {
+    const saveTimeout = setTimeout(() => {
+      try {
+        sessionStorage.setItem(sessionKey, JSON.stringify({
+          nodes,
+          edges,
+          timestamp: Date.now()
+        }));
+      } catch (error) {
+        console.warn('Failed to save to session storage:', error);
+      }
+    }, 500); // Debounce saves
+
+    return () => clearTimeout(saveTimeout);
+  }, [nodes, edges, sessionKey]);
 
   // Load saved plans
   useEffect(() => {
@@ -91,7 +132,7 @@ const AttackPlansPage: React.FC = () => {
         user_id: user.id,
         title: planTitle,
         description: planDescription,
-        plan_data: { nodes, edges }
+        plan_data: { nodes, edges } as any
       };
 
       if (currentPlanId) {
@@ -127,6 +168,8 @@ const AttackPlansPage: React.FC = () => {
     setNodes(plan.plan_data.nodes || []);
     setEdges(plan.plan_data.edges || []);
     setCurrentPlanId(plan.id);
+    // Clear session storage when loading a saved plan
+    sessionStorage.removeItem(sessionKey);
     toast.success('Plan loaded successfully');
   };
 
@@ -137,6 +180,8 @@ const AttackPlansPage: React.FC = () => {
     setEdges([]);
     setCurrentPlanId(null);
     setSelectedNode(null);
+    // Clear session storage when creating a new plan
+    sessionStorage.removeItem(sessionKey);
   };
 
   const handleAddTechnique = (technique: any) => {
