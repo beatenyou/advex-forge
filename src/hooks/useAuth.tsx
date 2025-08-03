@@ -11,6 +11,10 @@ interface AuthContextType {
   authError: string | null;
   isStuck: boolean;
   forceRestore: () => Promise<void>;
+  authInitialized: boolean;
+  redirecting: boolean;
+  redirectCount: number;
+  debugInfo: string[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -22,6 +26,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [authError, setAuthError] = useState<string | null>(null);
   const [isStuck, setIsStuck] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
+  const [authInitialized, setAuthInitialized] = useState(false);
+  const [redirecting, setRedirecting] = useState(false);
+  const [redirectCount, setRedirectCount] = useState(() => {
+    const stored = localStorage.getItem('auth_redirect_count');
+    return stored ? parseInt(stored, 10) : 0;
+  });
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
+
+  const addDebugInfo = (info: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    const message = `${timestamp}: ${info}`;
+    setDebugInfo(prev => [...prev.slice(-9), message]);
+    console.log(`[AUTH DEBUG] ${message}`);
+  };
+
+  const incrementRedirectCount = () => {
+    setRedirectCount(prev => {
+      const newCount = prev + 1;
+      localStorage.setItem('auth_redirect_count', newCount.toString());
+      addDebugInfo(`Redirect attempt #${newCount}`);
+      return newCount;
+    });
+  };
+
+  const resetRedirectCount = () => {
+    setRedirectCount(0);
+    localStorage.removeItem('auth_redirect_count');
+    addDebugInfo('Redirect count reset');
+  };
 
   const clearAllStorage = () => {
     // Clear localStorage
@@ -82,21 +115,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const forceRestore = async () => {
-    console.log('🔧 FORCE RESTORE: Attempting to restore authentication');
-    setDebugMode(true);
+    addDebugInfo('Force restore initiated');
     setIsStuck(false);
     setAuthError(null);
+    setRedirecting(false);
+    resetRedirectCount();
     
     try {
       // Try to get fresh session
       const { data: { session }, error } = await supabase.auth.getSession();
-      console.log('🔧 Force restore session check:', { session: !!session, error });
+      addDebugInfo(`Force restore session check: ${session ? 'found' : 'none'}, error: ${error?.message || 'none'}`);
       
       if (session) {
         setSession(session);
         setUser(session.user);
+        setAuthInitialized(true);
         setLoading(false);
-        console.log('🔧 Force restore successful');
+        addDebugInfo('Force restore successful');
         
         // Create profile if missing
         await ensureProfileExists(session.user);
@@ -106,20 +141,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // If no session, clear everything and go to auth
       setSession(null);
       setUser(null);
+      setAuthInitialized(true);
       setLoading(false);
-      window.location.href = '/auth';
+      addDebugInfo('Force restore: no session, redirecting to auth');
+      setRedirecting(true);
+      setTimeout(() => {
+        window.location.href = '/auth';
+      }, 1000);
     } catch (error) {
-      console.error('🔧 Force restore failed:', error);
+      addDebugInfo(`Force restore failed: ${error}`);
       setAuthError('Restore failed - redirecting to login');
       setTimeout(() => window.location.href = '/auth', 2000);
     }
   };
 
   const nuclearReset = async () => {
-    console.log('🚨 NUCLEAR RESET: Clearing all auth data');
+    addDebugInfo('Nuclear reset initiated');
     
     // Clear browser storage first
     clearAllStorage();
+    resetRedirectCount();
     
     // Reset local state
     setSession(null);
@@ -127,43 +168,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthError(null);
     setLoading(false);
     setIsStuck(false);
+    setAuthInitialized(true);
+    setRedirecting(false);
     
     try {
       // Sign out from Supabase
       await supabase.auth.signOut();
     } catch (error) {
-      console.error('Nuclear reset error (non-critical):', error);
+      addDebugInfo(`Nuclear reset error (non-critical): ${error}`);
     }
     
     // Force redirect to prevent any cached state
+    addDebugInfo('Redirecting to auth after nuclear reset');
     window.location.href = '/auth';
   };
 
   useEffect(() => {
-    console.log('🔐 Initializing auth...');
-    let authInitialized = false;
+    addDebugInfo('Initializing auth system');
     
-    // Track stuck state - reduced from 10s to 8s for faster feedback
+    // Check for existing redirect loop
+    if (redirectCount >= 3) {
+      addDebugInfo(`Circuit breaker activated - redirect count: ${redirectCount}`);
+      setIsStuck(true);
+      setLoading(false);
+      setAuthInitialized(true);
+      return;
+    }
+    
+    let localAuthInitialized = false;
+    
+    // Track stuck state - reduced to 5s for faster feedback
     const stuckTimeout = setTimeout(() => {
-      if (!authInitialized) {
-        console.warn('⚠️ Auth appears stuck - enabling debug mode');
+      if (!localAuthInitialized) {
+        addDebugInfo('Auth timeout reached - appears stuck');
         setIsStuck(true);
         setLoading(false);
-        setAuthError('Authentication is taking longer than expected');
+        setAuthInitialized(true);
       }
-    }, 8000); // 8 seconds
+    }, 5000);
 
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log(`🔐 [${debugMode ? 'DEBUG' : 'NORMAL'}] Auth state change:`, event, session?.user?.id);
+        addDebugInfo(`Auth state change: ${event}, session: ${session ? 'exists' : 'null'}`);
         
-        authInitialized = true;
+        localAuthInitialized = true;
+        setAuthInitialized(true);
         clearTimeout(stuckTimeout);
         setIsStuck(false);
+        setRedirecting(false);
         
-        // Defer profile creation to prevent blocking auth flow
         if (session?.user) {
+          resetRedirectCount();
+          // Defer profile creation to prevent blocking auth flow
           setTimeout(() => ensureProfileExists(session.user), 100);
         }
         
@@ -175,14 +232,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         
         // Handle specific auth events
         if (event === 'SIGNED_OUT') {
-          console.log('👋 User signed out');
+          addDebugInfo('User signed out');
           setSession(null);
           setUser(null);
           setAuthError(null);
         }
         
         if (event === 'TOKEN_REFRESHED' && !session) {
-          console.warn('⚠️ Token refresh failed');
+          addDebugInfo('Token refresh failed');
           setAuthError('Session expired - please sign in again');
         }
       }
@@ -191,29 +248,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        console.log('🔄 Getting initial session...');
+        addDebugInfo('Getting initial session');
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('❌ Initial session error:', error);
+          addDebugInfo(`Initial session error: ${error.message}`);
           setAuthError('Could not load session');
           setLoading(false);
-          authInitialized = true;
+          setAuthInitialized(true);
+          localAuthInitialized = true;
           clearTimeout(stuckTimeout);
           return;
         }
         
-        console.log('🔐 Initial session check:', session?.user?.id ? 'authenticated' : 'not authenticated');
+        addDebugInfo(`Initial session: ${session?.user?.id ? 'authenticated' : 'not authenticated'}`);
         
         // Don't set state here - let onAuthStateChange handle it
         // This prevents race conditions between getSession and onAuthStateChange
-        authInitialized = true;
+        localAuthInitialized = true;
+        setAuthInitialized(true);
         clearTimeout(stuckTimeout);
       } catch (error) {
-        console.error('❌ Session loading failed:', error);
+        addDebugInfo(`Session loading failed: ${error}`);
         setAuthError('Failed to connect to authentication service');
         setLoading(false);
-        authInitialized = true;
+        setAuthInitialized(true);
+        localAuthInitialized = true;
         clearTimeout(stuckTimeout);
       }
     };
@@ -224,7 +284,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       subscription.unsubscribe();
       clearTimeout(stuckTimeout);
     };
-  }, [debugMode]);
+  }, [redirectCount]);
 
   const signOut = async () => {
     try {
@@ -260,6 +320,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     authError,
     isStuck,
     forceRestore,
+    authInitialized,
+    redirecting,
+    redirectCount,
+    debugInfo,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

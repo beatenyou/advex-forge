@@ -8,33 +8,87 @@ import { Button } from "@/components/ui/button";
 import { Shield, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 
 const Index = () => {
-  const { user, loading, nuclearReset, authError, isStuck, forceRestore } = useAuth();
+  const { 
+    user, 
+    loading, 
+    nuclearReset, 
+    authError, 
+    isStuck, 
+    forceRestore,
+    authInitialized,
+    redirecting,
+    redirectCount,
+    debugInfo
+  } = useAuth();
   const navigate = useNavigate();
   const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth");
+    // Circuit breaker: stop redirecting after 3 attempts
+    if (redirectCount >= 3) {
+      console.log('Circuit breaker activated - stopping redirect loop');
+      return;
     }
-  }, [user, loading, navigate]);
 
-  if (loading) {
+    // Only redirect if auth is completely initialized and user is not found
+    if (authInitialized && !loading && !user && !authError && !isStuck && !redirecting) {
+      console.log('Redirecting to auth page...');
+      // Add a small delay to prevent immediate redirect loops
+      setTimeout(() => {
+        navigate("/auth");
+      }, 100);
+    }
+  }, [authInitialized, loading, user, authError, isStuck, redirecting, redirectCount, navigate]);
+
+  // Show loading or circuit breaker state
+  if (loading || (!user && authInitialized && redirectCount < 3) || redirecting) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="border-border/50 shadow-lg shadow-primary/5 max-w-md w-full">
           <CardContent className="text-center p-8 space-y-6">
             <div className="flex items-center justify-center space-x-3">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              <span className="text-lg">Loading authentication...</span>
+              <span className="text-lg">
+                {redirecting ? 'Redirecting...' : 'Loading authentication...'}
+              </span>
             </div>
+
+            {redirectCount >= 3 && (
+              <div className="space-y-4 text-left">
+                <div className="flex items-center space-x-2 text-destructive">
+                  <AlertTriangle className="h-5 w-5" />
+                  <span className="text-sm font-medium">Redirect Loop Detected</span>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Circuit breaker activated after {redirectCount} redirect attempts. Please try manual recovery.
+                </p>
+                <Button 
+                  onClick={() => navigate("/auth")}
+                  variant="default"
+                  className="w-full"
+                >
+                  Manual Login
+                </Button>
+              </div>
+            )}
             
-            <div className="text-xs text-muted-foreground">
-              <p>Status: {loading ? 'Loading' : 'Ready'}</p>
-              <p>User: {user ? 'Authenticated' : 'Not authenticated'}</p>
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p>Auth Initialized: {authInitialized ? 'Yes' : 'No'}</p>
+              <p>Redirect Count: {redirectCount}/3</p>
+              <p>Loading: {loading ? 'Yes' : 'No'}</p>
+              <p>User: {user ? 'Authenticated' : 'None'}</p>
+              <p>Redirecting: {redirecting ? 'Yes' : 'No'}</p>
               {showDebug && (
                 <div className="mt-2 p-2 bg-muted/20 rounded text-left">
                   <pre className="text-xs">
-                    {JSON.stringify({ loading, hasUser: !!user, hasError: !!authError }, null, 2)}
+                    {JSON.stringify({ 
+                      loading, 
+                      hasUser: !!user, 
+                      hasError: !!authError, 
+                      authInitialized,
+                      redirectCount,
+                      redirecting 
+                    }, null, 2)}
                   </pre>
                 </div>
               )}
@@ -57,6 +111,15 @@ const Index = () => {
                 Refresh
               </Button>
             </div>
+
+            {debugInfo.length > 0 && (
+              <div className="text-xs space-y-1 p-2 bg-muted/20 rounded text-left max-h-32 overflow-y-auto">
+                <div className="font-medium">Debug Log:</div>
+                {debugInfo.map((info, index) => (
+                  <div key={index} className="text-muted-foreground">{info}</div>
+                ))}
+              </div>
+            )}
             
             {(authError || isStuck) && (
               <div className="space-y-4">
