@@ -35,6 +35,30 @@ interface TechniquePaletteProps {
   onAddTechnique: (technique: Technique) => void;
 }
 
+// Function to map database phase names to Quick Navigation labels
+const mapPhaseToQuickNavLabel = (phaseName: string): string => {
+  const phaseMapping: { [key: string]: string } = {
+    'Reconnaissance': 'Active Reconnaissance',
+    'recon': 'Active Reconnaissance',
+    'Weaponization': 'Establish Foothold',
+    'weaponization': 'Establish Foothold',
+    'Delivery': 'Deliver Payload',
+    'delivery': 'Deliver Payload',
+    'Exploitation': 'Exploit Target',
+    'exploitation': 'Exploit Target',
+    'Installation': 'Install Persistence',
+    'installation': 'Install Persistence',
+    'Command & Control': 'Maintain Access',
+    'c2': 'Maintain Access',
+    'command-control': 'Maintain Access',
+    'Actions': 'Execute Objectives',
+    'actions': 'Execute Objectives',
+    'actions-on-objectives': 'Execute Objectives'
+  };
+  
+  return phaseMapping[phaseName] || phaseName;
+};
+
 export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechnique }) => {
   const [techniques, setTechniques] = useState<Technique[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -153,7 +177,7 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
                         </p>
                         <div className="flex items-center gap-2 mt-2">
                           <Badge variant="secondary" className="text-xs">
-                            {technique.phases?.[0] || technique.phase}
+                            {mapPhaseToQuickNavLabel(technique.phases?.[0] || technique.phase)}
                           </Badge>
                           <Badge variant="outline" className="text-xs">
                             {technique.category}
