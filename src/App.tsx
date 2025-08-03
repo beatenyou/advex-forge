@@ -10,6 +10,7 @@ import { useAnalytics } from "@/hooks/useAnalytics";
 import { usePerformanceMonitoring } from "@/hooks/usePerformanceMonitoring";
 import { ChatProvider } from "@/contexts/ChatContext";
 import { useMaintenanceCheck } from "@/hooks/useMaintenanceCheck";
+import { OrganizationProvider } from "@/hooks/useOrganizationContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AdminStats from "./pages/AdminStats";
@@ -61,63 +62,65 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <ChatProvider>
-        <AnalyticsProvider>
-          <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <MaintenanceWrapper>
-              <Routes>
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/" element={
-                  <ProtectedRoute>
-                    <Index />
-                  </ProtectedRoute>
-                } />
-                <Route path="/preferences" element={
-                  <ProtectedRoute>
-                    <UserPreferences />
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/stats" element={
-                  <ProtectedRoute>
-                    <RoleGuard requiredRole="admin">
-                      <AdminStats />
-                    </RoleGuard>
-                  </ProtectedRoute>
-                } />
-                <Route path="/admin/enterprise" element={
-                  <ProtectedRoute>
-                    <RoleGuard requiredRole="admin">
-                      <EnterpriseManagement />
-                    </RoleGuard>
-                  </ProtectedRoute>
-                } />
-                <Route path="/attack-plans" element={
-                  <ProtectedRoute>
-                    <RoleGuard requiredRole="pro">
-                      <AttackPlans />
-                    </RoleGuard>
-                  </ProtectedRoute>
-                } />
-                <Route path="/chat" element={
-                  <ProtectedRoute>
-                    <FullScreenChat />
-                  </ProtectedRoute>
-                } />
-                <Route path="/chat/:sessionId" element={
-                  <ProtectedRoute>
-                    <FullScreenChat />
-                  </ProtectedRoute>
-                } />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </MaintenanceWrapper>
-          </BrowserRouter>
-          </TooltipProvider>
-        </AnalyticsProvider>
-      </ChatProvider>
+      <OrganizationProvider>
+        <ChatProvider>
+          <AnalyticsProvider>
+            <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <MaintenanceWrapper>
+                <Routes>
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/" element={
+                    <ProtectedRoute>
+                      <Index />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/preferences" element={
+                    <ProtectedRoute>
+                      <UserPreferences />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin/stats" element={
+                    <ProtectedRoute>
+                      <RoleGuard requiredRole="admin">
+                        <AdminStats />
+                      </RoleGuard>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin/enterprise" element={
+                    <ProtectedRoute>
+                      <RoleGuard requiredRole="admin">
+                        <EnterpriseManagement />
+                      </RoleGuard>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/attack-plans" element={
+                    <ProtectedRoute>
+                      <RoleGuard requiredRole="pro">
+                        <AttackPlans />
+                      </RoleGuard>
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/chat" element={
+                    <ProtectedRoute>
+                      <FullScreenChat />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/chat/:sessionId" element={
+                    <ProtectedRoute>
+                      <FullScreenChat />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </MaintenanceWrapper>
+            </BrowserRouter>
+            </TooltipProvider>
+          </AnalyticsProvider>
+        </ChatProvider>
+      </OrganizationProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

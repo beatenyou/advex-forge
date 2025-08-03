@@ -5,12 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { User, Building2, Users, Settings, Loader2 } from 'lucide-react';
+import { User, Building2, Users, Settings, Loader2, Crown, Shield, CreditCard, Zap } from 'lucide-react';
+import { useOrganizationContext } from '@/hooks/useOrganizationContext';
 
 interface UserProfile {
   user_id: string;
@@ -22,6 +23,7 @@ interface UserProfile {
   is_pro: boolean;
   organization_id?: string;
   organization_name?: string;
+  organization_role?: string;
   ai_usage_current: number;
   ai_quota_limit: number;
 }
@@ -34,16 +36,20 @@ interface Organization {
 }
 
 export function EnhancedUserManager() {
+  const { currentOrganization } = useOrganizationContext();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [loading, setLoading] = useState(false);
+  const [processingMassProvision, setProcessingMassProvision] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectedOrganization, setSelectedOrganization] = useState<string>('');
   const [organizationFilter, setOrganizationFilter] = useState<string>('all');
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [bulkAssignDialogOpen, setBulkAssignDialogOpen] = useState(false);
+  const [massProvisionDialogOpen, setMassProvisionDialogOpen] = useState(false);
   const [newRole, setNewRole] = useState('member');
   const [newAccessLevel, setNewAccessLevel] = useState('user');
+  const [interactionsToProvision, setInteractionsToProvision] = useState(150);
 
   useEffect(() => {
     fetchUsers();
@@ -66,7 +72,8 @@ export function EnhancedUserManager() {
           organization_id,
           ai_usage_current:user_billing(ai_usage_current),
           ai_quota_limit:user_billing(ai_quota_limit),
-          organization:organizations(name)
+          organization:organizations(name),
+          organization_membership:organization_members(role)
         `);
 
       if (organizationFilter !== 'all') {
@@ -83,6 +90,7 @@ export function EnhancedUserManager() {
       const processedUsers = data?.map(user => ({
         ...user,
         organization_name: user.organization?.name || null,
+        organization_role: Array.isArray(user.organization_membership) ? user.organization_membership[0]?.role : null,
         ai_usage_current: Array.isArray(user.ai_usage_current) ? user.ai_usage_current[0]?.ai_usage_current || 0 : 0,
         ai_quota_limit: Array.isArray(user.ai_quota_limit) ? user.ai_quota_limit[0]?.ai_quota_limit || 50 : 50,
       })) || [];
@@ -163,6 +171,50 @@ export function EnhancedUserManager() {
     }
   };
 
+  const massProvisionOrganization = async () => {
+    if (!selectedOrganization) {
+      toast.error('Please select an organization');
+      return;
+    }
+
+    setProcessingMassProvision(true);
+    try {
+      const { data, error } = await supabase.rpc('mass_provision_org_members', {
+        org_id: selectedOrganization,
+        admin_user_id: (await supabase.auth.getUser()).data.user?.id,
+        interactions_per_member: interactionsToProvision
+      });
+
+      if (error) throw error;
+
+      const results = data || [];
+      const successCount = results.filter((r: any) => r.status === 'success').length;
+      const errorCount = results.filter((r: any) => r.status === 'error').length;
+
+      if (errorCount > 0) {
+        toast.error(`Provisioned ${successCount} users, ${errorCount} failed`);
+      } else {
+        toast.success(`Successfully provisioned ${successCount} users with ${interactionsToProvision} interactions each`);
+      }
+
+      setMassProvisionDialogOpen(false);
+      fetchUsers();
+    } catch (error) {
+      console.error('Error mass provisioning:', error);
+      toast.error('Failed to mass provision users');
+    } finally {
+      setProcessingMassProvision(false);
+    }
+  };
+
+  const getOrganizationRoleIcon = (role: string) => {
+    switch (role) {
+      case 'owner': return <Crown className="h-4 w-4 text-yellow-500" />;
+      case 'admin': return <Shield className="h-4 w-4 text-blue-500" />;
+      default: return null;
+    }
+  };
+
   const toggleUserSelection = (userId: string) => {
     setSelectedUsers(prev => 
       prev.includes(userId) 
@@ -216,6 +268,68 @@ export function EnhancedUserManager() {
             </div>
 
             <div className="flex gap-2">
+              <Dialog open={massProvisionDialogOpen} onOpenChange={setMassProvisionDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="default" className="flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    Mass Provision
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Mass Provision Organization</DialogTitle>
+                    <DialogDescription>
+                      Provision all members of an organization with pro access and AI interactions
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <Label>Organization</Label>
+                      <Select value={selectedOrganization} onValueChange={setSelectedOrganization}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select organization" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {organizations.map((org) => (
+                            <SelectItem key={org.id} value={org.id}>
+                              {org.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label>Interactions per Member</Label>
+                      <Input
+                        type="number"
+                        value={interactionsToProvision}
+                        onChange={(e) => setInteractionsToProvision(parseInt(e.target.value) || 150)}
+                        placeholder="150"
+                      />
+                      <div className="text-sm text-muted-foreground mt-1">
+                        Each member will receive this many AI interactions
+                      </div>
+                    </div>
+
+                    <Button 
+                      onClick={massProvisionOrganization} 
+                      className="w-full"
+                      disabled={!selectedOrganization || processingMassProvision}
+                    >
+                      {processingMassProvision ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Provisioning...
+                        </>
+                      ) : (
+                        'Provision All Members'
+                      )}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
               <Dialog open={bulkAssignDialogOpen} onOpenChange={setBulkAssignDialogOpen}>
                 <DialogTrigger asChild>
                   <Button 
@@ -293,6 +407,7 @@ export function EnhancedUserManager() {
                   <TableHead>User</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Organization</TableHead>
+                  <TableHead>Org Role</TableHead>
                   <TableHead>AI Usage</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -333,6 +448,18 @@ export function EnhancedUserManager() {
                         </div>
                       ) : (
                         <span className="text-muted-foreground">No organization</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {user.organization_role ? (
+                        <div className="flex items-center gap-1">
+                          {getOrganizationRoleIcon(user.organization_role)}
+                          <Badge variant="outline" className="capitalize">
+                            {user.organization_role}
+                          </Badge>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
                       )}
                     </TableCell>
                     <TableCell>

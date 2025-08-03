@@ -13,7 +13,7 @@ import AIUsagePreferences from '@/components/preferences/AIUsagePreferences';
 import { AIModelPreferences } from '@/components/preferences/AIModelPreferences';
 import PrivacyPreferences from '@/components/preferences/PrivacyPreferences';
 import SupportPreferences from '@/components/preferences/SupportPreferences';
-import OrganizationPreferences from '@/components/preferences/OrganizationPreferences';
+import { OrganizationPreferences } from '@/components/preferences/OrganizationPreferences';
 
 export default function UserPreferences() {
   const { user, loading } = useAuth();
