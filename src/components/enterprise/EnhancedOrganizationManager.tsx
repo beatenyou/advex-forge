@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, Users, Settings, Plus, UserPlus, CreditCard, BarChart3, Zap, DollarSign, TrendingUp } from 'lucide-react';
+import { Building2, Users, Settings, Plus, UserPlus, CreditCard, BarChart3, Zap, DollarSign, TrendingUp, Edit3, Trash2, AlertTriangle } from 'lucide-react';
 
 interface EnhancedOrganization {
   id: string;
@@ -60,6 +60,8 @@ export function EnhancedOrganizationManager() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isCreditDialogOpen, setIsCreditDialogOpen] = useState(false);
   const [isBulkCreditDialogOpen, setIsBulkCreditDialogOpen] = useState(false);
+  const [isEditSeatsDialogOpen, setIsEditSeatsDialogOpen] = useState(false);
+  const [isDeleteOrgDialogOpen, setIsDeleteOrgDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -72,6 +74,8 @@ export function EnhancedOrganizationManager() {
   const [inviteAccessLevel, setInviteAccessLevel] = useState('user');
   const [creditAmount, setCreditAmount] = useState('');
   const [bulkCreditAmount, setBulkCreditAmount] = useState('');
+  const [newSeatLimit, setNewSeatLimit] = useState('');
+  const [orgToDelete, setOrgToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     fetchOrganizations();
@@ -356,6 +360,145 @@ export function EnhancedOrganizationManager() {
     }
   };
 
+  const updateSeatLimit = async () => {
+    if (!selectedOrg || !newSeatLimit) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a valid seat limit',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const seatLimitNum = parseInt(newSeatLimit);
+    const currentOrg = organizations.find(org => org.id === selectedOrg);
+    
+    if (seatLimitNum < (currentOrg?.seat_used || 0)) {
+      toast({
+        title: 'Error',
+        description: `Cannot set seat limit below current usage (${currentOrg?.seat_used} seats used)`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('organizations')
+        .update({ seat_limit: seatLimitNum })
+        .eq('id', selectedOrg);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: `Seat limit updated to ${seatLimitNum}`,
+      });
+
+      setIsEditSeatsDialogOpen(false);
+      setNewSeatLimit('');
+      fetchOrganizations();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update seat limit',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const deleteOrganization = async () => {
+    if (!orgToDelete) return;
+
+    try {
+      // First, get all members of the organization
+      const { data: membersData, error: membersError } = await supabase
+        .from('organization_members')
+        .select('user_id')
+        .eq('organization_id', orgToDelete);
+
+      if (membersError) throw membersError;
+
+      const memberUserIds = membersData?.map(m => m.user_id) || [];
+
+      // Reset all members to free tier and remove organization association
+      if (memberUserIds.length > 0) {
+        // Update profiles to remove organization and reset to free tier
+        const { error: profilesError } = await supabase
+          .from('profiles')
+          .update({
+            organization_id: null,
+            role_enum: 'user',
+            is_pro: false
+          })
+          .in('user_id', memberUserIds);
+
+        if (profilesError) throw profilesError;
+
+        // Reset user billing to free tier defaults
+        const { error: billingError } = await supabase
+          .from('user_billing')
+          .update({
+            ai_quota_limit: 50,
+            subscription_status: 'free'
+          })
+          .in('user_id', memberUserIds);
+
+        if (billingError) {
+          console.warn('Some user billing records could not be updated:', billingError);
+        }
+
+        // Remove organization memberships
+        const { error: membershipError } = await supabase
+          .from('organization_members')
+          .delete()
+          .eq('organization_id', orgToDelete);
+
+        if (membershipError) throw membershipError;
+      }
+
+      // Finally, delete the organization
+      const { error: orgError } = await supabase
+        .from('organizations')
+        .delete()
+        .eq('id', orgToDelete);
+
+      if (orgError) throw orgError;
+
+      toast({
+        title: 'Success',
+        description: `Organization deleted and ${memberUserIds.length} users migrated to Personal accounts`,
+      });
+
+      setIsDeleteOrgDialogOpen(false);
+      setOrgToDelete(null);
+      
+      // Reset selected org if it was the deleted one
+      if (selectedOrg === orgToDelete) {
+        setSelectedOrg(null);
+      }
+      
+      fetchOrganizations();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete organization',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const openEditSeatsDialog = (org: EnhancedOrganization) => {
+    setSelectedOrg(org.id);
+    setNewSeatLimit(org.seat_limit.toString());
+    setIsEditSeatsDialogOpen(true);
+  };
+
+  const openDeleteOrgDialog = (org: EnhancedOrganization) => {
+    setOrgToDelete(org.id);
+    setIsDeleteOrgDialogOpen(true);
+  };
+
   const selectedOrgData = organizations.find(org => org.id === selectedOrg);
 
   if (loading) {
@@ -435,6 +578,96 @@ export function EnhancedOrganizationManager() {
         </Dialog>
       </div>
 
+      {/* Edit Seats Dialog */}
+      <Dialog open={isEditSeatsDialogOpen} onOpenChange={setIsEditSeatsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Seat Limit</DialogTitle>
+            <DialogDescription>
+              Update the maximum number of seats for this organization.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="newSeatLimit">New Seat Limit</Label>
+              <Input
+                id="newSeatLimit"
+                type="number"
+                value={newSeatLimit}
+                onChange={(e) => setNewSeatLimit(e.target.value)}
+                placeholder="Enter new seat limit"
+                min={selectedOrgData?.seat_used || 0}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Minimum: {selectedOrgData?.seat_used || 0} (current usage)
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={updateSeatLimit} className="flex-1">
+                Update Seats
+              </Button>
+              <Button variant="outline" onClick={() => setIsEditSeatsDialogOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Organization Dialog */}
+      <Dialog open={isDeleteOrgDialogOpen} onOpenChange={setIsDeleteOrgDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Delete Organization
+            </DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. This will permanently delete the organization and:
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-destructive/10 p-4 rounded-lg">
+              <ul className="text-sm space-y-1">
+                <li>• Remove all members from the organization</li>
+                <li>• Convert all members to Personal accounts (Free plan)</li>
+                <li>• Reset all user AI quotas to free tier limits</li>
+                <li>• Delete all organization data and settings</li>
+              </ul>
+            </div>
+            {orgToDelete && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="font-medium">
+                  Organization: {organizations.find(o => o.id === orgToDelete)?.name}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {organizations.find(o => o.id === orgToDelete)?.seat_used} members will be affected
+                </p>
+              </div>
+            )}
+            <div className="flex gap-2">
+              <Button
+                variant="destructive"
+                onClick={deleteOrganization}
+                className="flex-1"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete Organization
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsDeleteOrgDialogOpen(false);
+                  setOrgToDelete(null);
+                }}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Organizations List */}
         <Card>
@@ -465,7 +698,33 @@ export function EnhancedOrganizationManager() {
                       <span className="text-xs">{org.ai_credits_pool - org.ai_credits_used}</span>
                     </div>
                   </div>
-                  <Badge variant="outline" className="text-xs">{org.default_member_access_level}</Badge>
+                  <div className="flex flex-col gap-1">
+                    <Badge variant="outline" className="text-xs">{org.default_member_access_level}</Badge>
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditSeatsDialog(org);
+                        }}
+                      >
+                        <Edit3 className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openDeleteOrgDialog(org);
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
