@@ -76,7 +76,9 @@ export const Sidebar = ({
   console.log('First technique:', techniques[0]);
   
   const { phases: navigationPhases } = useNavigationPhases();
-  const { isProUser } = useProPlanCheck();
+  const { isProUser, loading: proCheckLoading } = useProPlanCheck();
+  
+  console.log('Sidebar - Pro status:', { isProUser, proCheckLoading });
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [linkTabs, setLinkTabs] = useState<LinkTab[]>([]);
   const [cheatSheets, setCheatSheets] = useState<CheatSheet[]>([]);
