@@ -4,7 +4,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { fetchTechniquesFromDatabase } from '@/lib/techniqueDataMigration';
 import { useNavigationPhases } from '@/hooks/useNavigationPhases';
 import { Search, Plus } from 'lucide-react';
@@ -35,24 +34,6 @@ interface TechniquePaletteProps {
   onAddTechnique: (technique: Technique) => void;
 }
 
-// Function to map database phase names to Quick Navigation labels
-const mapPhaseToQuickNavLabel = (phaseName: string): string => {
-  const phaseMapping: { [key: string]: string } = {
-    'foothold': 'Establish Foothold',
-    'enum': 'Enumeration',
-    'collection': 'Collection',
-    'lateral_mvmnt': 'Lateral Movement',
-    'pe': 'Privilege Escalation',
-    'recon': 'Active Reconnaissance',
-    'remote_enum': 'Remote Enumeration',
-    'system_persistence': 'System Persistence',
-    'user_persistence': 'User Persistence',
-    'c2': 'C2',
-    'effects': 'Effects'
-  };
-  
-  return phaseMapping[phaseName] || phaseName;
-};
 
 export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechnique }) => {
   const [techniques, setTechniques] = useState<Technique[]>([]);
@@ -89,28 +70,13 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
     
     if (!selectedPhase) return matchesSearch;
     
-    // Map phase labels to actual phase names in the database
-    const phaseMap: { [key: string]: string[] } = {
-      'Active Reconnaissance': ['recon'],
-      'Establish Foothold': ['foothold'],
-      'Enumeration': ['enum'],
-      'Remote Enumeration': ['remote_enum'],
-      'Privilege Escalation': ['pe'],
-      'Lateral Movement': ['lateral_mvmnt'],
-      'System Persistence': ['system_persistence'],
-      'User Persistence': ['user_persistence'],
-      'Collection': ['collection'],
-      'C2': ['c2'],
-      'Effects': ['effects']
-    };
+    // Find the selected navigation phase
+    const selectedNavigationPhase = navigationPhases.find(phase => phase.label === selectedPhase);
+    if (!selectedNavigationPhase) return matchesSearch;
     
-    // Get possible phase names for the selected phase
-    const possiblePhaseNames = phaseMap[selectedPhase] || [selectedPhase];
-    
-    // Check if any of the possible phase names match
-    const matchesPhase = possiblePhaseNames.some(phaseName => 
-      technique.phases?.includes(phaseName) || technique.phase === phaseName
-    );
+    // Check if technique matches the selected phase name
+    const matchesPhase = technique.phases?.includes(selectedNavigationPhase.name) || 
+                        technique.phase === selectedNavigationPhase.name;
     
     return matchesSearch && matchesPhase;
   });
@@ -176,7 +142,11 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
                         </p>
                         <div className="flex items-center gap-2 mt-2">
                           <Badge variant="secondary" className="text-xs">
-                            {mapPhaseToQuickNavLabel(technique.phases?.[0] || technique.phase)}
+                            {(() => {
+                              const phaseName = technique.phases?.[0] || technique.phase;
+                              const navPhase = navigationPhases.find(phase => phase.name === phaseName);
+                              return navPhase ? navPhase.label : phaseName;
+                            })()}
                           </Badge>
                           <Badge variant="outline" className="text-xs">
                             {technique.category}
