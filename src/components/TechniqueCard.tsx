@@ -90,6 +90,14 @@ const normalizeAndMapPhase = (phase: string): string => {
   return phaseMapping[normalized] || normalized;
 };
 
+// Helper function to get display phases (no mapping needed since database is cleaned)
+const getDisplayPhases = (technique: Technique): string[] => {
+  if (technique.phases && Array.isArray(technique.phases) && technique.phases.length > 0) {
+    return technique.phases.filter(p => p && p.trim());
+  }
+  return technique.phase ? [technique.phase] : [];
+};
+
 interface TechniqueCardProps {
   technique: Technique;
   onToggleFavorite: (techniqueId: string) => Promise<void>;
@@ -224,14 +232,11 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
                 {technique.title}
               </CardTitle>
               <div className="flex flex-wrap gap-1 mb-2">
-                {(technique.phases && technique.phases.length > 0 ? technique.phases : technique.phase ? [technique.phase] : []).map((phase, index) => {
-                  const mappedPhase = normalizeAndMapPhase(phase);
-                  return (
+                {getDisplayPhases(technique).map((phase, index) => (
                     <Badge key={index} variant="outline" className={`text-xs ${getPhaseColor(phase)}`}>
-                      {mappedPhase}
+                      {phase}
                     </Badge>
-                  );
-                })}
+                  ))}
                 {(technique.mitre_id && isValidMitreId(technique.mitre_id)) && (
                   <Badge variant="outline" className="text-xs bg-muted/20 text-muted-foreground border-muted/30">
                     {extractCleanMitreId(technique.mitre_id)}
@@ -378,14 +383,11 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
             {/* Actions */}
             <div className="flex items-center justify-between pt-2 border-t border-border/30">
               <div className="flex flex-wrap gap-1">
-                {(technique.phases || [technique.phase]).filter(Boolean).map((phase, index) => {
-                  const mappedPhase = normalizeAndMapPhase(phase!);
-                  return (
-                    <Badge key={index} variant="outline" className={getPhaseColor(phase!)}>
-                      {mappedPhase}
+                {getDisplayPhases(technique).map((phase, index) => (
+                    <Badge key={index} variant="outline" className={getPhaseColor(phase)}>
+                      {phase}
                     </Badge>
-                  );
-                })}
+                  ))}
               </div>
               <div className="flex items-center gap-1">
                 <TooltipProvider>

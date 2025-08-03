@@ -216,25 +216,7 @@ export const Dashboard = ({
       });
     }
   };
-  // Phase mapping to translate legacy technique phases to navigation phase labels
-  const createPhaseMapping = () => {
-    const mapping: Record<string, string> = {
-      'Reconnaissance': 'Active Reconnaissance',
-      'Command and Control': 'C2',
-      'Initial Access': 'Establish Foothold',
-      'Credential Access': 'Privilege Escalation', // Map to closest match
-      'Discovery': 'Enumeration', // Map to closest match
-    };
-    return mapping;
-  };
-
-  const phaseMapping = createPhaseMapping();
-
-  // Function to normalize and map phases
-  const normalizeAndMapPhase = (phase: string): string => {
-    const normalized = phase?.trim();
-    return phaseMapping[normalized] || normalized;
-  };
+  // No longer need phase mapping since database has been cleaned
 
   // Create mapping for tag transformation
   const createTagMapping = (tags: string[]) => {
@@ -259,26 +241,17 @@ export const Dashboard = ({
       filtered = filtered.filter(technique => technique.title.toLowerCase().includes(query) || technique.description.toLowerCase().includes(query) || technique.mitre_id && technique.mitre_id.toLowerCase().includes(query) || technique.id.toLowerCase().includes(query) || technique.phase.toLowerCase().includes(query) || technique.category.toLowerCase().includes(query) || technique.tags.some(tag => tag.toLowerCase().includes(query)) || technique.tools.some(tool => tool.toLowerCase().includes(query)));
     }
 
-    // Phase filtering with phase mapping support
+    // Phase filtering (simplified since database has been cleaned)
     const currentPhase = selectedPhase || (navigationPhases.length > 0 ? navigationPhases[0].label : "All Techniques");
     if (currentPhase !== "All Techniques") {
       filtered = filtered.filter(technique => {
-        const targetPhase = currentPhase;
-        
-        // Handle both legacy phase field and new phases array
+        // Check phases array first (preferred)
         if (technique.phases && Array.isArray(technique.phases)) {
-          // Check for exact match or mapped match
-          const hasExactMatch = technique.phases.some(p => p?.trim() === targetPhase);
-          const hasMappedMatch = technique.phases.some(p => normalizeAndMapPhase(p?.trim()) === targetPhase);
-          
-          return hasExactMatch || hasMappedMatch;
+          return technique.phases.some(p => p?.trim() === currentPhase);
         }
         
-        // Check legacy phase field for exact or mapped match
-        const exactMatch = technique.phase?.trim() === targetPhase;
-        const mappedMatch = normalizeAndMapPhase(technique.phase?.trim()) === targetPhase;
-        
-        return exactMatch || mappedMatch;
+        // Fallback to legacy phase field
+        return technique.phase?.trim() === currentPhase;
       });
     }
 
@@ -514,6 +487,12 @@ Can you help me understand this scenario and provide guidance on the techniques,
               style={gridStyle} 
               className="mb-8 w-full"
             >
+              {/* Debug info for grid */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="col-span-full mb-4 p-2 bg-muted/50 rounded text-xs text-muted-foreground">
+                  Grid Debug: {columnCount} columns, {filteredTechniques.length} techniques, Initialized: {isInitialized ? 'Yes' : 'No'}
+                </div>
+              )}
               {filteredTechniques.map(technique => (
                 <TechniqueCard 
                   key={technique.id} 
