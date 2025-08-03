@@ -10,8 +10,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { 
   useNodesState,
   useEdgesState,
@@ -211,18 +209,19 @@ const AttackPlansPage: React.FC = () => {
     toast.success('Text box added to canvas');
   };
 
-  const exportPlan = (format: 'pdf' | 'markdown' | 'csv') => {
+  const exportPlan = (format: 'html' | 'markdown' | 'csv') => {
     const planData = {
       title: planTitle,
       description: planDescription,
       nodes,
       edges,
-      createdAt: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
     switch (format) {
-      case 'pdf':
-        exportToPDF(planData);
+      case 'html':
+        exportToHTML(planData);
         break;
       case 'markdown':
         exportToMarkdown(planData);
@@ -233,68 +232,120 @@ const AttackPlansPage: React.FC = () => {
     }
   };
 
-  const exportToPDF = async (planData: any) => {
+  const exportToHTML = (planData: any) => {
     try {
-      setIsLoading(true);
-      toast.info('Generating PDF...');
-
-      // Create a temporary div to render content for PDF
-      const tempDiv = document.createElement('div');
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.left = '-9999px';
-      tempDiv.style.width = '800px';
-      tempDiv.style.fontFamily = 'Arial, sans-serif';
-      tempDiv.style.fontSize = '14px';
-      tempDiv.style.lineHeight = '1.4';
-      tempDiv.style.backgroundColor = 'white';
-      tempDiv.style.padding = '20px';
-      
       const printContent = generatePrintableContent(planData);
-      tempDiv.innerHTML = printContent;
-      document.body.appendChild(tempDiv);
+      
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>${planData.title} - Attack Plan</title>
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+                line-height: 1.6;
+                color: #333;
+                max-width: 800px;
+                margin: 0 auto;
+                padding: 20px;
+                background-color: #fff;
+              }
+              .header {
+                text-align: center;
+                margin-bottom: 30px;
+                border-bottom: 2px solid #e2e8f0;
+                padding-bottom: 20px;
+              }
+              .header h1 {
+                color: #1a202c;
+                margin-bottom: 10px;
+                font-size: 2rem;
+              }
+              .header p {
+                color: #4a5568;
+                font-size: 1.1rem;
+              }
+              .node {
+                margin: 15px 0;
+                padding: 15px;
+                border-radius: 8px;
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                border-left: 4px solid #cbd5e0;
+              }
+              .text-node {
+                background-color: #f0f9ff;
+                border-left-color: #3182ce;
+              }
+              .technique-node {
+                background-color: #fef3c7;
+                border-left-color: #d69e2e;
+              }
+              .phase-node {
+                background-color: #ecfdf5;
+                border-left-color: #38a169;
+              }
+              .node h3 {
+                margin: 0 0 10px 0;
+                color: #2d3748;
+                font-size: 1.2rem;
+              }
+              .node p {
+                margin: 5px 0;
+                color: #4a5568;
+              }
+              .metadata {
+                font-size: 0.9rem;
+                color: #718096;
+                margin-top: 10px;
+                font-style: italic;
+              }
+              .connections {
+                margin-top: 30px;
+                padding: 20px;
+                background-color: #f7fafc;
+                border-radius: 8px;
+              }
+              .connections h2 {
+                color: #2d3748;
+                margin-bottom: 15px;
+              }
+              .connection {
+                padding: 8px 12px;
+                margin: 5px 0;
+                background-color: #e2e8f0;
+                border-radius: 4px;
+                font-family: monospace;
+                font-size: 0.9rem;
+              }
+              @media print {
+                body { max-width: none; margin: 0; padding: 15px; }
+                .node { break-inside: avoid; }
+              }
+            </style>
+          </head>
+          <body>
+            ${printContent}
+          </body>
+        </html>
+      `;
 
-      try {
-        // Use html2canvas to capture the content
-        const canvas = await html2canvas(tempDiv, {
-          scale: 2,
-          useCORS: true,
-          backgroundColor: '#ffffff'
-        });
-
-        // Create PDF with jsPDF
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgWidth = 210; // A4 width in mm
-        const pageHeight = 295; // A4 height in mm
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
-
-        // Add first page
-        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-
-        // Add additional pages if content is too long
-        while (heightLeft >= 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
-          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
-
-        // Download the PDF
-        const fileName = `${planData.title.replace(/\s+/g, '-').toLowerCase()}-attack-plan.pdf`;
-        pdf.save(fileName);
-        
-        toast.success('PDF downloaded successfully');
-      } finally {
-        // Clean up temporary div
-        document.body.removeChild(tempDiv);
-      }
+      const blob = new Blob([htmlContent], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${planData.title.replace(/\s+/g, '-').toLowerCase()}-attack-plan.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success('HTML file downloaded successfully');
     } catch (error) {
-      console.error('PDF export error:', error);
-      toast.error('Failed to generate PDF');
-    } finally {
-      setIsLoading(false);
+      console.error('HTML export error:', error);
+      toast.error('Failed to export HTML');
     }
   };
 
@@ -643,12 +694,12 @@ const AttackPlansPage: React.FC = () => {
                 </DialogHeader>
                 <div className="space-y-3">
                   <Button 
-                    onClick={() => exportPlan('pdf')} 
+                    onClick={() => exportPlan('html')} 
                     variant="outline" 
                     className="w-full justify-start"
                   >
                     <FileText className="w-4 h-4 mr-2" />
-                    Export as PDF
+                    Export as HTML
                   </Button>
                   <Button 
                     onClick={() => exportPlan('markdown')} 
