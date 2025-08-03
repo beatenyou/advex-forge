@@ -241,17 +241,21 @@ export const Dashboard = ({
       filtered = filtered.filter(technique => technique.title.toLowerCase().includes(query) || technique.description.toLowerCase().includes(query) || technique.mitre_id && technique.mitre_id.toLowerCase().includes(query) || technique.id.toLowerCase().includes(query) || technique.phase.toLowerCase().includes(query) || technique.category.toLowerCase().includes(query) || technique.tags.some(tag => tag.toLowerCase().includes(query)) || technique.tools.some(tool => tool.toLowerCase().includes(query)));
     }
 
-    // Phase filtering (simplified since database has been cleaned)
+    // Phase filtering using navigation phase names
     const currentPhase = selectedPhase || (navigationPhases.length > 0 ? navigationPhases[0].label : "All Techniques");
     if (currentPhase !== "All Techniques") {
+      // Find the navigation phase name that corresponds to the selected label
+      const selectedNavPhase = navigationPhases.find(p => p.label === currentPhase);
+      const phaseName = selectedNavPhase ? selectedNavPhase.name : currentPhase;
+      
       filtered = filtered.filter(technique => {
         // Check phases array first (preferred)
         if (technique.phases && Array.isArray(technique.phases)) {
-          return technique.phases.some(p => p?.trim() === currentPhase);
+          return technique.phases.some(p => p?.trim() === phaseName);
         }
         
         // Fallback to legacy phase field
-        return technique.phase?.trim() === currentPhase;
+        return technique.phase?.trim() === phaseName;
       });
     }
 

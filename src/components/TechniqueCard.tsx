@@ -68,34 +68,29 @@ const generateMitreUrl = (mitreId: string): string => {
   return `https://attack.mitre.org/techniques/${cleanId}/`;
 };
 
-// Phase mapping to translate legacy technique phases to navigation phase labels
-const createPhaseMapping = () => {
-  const mapping: Record<string, string> = {
-    'Reconnaissance': 'Active Reconnaissance',
-    'Command and Control': 'C2',
-    'Initial Access': 'Establish Foothold',
-    'Credential Access': 'Privilege Escalation',
-    'Discovery': 'Enumeration',
-    'Lateral Movement': 'Lateral Movement',
-    'Effects': 'Effects'
-  };
-  return mapping;
-};
 
-const phaseMapping = createPhaseMapping();
-
-// Function to normalize and map phases
-const normalizeAndMapPhase = (phase: string): string => {
-  const normalized = phase?.trim();
-  return phaseMapping[normalized] || normalized;
-};
-
-// Helper function to get display phases (no mapping needed since database is cleaned)
+// Helper function to convert navigation phase names to display labels
 const getDisplayPhases = (technique: Technique): string[] => {
-  if (technique.phases && Array.isArray(technique.phases) && technique.phases.length > 0) {
-    return technique.phases.filter(p => p && p.trim());
-  }
-  return technique.phase ? [technique.phase] : [];
+  const phaseNameToLabel: Record<string, string> = {
+    'recon': 'Active Reconnaissance',
+    'foothold': 'Establish Foothold',
+    'enum': 'Enumeration',
+    'user_persistence': 'User Persistence',
+    'pe': 'Privilege Escalation',
+    'system_persistence': 'System Persistence',
+    'collection': 'Collection',
+    'remote_enum': 'Remote Enumeration',
+    'lateral_mvmnt': 'Lateral Movement',
+    'c2': 'C2',
+    'effects': 'Effects'
+  };
+  
+  // Use phases array if available, otherwise fall back to single phase
+  const phases = technique.phases && technique.phases.length > 0 
+    ? technique.phases.filter(phase => phase && phase.trim() !== '')
+    : (technique.phase ? [technique.phase] : []);
+    
+  return phases.map(phase => phaseNameToLabel[phase] || phase);
 };
 
 interface TechniqueCardProps {
@@ -180,28 +175,29 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
   };
 
   const getPhaseColor = (phase: string) => {
-    // Handle both legacy and mapped phase names
-    const normalizedPhase = normalizeAndMapPhase(phase);
-    switch (normalizedPhase) {
-      case "Establish Foothold": 
-      case "Initial Access": 
-        return "bg-cyber-blue/20 text-cyber-blue border-cyber-blue/30";
+    switch (phase) {
       case "Active Reconnaissance": 
-      case "Reconnaissance": 
         return "bg-cyber-green/20 text-cyber-green border-cyber-green/30";
-      case "Privilege Escalation": 
-      case "Credential Access": 
+      case "Establish Foothold": 
+        return "bg-cyber-blue/20 text-cyber-blue border-cyber-blue/30";
+      case "Enumeration": 
+        return "bg-cyber-yellow/20 text-cyber-yellow border-cyber-yellow/30";
+      case "Remote Enumeration": 
+        return "bg-cyber-yellow/30 text-cyber-yellow border-cyber-yellow/40";
+      case "User Persistence": 
         return "bg-cyber-purple/20 text-cyber-purple border-cyber-purple/30";
+      case "Privilege Escalation": 
+        return "bg-cyber-purple/30 text-cyber-purple border-cyber-purple/40";
+      case "System Persistence": 
+        return "bg-cyber-purple/25 text-cyber-purple border-cyber-purple/35";
       case "Lateral Movement": 
         return "bg-cyber-orange/20 text-cyber-orange border-cyber-orange/30";
-      case "Enumeration": 
-      case "Discovery": 
-        return "bg-cyber-yellow/20 text-cyber-yellow border-cyber-yellow/30";
+      case "Collection": 
+        return "bg-cyber-cyan/20 text-cyber-cyan border-cyber-cyan/30";
+      case "C2": 
+        return "bg-cyber-cyan/30 text-cyber-cyan border-cyber-cyan/40";
       case "Effects": 
         return "bg-cyber-red/20 text-cyber-red border-cyber-red/30";
-      case "C2": 
-      case "Command and Control": 
-        return "bg-cyber-cyan/20 text-cyber-cyan border-cyber-cyan/30";
       default: 
         return "bg-muted/20 text-muted-foreground border-muted/30";
     }
@@ -231,18 +227,13 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
               <CardTitle className="text-lg text-foreground group-hover:text-primary transition-colors mb-2 pr-2">
                 {technique.title}
               </CardTitle>
-              <div className="flex flex-wrap gap-1 mb-2">
-                {getDisplayPhases(technique).map((phase, index) => (
-                    <Badge key={index} variant="outline" className={`text-xs ${getPhaseColor(phase)}`}>
-                      {phase}
-                    </Badge>
-                  ))}
-                {(technique.mitre_id && isValidMitreId(technique.mitre_id)) && (
+              {(technique.mitre_id && isValidMitreId(technique.mitre_id)) && (
+                <div className="flex flex-wrap gap-1 mb-2">
                   <Badge variant="outline" className="text-xs bg-muted/20 text-muted-foreground border-muted/30">
                     {extractCleanMitreId(technique.mitre_id)}
                   </Badge>
-                )}
-              </div>
+                </div>
+              )}
             </div>
             
             {/* Star Button - Always Top Right */}
