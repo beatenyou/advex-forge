@@ -139,6 +139,49 @@ const AttackPlansPage: React.FC = () => {
     setSelectedNode(null);
   };
 
+  const handleAddTechnique = (technique: any) => {
+    const newNode: Node = {
+      id: `technique-${Date.now()}`,
+      type: 'technique',
+      position: { x: Math.random() * 500, y: Math.random() * 300 },
+      data: {
+        label: technique.title,
+        technique: technique
+      }
+    };
+    
+    setNodes((nds) => [...nds, newNode]);
+  };
+
+  const handleCanvasDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    
+    try {
+      const dropData = JSON.parse(event.dataTransfer.getData('application/json'));
+      
+      if (dropData.type === 'phase' && reactFlowInstance) {
+        const position = reactFlowInstance.screenToFlowPosition({
+          x: event.clientX,
+          y: event.clientY,
+        });
+
+        const newNode: Node = {
+          id: `phase-${Date.now()}`,
+          type: 'phase',
+          position,
+          data: {
+            label: dropData.phase.name,
+            phase: dropData.phase
+          }
+        };
+        
+        setNodes((nds) => [...nds, newNode]);
+      }
+    } catch (error) {
+      console.error('Error handling drop:', error);
+    }
+  };
+
   const exportPlan = (format: 'pdf' | 'markdown' | 'csv') => {
     // Implementation for export functionality would go here
     toast.info(`Export to ${format.toUpperCase()} coming soon!`);
@@ -356,15 +399,16 @@ const AttackPlansPage: React.FC = () => {
 
         {/* Center - Canvas */}
         <div className="flex-1 relative">
-          <AttackPlanCanvas
-            nodes={nodes}
-            edges={edges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onNodeClick={handleNodeClick}
-            onInit={setReactFlowInstance}
-          />
+            <AttackPlanCanvas
+              nodes={nodes}
+              edges={edges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onNodeClick={handleNodeClick}
+              onInit={setReactFlowInstance}
+              onDrop={handleCanvasDrop}
+            />
         </div>
 
         {/* Right Sidebar - Technique Details */}

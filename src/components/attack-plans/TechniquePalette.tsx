@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { fetchTechniquesFromDatabase } from '@/lib/techniqueDataMigration';
 import { useNavigationPhases } from '@/hooks/useNavigationPhases';
 import { Search, Plus } from 'lucide-react';
@@ -40,6 +41,13 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
   const [selectedPhase, setSelectedPhase] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { phases: navigationPhases } = useNavigationPhases();
+
+  const handlePhaseDragStart = (e: React.DragEvent, phase: any) => {
+    e.dataTransfer.setData('application/json', JSON.stringify({
+      type: 'phase',
+      phase: phase
+    }));
+  };
 
   useEffect(() => {
     loadTechniques();
@@ -90,8 +98,35 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
   return (
     <div className="h-full flex flex-col">
       <CardHeader className="pb-4">
-        <CardTitle className="text-lg">Technique Palette</CardTitle>
+        <CardTitle className="text-lg">Attack Planning</CardTitle>
+        
+        {/* Phase Icons Section */}
+        <div className="space-y-2">
+          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Phases
+          </h4>
+          <div className="grid grid-cols-2 gap-2">
+            {navigationPhases.map((phase) => (
+              <div
+                key={phase.id}
+                draggable
+                onDragStart={(e) => handlePhaseDragStart(e, phase)}
+                className="flex items-center gap-2 p-2 rounded-md border border-border bg-card hover:bg-accent hover:text-accent-foreground cursor-grab active:cursor-grabbing transition-colors"
+              >
+                <span className="text-sm">{phase.icon}</span>
+                <span className="text-xs font-medium truncate">{phase.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <Separator />
+
+        {/* Techniques Section */}
         <div className="space-y-3">
+          <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Techniques
+          </h4>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input

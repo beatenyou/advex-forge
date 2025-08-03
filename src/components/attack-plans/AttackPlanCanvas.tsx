@@ -13,6 +13,7 @@ import {
   ReactFlowInstance
 } from '@xyflow/react';
 import TechniqueNode from './TechniqueNode';
+import PhaseNode from './PhaseNode';
 
 interface AttackPlanCanvasProps {
   nodes: Node[];
@@ -22,10 +23,12 @@ interface AttackPlanCanvasProps {
   onConnect: OnConnect;
   onNodeClick?: (event: React.MouseEvent, node: Node) => void;
   onInit?: (instance: ReactFlowInstance) => void;
+  onDrop?: (event: React.DragEvent) => void;
 }
 
 const nodeTypes: NodeTypes = {
   technique: TechniqueNode,
+  phase: PhaseNode,
 };
 
 export const AttackPlanCanvas: React.FC<AttackPlanCanvasProps> = ({
@@ -35,10 +38,20 @@ export const AttackPlanCanvas: React.FC<AttackPlanCanvasProps> = ({
   onEdgesChange,
   onConnect,
   onNodeClick,
-  onInit
+  onInit,
+  onDrop
 }) => {
+  const handleDragOver = (event: React.DragEvent) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  };
+
   return (
-    <div className="w-full h-full">
+    <div 
+      className="w-full h-full"
+      onDrop={onDrop}
+      onDragOver={handleDragOver}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
