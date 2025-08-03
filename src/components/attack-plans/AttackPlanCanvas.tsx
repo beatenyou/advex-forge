@@ -83,11 +83,7 @@ export const AttackPlanCanvas: React.FC<AttackPlanCanvasProps> = ({
   }, [nodes, edges, onNodesChange, onEdgesChange]);
 
   return (
-    <div 
-      className="w-full h-full"
-      onDrop={onDrop}
-      onDragOver={handleDragOver}
-    >
+    <div className="w-full h-full">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -96,8 +92,9 @@ export const AttackPlanCanvas: React.FC<AttackPlanCanvasProps> = ({
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         onInit={onInit}
+        onDrop={onDrop}
+        onDragOver={handleDragOver}
         nodeTypes={nodeTypes}
-        fitView
         className="bg-background"
       >
         <Background color="#94a3b8" gap={20} />

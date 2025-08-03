@@ -160,17 +160,10 @@ const AttackPlansPage: React.FC = () => {
       const dropData = JSON.parse(event.dataTransfer.getData('application/json'));
       
       if (dropData.type === 'phase' && reactFlowInstance) {
-        // Get the canvas element to calculate relative coordinates
-        const canvasElement = event.currentTarget as HTMLElement;
-        const canvasRect = canvasElement.getBoundingClientRect();
-        
-        // Calculate mouse position relative to the canvas
-        const canvasX = event.clientX - canvasRect.left;
-        const canvasY = event.clientY - canvasRect.top;
-        
+        // Use ReactFlow's built-in coordinate conversion
         const position = reactFlowInstance.screenToFlowPosition({
-          x: canvasX,
-          y: canvasY,
+          x: event.clientX,
+          y: event.clientY,
         });
 
         const newNode: Node = {
@@ -181,7 +174,7 @@ const AttackPlansPage: React.FC = () => {
             label: dropData.phase.label || dropData.phase.name,
             phase: {
               ...dropData.phase,
-              name: dropData.phase.label || dropData.phase.name, // Ensure consistency
+              name: dropData.phase.label || dropData.phase.name,
             }
           }
         };
