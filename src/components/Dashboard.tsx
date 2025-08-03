@@ -491,12 +491,6 @@ Can you help me understand this scenario and provide guidance on the techniques,
               style={gridStyle} 
               className="mb-8 w-full"
             >
-              {/* Debug info for grid */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="col-span-full mb-4 p-2 bg-muted/50 rounded text-xs text-muted-foreground">
-                  Grid Debug: {columnCount} columns, {filteredTechniques.length} techniques, Initialized: {isInitialized ? 'Yes' : 'No'}
-                </div>
-              )}
               {filteredTechniques.map(technique => (
                 <TechniqueCard 
                   key={technique.id} 
