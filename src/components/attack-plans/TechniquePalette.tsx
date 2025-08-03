@@ -13,6 +13,7 @@ interface Technique {
   title: string;
   description: string;
   phase: string;
+  phases?: string[]; // Array of phases from database
   category: string;
   tags: string[];
 }
@@ -46,7 +47,18 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
   const filteredTechniques = techniques.filter(technique => {
     const matchesSearch = technique.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          technique.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPhase = !selectedPhase || technique.phase === selectedPhase;
+    
+    if (!selectedPhase) return matchesSearch;
+    
+    // Debug logging
+    if (technique.title.toLowerCase().includes('reconnaissance')) {
+      console.log('Debug technique:', technique.title, 'phases:', technique.phases, 'phase:', technique.phase, 'selectedPhase:', selectedPhase);
+    }
+    
+    // Check if the selected phase name is in the technique's phases array
+    const matchesPhase = technique.phases?.includes(selectedPhase) || 
+                        technique.phase === selectedPhase; // fallback for techniques with single phase
+    
     return matchesSearch && matchesPhase;
   });
 
@@ -108,7 +120,7 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
                         </p>
                         <div className="flex items-center gap-2 mt-2">
                           <Badge variant="secondary" className="text-xs">
-                            {technique.phase}
+                            {technique.phases?.[0] || technique.phase}
                           </Badge>
                           <Badge variant="outline" className="text-xs">
                             {technique.category}
