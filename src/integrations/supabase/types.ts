@@ -1968,6 +1968,23 @@ export type Database = {
           provider_name: string
         }[]
       }
+      enhanced_bulk_create_and_assign_users: {
+        Args: {
+          org_id: string
+          user_emails: string[]
+          default_role?: string
+          access_level?: string
+          provision_interactions?: number
+          admin_user_id?: string
+        }
+        Returns: {
+          email: string
+          status: string
+          message: string
+          user_id: string
+          temp_password: string
+        }[]
+      }
       enhanced_bulk_invite_users: {
         Args: {
           org_id: string
@@ -2149,6 +2166,19 @@ export type Database = {
           p_user_agent?: string
         }
         Returns: undefined
+      }
+      mass_provision_org_members: {
+        Args: {
+          org_id: string
+          admin_user_id: string
+          interactions_per_member?: number
+        }
+        Returns: {
+          user_id: string
+          email: string
+          status: string
+          message: string
+        }[]
       }
       nuclear_auth_reset: {
         Args: { target_user_id?: string }
