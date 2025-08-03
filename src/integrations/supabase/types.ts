@@ -823,6 +823,7 @@ export type Database = {
           is_pro: boolean | null
           permissions: string[] | null
           role: string
+          role_enum: Database["public"]["Enums"]["user_role"] | null
           subscription_status: string | null
           updated_at: string
           user_id: string
@@ -835,6 +836,7 @@ export type Database = {
           is_pro?: boolean | null
           permissions?: string[] | null
           role?: string
+          role_enum?: Database["public"]["Enums"]["user_role"] | null
           subscription_status?: string | null
           updated_at?: string
           user_id: string
@@ -847,6 +849,7 @@ export type Database = {
           is_pro?: boolean | null
           permissions?: string[] | null
           role?: string
+          role_enum?: Database["public"]["Enums"]["user_role"] | null
           subscription_status?: string | null
           updated_at?: string
           user_id?: string
@@ -1610,6 +1613,10 @@ export type Database = {
           plan_name: string
         }[]
       }
+      get_user_role: {
+        Args: { target_user_id: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
       get_user_sessions_with_profiles: {
         Args: {
           start_date_param?: string
@@ -1629,6 +1636,13 @@ export type Database = {
           referrer: string
           created_at: string
         }[]
+      }
+      has_permission: {
+        Args: {
+          target_user_id: string
+          required_role: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: boolean
       }
       increment_ai_usage: {
         Args: { user_id_param: string }
@@ -1679,6 +1693,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      user_role: "user" | "pro" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1807,6 +1822,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      user_role: ["user", "pro", "admin"],
     },
   },
 } as const
