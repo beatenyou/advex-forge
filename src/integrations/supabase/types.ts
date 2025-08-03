@@ -837,6 +837,53 @@ export type Database = {
         }
         Relationships: []
       }
+      organization_credit_transactions: {
+        Row: {
+          admin_user_id: string | null
+          amount: number
+          balance_after: number
+          created_at: string | null
+          description: string | null
+          id: string
+          metadata: Json | null
+          organization_id: string
+          transaction_type: string
+          user_id: string | null
+        }
+        Insert: {
+          admin_user_id?: string | null
+          amount: number
+          balance_after: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          organization_id: string
+          transaction_type: string
+          user_id?: string | null
+        }
+        Update: {
+          admin_user_id?: string | null
+          amount?: number
+          balance_after?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          organization_id?: string
+          transaction_type?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_credit_transactions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_members: {
         Row: {
           id: string
@@ -880,8 +927,14 @@ export type Database = {
       }
       organizations: {
         Row: {
+          ai_credits_pool: number | null
+          ai_credits_used: number | null
+          billing_address: Json | null
+          billing_contact_email: string | null
+          billing_plan_id: string | null
           created_at: string | null
           created_by: string | null
+          default_member_access_level: string | null
           domain: string | null
           id: string
           is_active: boolean | null
@@ -894,8 +947,14 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_credits_pool?: number | null
+          ai_credits_used?: number | null
+          billing_address?: Json | null
+          billing_contact_email?: string | null
+          billing_plan_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          default_member_access_level?: string | null
           domain?: string | null
           id?: string
           is_active?: boolean | null
@@ -908,8 +967,14 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_credits_pool?: number | null
+          ai_credits_used?: number | null
+          billing_address?: Json | null
+          billing_contact_email?: string | null
+          billing_plan_id?: string | null
           created_at?: string | null
           created_by?: string | null
+          default_member_access_level?: string | null
           domain?: string | null
           id?: string
           is_active?: boolean | null
@@ -921,7 +986,15 @@ export type Database = {
           subscription_plan?: string | null
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "organizations_billing_plan_id_fkey"
+            columns: ["billing_plan_id"]
+            isOneToOne: false
+            referencedRelation: "billing_plans"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       performance_metrics: {
         Row: {
@@ -1827,6 +1900,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      allocate_organization_credits: {
+        Args: {
+          org_id: string
+          target_user_id: string
+          credit_amount: number
+          admin_user_id: string
+        }
+        Returns: boolean
+      }
       backfill_model_usage_from_interactions: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1870,6 +1952,20 @@ export type Database = {
           provider_name: string
         }[]
       }
+      enhanced_bulk_invite_users: {
+        Args: {
+          org_id: string
+          user_emails: string[]
+          default_role?: string
+          access_level?: string
+          invited_by_user_id?: string
+        }
+        Returns: {
+          email: string
+          status: string
+          message: string
+        }[]
+      }
       ensure_default_model_access_for_all_users: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -1910,6 +2006,17 @@ export type Database = {
           organization_name: string
           organization_role: string
           teams: Json
+        }[]
+      }
+      get_organization_usage_analytics: {
+        Args: { org_id: string; start_date?: string; end_date?: string }
+        Returns: {
+          total_members: number
+          active_members: number
+          total_ai_interactions: number
+          credits_used: number
+          credits_remaining: number
+          top_users: Json
         }[]
       }
       get_user_ai_usage_stats: {
@@ -2021,6 +2128,15 @@ export type Database = {
       nuclear_auth_reset: {
         Args: { target_user_id?: string }
         Returns: undefined
+      }
+      purchase_organization_credits: {
+        Args: {
+          org_id: string
+          credit_amount: number
+          admin_user_id: string
+          purchase_description?: string
+        }
+        Returns: boolean
       }
       validate_session_health: {
         Args: { p_user_id: string; p_session_id: string }

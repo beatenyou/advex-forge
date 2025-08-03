@@ -4,7 +4,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { User, Shield, Bell, CreditCard, Brain, Lock, HelpCircle, ArrowLeft, Bot } from 'lucide-react';
+import { User, Shield, Bell, CreditCard, Brain, Lock, HelpCircle, ArrowLeft, Bot, Building2 } from 'lucide-react';
 import ProfilePreferences from '@/components/preferences/ProfilePreferences';
 import SecurityPreferences from '@/components/preferences/SecurityPreferences';
 import NotificationPreferences from '@/components/preferences/NotificationPreferences';
@@ -13,6 +13,7 @@ import AIUsagePreferences from '@/components/preferences/AIUsagePreferences';
 import { AIModelPreferences } from '@/components/preferences/AIModelPreferences';
 import PrivacyPreferences from '@/components/preferences/PrivacyPreferences';
 import SupportPreferences from '@/components/preferences/SupportPreferences';
+import OrganizationPreferences from '@/components/preferences/OrganizationPreferences';
 
 export default function UserPreferences() {
   const { user, loading } = useAuth();
@@ -33,6 +34,7 @@ export default function UserPreferences() {
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
+    { id: 'organization', label: 'Organization', icon: Building2 },
     { id: 'security', label: 'Security', icon: Shield },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'billing', label: 'Billing', icon: CreditCard },
@@ -59,7 +61,7 @@ export default function UserPreferences() {
 
           <Card className="p-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-8 mb-8">
+              <TabsList className="grid w-full grid-cols-9 mb-8">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
                   return (
@@ -78,6 +80,10 @@ export default function UserPreferences() {
               <div className="mt-6">
                 <TabsContent value="profile" className="mt-0">
                   <ProfilePreferences />
+                </TabsContent>
+
+                <TabsContent value="organization" className="mt-0">
+                  <OrganizationPreferences />
                 </TabsContent>
 
                 <TabsContent value="security" className="mt-0">

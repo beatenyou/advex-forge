@@ -1,6 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { OrganizationManager } from '@/components/enterprise/OrganizationManager';
-import { BulkUserManager } from '@/components/enterprise/BulkUserManager';
+import { EnhancedOrganizationManager } from '@/components/enterprise/EnhancedOrganizationManager';
+import { EnhancedBulkUserManager } from '@/components/enterprise/EnhancedBulkUserManager';
 import { Building2, Users, Settings, BarChart3 } from 'lucide-react';
 
 export default function EnterpriseManagement() {
@@ -34,11 +34,11 @@ export default function EnterpriseManagement() {
         </TabsList>
 
         <TabsContent value="organizations" className="space-y-6">
-          <OrganizationManager />
+          <EnhancedOrganizationManager />
         </TabsContent>
 
         <TabsContent value="bulk-users" className="space-y-6">
-          <BulkUserManager />
+          <EnhancedBulkUserManager />
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">
