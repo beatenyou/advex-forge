@@ -330,6 +330,28 @@ export const Sidebar = ({
         </CardContent>
       </Card>
 
+      {/* Page Sections */}
+      <Card className="bg-muted/20 border-border/30">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg text-foreground">Page Sections</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-sm h-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+            onClick={() => {
+              const element = document.getElementById('cheat-sheets-section');
+              if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }}
+          >
+            <Hash className="w-4 h-4 mr-2" />
+            Cheat Sheets
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Quick Links */}
       {linkTabs.length > 0 && (
         <Card className="bg-muted/20 border-border/30">

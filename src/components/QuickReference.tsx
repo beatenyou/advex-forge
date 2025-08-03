@@ -56,6 +56,27 @@ export const QuickReference = () => {
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     fetchCheatSheets();
+
+    // Set up real-time subscription for cheat sheets
+    const cheatSheetsChannel = supabase
+      .channel('cheat-sheets-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'cheat_sheets'
+        },
+        () => {
+          console.log('Cheat sheets table changed, refreshing...');
+          fetchCheatSheets();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(cheatSheetsChannel);
+    };
   }, []);
   const fetchCheatSheets = async () => {
     try {
@@ -94,7 +115,7 @@ export const QuickReference = () => {
         </div>
       </div>;
   }
-  return <div className="space-y-6">
+  return <div className="space-y-6" id="cheat-sheets-section">
       <div className="flex items-center gap-3">
         <h2 className="text-2xl font-bold text-foreground">Cheat Sheets</h2>
       </div>
