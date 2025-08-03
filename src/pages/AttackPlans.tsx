@@ -10,6 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { 
   useNodesState,
   useEdgesState,
@@ -231,74 +233,68 @@ const AttackPlansPage: React.FC = () => {
     }
   };
 
-  const exportToPDF = (planData: any) => {
+  const exportToPDF = async (planData: any) => {
     try {
-      // Create a printable version
+      setIsLoading(true);
+      toast.info('Generating PDF...');
+
+      // Create a temporary div to render content for PDF
+      const tempDiv = document.createElement('div');
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.left = '-9999px';
+      tempDiv.style.width = '800px';
+      tempDiv.style.fontFamily = 'Arial, sans-serif';
+      tempDiv.style.fontSize = '14px';
+      tempDiv.style.lineHeight = '1.4';
+      tempDiv.style.backgroundColor = 'white';
+      tempDiv.style.padding = '20px';
+      
       const printContent = generatePrintableContent(planData);
-      
-      // Open print dialog
-      const printWindow = window.open('', '_blank');
-      
-      if (!printWindow) {
-        toast.error('Please allow popups to export PDF');
-        return;
+      tempDiv.innerHTML = printContent;
+      document.body.appendChild(tempDiv);
+
+      try {
+        // Use html2canvas to capture the content
+        const canvas = await html2canvas(tempDiv, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff'
+        });
+
+        // Create PDF with jsPDF
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210; // A4 width in mm
+        const pageHeight = 295; // A4 height in mm
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        // Add first page
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        // Add additional pages if content is too long
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+
+        // Download the PDF
+        const fileName = `${planData.title.replace(/\s+/g, '-').toLowerCase()}-attack-plan.pdf`;
+        pdf.save(fileName);
+        
+        toast.success('PDF downloaded successfully');
+      } finally {
+        // Clean up temporary div
+        document.body.removeChild(tempDiv);
       }
-      
-      // Write content to new window
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>${planData.title} - Attack Plan</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 20px; }
-              .header { text-align: center; margin-bottom: 30px; }
-              .node { margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 5px; }
-              .text-node { background-color: #f0f9ff; }
-              .technique-node { background-color: #fef3c7; }
-              .phase-node { background-color: #ecfdf5; }
-              .metadata { font-size: 12px; color: #666; margin-top: 5px; }
-            </style>
-          </head>
-          <body>
-            ${printContent}
-          </body>
-        </html>
-      `);
-      printWindow.document.close();
-      
-      // Handle print operation
-      printWindow.focus();
-      
-      // Clean up if window is closed without printing
-      const checkClosed = setInterval(() => {
-        if (printWindow.closed) {
-          clearInterval(checkClosed);
-        }
-      }, 1000);
-      
-      // Trigger print and clean up after print dialog
-      setTimeout(() => {
-        try {
-          printWindow.print();
-          // Close the window after printing or if user cancels
-          setTimeout(() => {
-            if (!printWindow.closed) {
-              printWindow.close();
-            }
-            clearInterval(checkClosed);
-          }, 1000);
-        } catch (printError) {
-          console.error('Print error:', printError);
-          printWindow.close();
-          clearInterval(checkClosed);
-        }
-      }, 500);
-      
-      toast.success('PDF export opened');
-      
     } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Failed to export PDF');
+      console.error('PDF export error:', error);
+      toast.error('Failed to generate PDF');
+    } finally {
+      setIsLoading(false);
     }
   };
 
