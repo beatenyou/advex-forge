@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useProPlanCheck } from '@/hooks/useProPlanCheck';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -11,23 +11,20 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
-  ReactFlow, 
-  Background, 
-  Controls, 
-  MiniMap,
   useNodesState,
   useEdgesState,
   addEdge,
   Connection,
   Edge,
   Node,
-  NodeTypes
+  ReactFlowInstance
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Crown, Save, Download, Plus, FileText, FileSpreadsheet, Lock, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { TechniquePalette } from '@/components/attack-plans/TechniquePalette';
 import { TechniqueDetailsPanel } from '@/components/attack-plans/TechniqueDetailsPanel';
+import { AttackPlanCanvas } from '@/components/attack-plans/AttackPlanCanvas';
 
 interface AttackPlan {
   id: string;
@@ -50,6 +47,8 @@ const AttackPlansPage: React.FC = () => {
   const [savedPlans, setSavedPlans] = useState<AttackPlan[]>([]);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
+  const nodeCounter = useRef(0);
 
   // Load saved plans
   useEffect(() => {
@@ -321,15 +320,35 @@ const AttackPlansPage: React.FC = () => {
         <div className="w-80 border-r bg-card">
           <TechniquePalette onAddTechnique={(technique) => {
             console.log('Adding technique to canvas:', technique.title);
+            
+            // Calculate position in the center of the current viewport
+            let x = 300; // Default fallback
+            let y = 300; // Default fallback
+            
+            if (reactFlowInstance) {
+              const viewport = reactFlowInstance.getViewport();
+              const canvasCenter = reactFlowInstance.screenToFlowPosition({
+                x: window.innerWidth / 2,
+                y: window.innerHeight / 2,
+              });
+              
+              // Add slight offset to prevent nodes from stacking exactly on top of each other
+              const offset = (nodeCounter.current % 5) * 50;
+              x = canvasCenter.x + offset;
+              y = canvasCenter.y + offset;
+            }
+            
             const newNode: Node = {
-              id: `technique-${Date.now()}`,
+              id: `technique-${Date.now()}-${nodeCounter.current}`,
               type: 'default',
-              position: { x: 200, y: 200 },
+              position: { x, y },
               data: { 
                 label: technique.title,
                 technique: technique
               }
             };
+            
+            nodeCounter.current += 1;
             setNodes((nds) => [...nds, newNode]);
             toast.success(`Added ${technique.title} to canvas`);
           }} />
@@ -337,19 +356,15 @@ const AttackPlansPage: React.FC = () => {
 
         {/* Center - Canvas */}
         <div className="flex-1 relative">
-          <ReactFlow
+          <AttackPlanCanvas
             nodes={nodes}
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
             onNodeClick={handleNodeClick}
-            fitView
-          >
-            <Background />
-            <Controls />
-            <MiniMap />
-          </ReactFlow>
+            onInit={setReactFlowInstance}
+          />
         </div>
 
         {/* Right Sidebar - Technique Details */}

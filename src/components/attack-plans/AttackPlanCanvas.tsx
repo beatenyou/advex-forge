@@ -9,7 +9,8 @@ import {
   NodeTypes,
   OnNodesChange,
   OnEdgesChange,
-  OnConnect
+  OnConnect,
+  ReactFlowInstance
 } from '@xyflow/react';
 
 interface AttackPlanCanvasProps {
@@ -19,6 +20,7 @@ interface AttackPlanCanvasProps {
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
   onNodeClick?: (event: React.MouseEvent, node: Node) => void;
+  onInit?: (instance: ReactFlowInstance) => void;
 }
 
 export const AttackPlanCanvas: React.FC<AttackPlanCanvasProps> = ({
@@ -27,7 +29,8 @@ export const AttackPlanCanvas: React.FC<AttackPlanCanvasProps> = ({
   onNodesChange,
   onEdgesChange,
   onConnect,
-  onNodeClick
+  onNodeClick,
+  onInit
 }) => {
   return (
     <div className="w-full h-full">
@@ -38,6 +41,7 @@ export const AttackPlanCanvas: React.FC<AttackPlanCanvasProps> = ({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onNodeClick={onNodeClick}
+        onInit={onInit}
         fitView
         className="bg-background"
       >
