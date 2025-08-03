@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useProfile } from './useProfile';
-import { useAuth } from './useAuth';
+import { usePermissions } from './usePermissions';
 
 interface MaintenanceData {
   id: string;
@@ -13,8 +12,7 @@ interface MaintenanceData {
 }
 
 export const useMaintenanceCheck = () => {
-  const { isAdmin } = useProfile();
-  const { user } = useAuth();
+  const { isAdmin, loading: profileLoading } = usePermissions();
   const [maintenanceData, setMaintenanceData] = useState<MaintenanceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
@@ -39,7 +37,7 @@ export const useMaintenanceCheck = () => {
         setIsMaintenanceMode(data.is_enabled);
         
         // Non-admin users should be redirected when maintenance is enabled
-        setShouldRedirect(data.is_enabled && user && !isAdmin);
+        setShouldRedirect(data.is_enabled && !profileLoading && !isAdmin);
       }
     } catch (error) {
       console.error('Error in maintenance check:', error);
@@ -49,10 +47,10 @@ export const useMaintenanceCheck = () => {
   };
 
   useEffect(() => {
-    if (user !== null) { // Only run when auth state is determined
+    if (!profileLoading) { // Only run when profile loading is done
       fetchMaintenanceStatus();
     }
-  }, [user, isAdmin]);
+  }, [profileLoading, isAdmin]);
 
   // Set up real-time subscription for maintenance status changes
   useEffect(() => {
@@ -74,7 +72,7 @@ export const useMaintenanceCheck = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, isAdmin]);
+  }, [profileLoading, isAdmin]);
 
   return {
     maintenanceData,

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useProfile } from '@/hooks/useProfile';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -15,7 +15,7 @@ interface Announcement {
 }
 
 export default function AnnouncementBanner() {
-  const { isAdmin } = useProfile();
+  const { isAdmin } = usePermissions();
   const { user } = useAuth();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [dismissedBanners, setDismissedBanners] = useState<Set<string>>(new Set());

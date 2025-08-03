@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { RoleGuard } from "@/components/auth/RoleGuard";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { usePerformanceMonitoring } from "@/hooks/usePerformanceMonitoring";
 import { ChatProvider } from "@/contexts/ChatContext";
@@ -66,15 +68,41 @@ const App = () => (
           <BrowserRouter>
             <MaintenanceWrapper>
               <Routes>
-                <Route path="/" element={<Index />} />
                 <Route path="/auth" element={<Auth />} />
-                <Route path="/preferences" element={<UserPreferences />} />
-                <Route path="/admin/stats" element={<AdminStats />} />
-                <Route path="/attack-plans" element={<AttackPlans />} />
-                <Route path="/chat" element={<FullScreenChat />} />
-                <Route path="/chat/:sessionId" element={<FullScreenChat />} />
-                {/* Auth debug route removed - using simplified auth */}
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="/" element={
+                  <ProtectedRoute>
+                    <Index />
+                  </ProtectedRoute>
+                } />
+                <Route path="/preferences" element={
+                  <ProtectedRoute>
+                    <UserPreferences />
+                  </ProtectedRoute>
+                } />
+                <Route path="/admin/stats" element={
+                  <ProtectedRoute>
+                    <RoleGuard requiredRole="admin">
+                      <AdminStats />
+                    </RoleGuard>
+                  </ProtectedRoute>
+                } />
+                <Route path="/attack-plans" element={
+                  <ProtectedRoute>
+                    <RoleGuard requiredRole="pro">
+                      <AttackPlans />
+                    </RoleGuard>
+                  </ProtectedRoute>
+                } />
+                <Route path="/chat" element={
+                  <ProtectedRoute>
+                    <FullScreenChat />
+                  </ProtectedRoute>
+                } />
+                <Route path="/chat/:sessionId" element={
+                  <ProtectedRoute>
+                    <FullScreenChat />
+                  </ProtectedRoute>
+                } />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </MaintenanceWrapper>

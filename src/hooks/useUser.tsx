@@ -2,20 +2,23 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 
+export type UserRole = 'user' | 'pro' | 'admin';
+
 interface UserProfile {
   user_id: string;
   email: string;
   display_name: string;
   role: string;
-  permissions: string[];
+  role_enum: UserRole;
   subscription_status: string;
   is_pro: boolean;
+  permissions: string[];
   ai_usage_current: number;
   ai_quota_limit: number;
   plan_name: string;
 }
 
-export function useProfile() {
+export function useUser() {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
@@ -30,8 +33,6 @@ export function useProfile() {
     
     const fetchProfile = async () => {
       try {
-        console.log('[PROFILE] Fetching profile for user:', user.id);
-        
         // First ensure profile exists
         await supabase
           .from('profiles')
@@ -40,6 +41,7 @@ export function useProfile() {
             email: user.email || '',
             display_name: user.email?.split('@')[0] || 'User',
             role: 'user',
+            role_enum: 'user',
             permissions: ['user'],
             is_pro: false,
             subscription_status: 'free'
@@ -52,13 +54,14 @@ export function useProfile() {
           .rpc('get_complete_user_profile', { target_user_id: user.id });
 
         if (error) {
-          console.error('[PROFILE] Error fetching profile:', error);
+          console.error('Error fetching profile:', error);
           // Create fallback profile
           setProfile({
             user_id: user.id,
             email: user.email || '',
             display_name: user.email?.split('@')[0] || 'User',
             role: 'user',
+            role_enum: 'user',
             permissions: ['user'],
             subscription_status: 'free',
             is_pro: false,
@@ -67,11 +70,13 @@ export function useProfile() {
             plan_name: 'Free'
           });
         } else if (data && data.length > 0) {
-          console.log('[PROFILE] Profile loaded successfully');
-          setProfile(data[0]);
+          setProfile({
+            ...data[0],
+            role_enum: data[0].role as UserRole
+          });
         }
       } catch (error) {
-        console.error('[PROFILE] Exception fetching profile:', error);
+        console.error('Exception fetching profile:', error);
       } finally {
         setLoading(false);
       }
@@ -83,10 +88,11 @@ export function useProfile() {
   return {
     profile,
     loading,
-    isAdmin: profile?.role === 'admin',
-    isProUser: profile?.is_pro || profile?.role === 'admin',
-    hasPermission: (permission: string): boolean => {
-      return profile?.permissions?.includes(permission) || false;
-    },
+    refetch: () => {
+      if (user) {
+        setLoading(true);
+        // Trigger re-fetch by setting user again
+      }
+    }
   };
 }

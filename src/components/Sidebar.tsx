@@ -8,7 +8,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigationPhases } from "@/hooks/useNavigationPhases";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfile } from "@/hooks/useProfile";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Link } from "react-router-dom";
 
 interface Technique {
@@ -77,7 +77,7 @@ export const Sidebar = ({
   console.log('First technique:', techniques[0]);
   
   const { phases: navigationPhases } = useNavigationPhases();
-  const { isProUser, loading: proCheckLoading } = useProfile();
+  const { isProUser, loading: proCheckLoading } = usePermissions();
   
   console.log('Sidebar - Pro status:', { isProUser, proCheckLoading });
   const [scenarios, setScenarios] = useState<Scenario[]>([]);

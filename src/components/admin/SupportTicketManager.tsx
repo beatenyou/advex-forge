@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useProfile } from '@/hooks/useProfile';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,7 +44,7 @@ interface TicketMessage {
 }
 
 export default function SupportTicketManager() {
-  const { isAdmin, loading: adminLoading } = useProfile();
+  const { isAdmin, loading: adminLoading } = usePermissions();
   const { user } = useAuth();
   const { toast } = useToast();
   

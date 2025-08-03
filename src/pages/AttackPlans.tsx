@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useProfile } from '@/hooks/useProfile';
+import { usePermissions } from '@/hooks/usePermissions';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,7 +36,7 @@ interface AttackPlan {
 }
 
 const AttackPlansPage: React.FC = () => {
-  const { isProUser, loading: proLoading } = useProfile();
+  const { isProUser, loading: proLoading } = usePermissions();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
