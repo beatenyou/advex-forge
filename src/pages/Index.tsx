@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Shield, Loader2, AlertTriangle, RefreshCw } from "lucide-react";
 
 const Index = () => {
-  const { user, loading, nuclearReset, authError } = useAuth();
+  const { user, loading, nuclearReset, authError, isStuck, forceRestore } = useAuth();
   const navigate = useNavigate();
   const [showDebug, setShowDebug] = useState(false);
 
@@ -58,13 +58,17 @@ const Index = () => {
               </Button>
             </div>
             
-            {authError && (
+            {(authError || isStuck) && (
               <div className="space-y-4">
                 <div className="flex items-center space-x-2 text-destructive">
                   <AlertTriangle className="h-5 w-5" />
-                  <span className="text-sm">Authentication Issue</span>
+                  <span className="text-sm">
+                    {isStuck ? 'Authentication Stuck' : 'Authentication Issue'}
+                  </span>
                 </div>
-                <p className="text-sm text-muted-foreground">{authError}</p>
+                <p className="text-sm text-muted-foreground">
+                  {authError || 'Authentication is taking longer than expected. Try force restore or reset.'}
+                </p>
                 <div className="flex gap-2">
                   <Button 
                     onClick={() => navigate("/auth")}
@@ -73,6 +77,15 @@ const Index = () => {
                   >
                     Go to Login
                   </Button>
+                  {isStuck && (
+                    <Button 
+                      onClick={forceRestore}
+                      variant="outline"
+                      size="sm"
+                    >
+                      Force Restore
+                    </Button>
+                  )}
                   <Button 
                     onClick={nuclearReset}
                     variant="destructive"

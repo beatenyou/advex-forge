@@ -9,6 +9,8 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   nuclearReset: () => Promise<void>;
   authError: string | null;
+  isStuck: boolean;
+  forceRestore: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,6 +20,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [isStuck, setIsStuck] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
 
   const clearAllStorage = () => {
     // Clear localStorage
@@ -47,26 +51,72 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  const ensureProfileExists = async (user: User) => {
+    try {
+      const { data: profile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (fetchError && fetchError.code === 'PGRST116') {
+        // Profile doesn't exist, create it
+        console.log('🔧 Creating missing profile for user:', user.id);
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: user.id,
+            email: user.email,
+            display_name: user.email?.split('@')[0] || 'User'
+          });
+
+        if (insertError) {
+          console.error('Failed to create profile:', insertError);
+        } else {
+          console.log('✅ Profile created successfully');
+        }
+      }
+    } catch (error) {
+      console.error('Error ensuring profile exists:', error);
+    }
+  };
+
+  const forceRestore = async () => {
+    console.log('🔧 FORCE RESTORE: Attempting to restore authentication');
+    setDebugMode(true);
+    setIsStuck(false);
+    setAuthError(null);
+    
+    try {
+      // Try to get fresh session
+      const { data: { session }, error } = await supabase.auth.getSession();
+      console.log('🔧 Force restore session check:', { session: !!session, error });
+      
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+        setLoading(false);
+        console.log('🔧 Force restore successful');
+        
+        // Create profile if missing
+        await ensureProfileExists(session.user);
+        return;
+      }
+      
+      // If no session, clear everything and go to auth
+      setSession(null);
+      setUser(null);
+      setLoading(false);
+      window.location.href = '/auth';
+    } catch (error) {
+      console.error('🔧 Force restore failed:', error);
+      setAuthError('Restore failed - redirecting to login');
+      setTimeout(() => window.location.href = '/auth', 2000);
+    }
+  };
+
   const nuclearReset = async () => {
     console.log('🚨 NUCLEAR RESET: Clearing all auth data');
-    
-    // Log the nuclear reset event for enhanced monitoring
-    if (user?.id) {
-      try {
-        await supabase.from('auth_events').insert({
-          user_id: user.id,
-          event_type: 'nuclear_reset_initiated',
-          event_data: {
-            reason: 'User initiated nuclear reset',
-            timestamp: new Date().toISOString(),
-            userAgent: navigator.userAgent
-          },
-          severity: 'warning'
-        });
-      } catch (error) {
-        console.error('Failed to log nuclear reset event:', error);
-      }
-    }
     
     // Clear browser storage first
     clearAllStorage();
@@ -76,15 +126,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setAuthError(null);
     setLoading(false);
+    setIsStuck(false);
     
     try {
       // Sign out from Supabase
       await supabase.auth.signOut();
-      
-      // Clean database sessions if user exists
-      if (user?.id) {
-        await supabase.rpc('nuclear_auth_reset', { target_user_id: user.id });
-      }
     } catch (error) {
       console.error('Nuclear reset error (non-critical):', error);
     }
@@ -95,25 +141,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     console.log('🔐 Initializing auth...');
+    let authInitialized = false;
     
-    // Emergency timeout to prevent infinite loading
-    const emergencyTimeout = setTimeout(() => {
-      console.warn('⏰ Emergency timeout: Auth loading took too long, forcing resolution');
-      setLoading(false);
-      if (!user && !session) {
-        setAuthError('Authentication timeout - please try refreshing');
+    // Track stuck state - reduced from 10s to 8s for faster feedback
+    const stuckTimeout = setTimeout(() => {
+      if (!authInitialized) {
+        console.warn('⚠️ Auth appears stuck - enabling debug mode');
+        setIsStuck(true);
+        setLoading(false);
+        setAuthError('Authentication is taking longer than expected');
       }
-    }, 10000); // 10 seconds
+    }, 8000); // 8 seconds
 
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('🔐 Auth state change:', event, session?.user?.id);
+        console.log(`🔐 [${debugMode ? 'DEBUG' : 'NORMAL'}] Auth state change:`, event, session?.user?.id);
         
-        // Clear emergency timeout once we get any auth state change
-        clearTimeout(emergencyTimeout);
+        authInitialized = true;
+        clearTimeout(stuckTimeout);
+        setIsStuck(false);
         
-        // Only update state synchronously - no async operations here
+        // Defer profile creation to prevent blocking auth flow
+        if (session?.user) {
+          setTimeout(() => ensureProfileExists(session.user), 100);
+        }
+        
+        // Only update state synchronously - NO async operations here
         setSession(session);
         setUser(session?.user ?? null);
         setAuthError(null);
@@ -127,39 +181,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setAuthError(null);
         }
         
-        // Only trigger nuclear reset for critical failures
         if (event === 'TOKEN_REFRESHED' && !session) {
-          console.warn('⚠️ Token refresh failed - this may require nuclear reset');
+          console.warn('⚠️ Token refresh failed');
           setAuthError('Session expired - please sign in again');
         }
       }
     );
 
-    // Get initial session with timeout and retry
+    // Get initial session
     const getInitialSession = async () => {
       try {
         console.log('🔄 Getting initial session...');
         const { data: { session }, error } = await supabase.auth.getSession();
         
-        // Clear emergency timeout once we get initial session
-        clearTimeout(emergencyTimeout);
-        
         if (error) {
           console.error('❌ Initial session error:', error);
           setAuthError('Could not load session');
           setLoading(false);
+          authInitialized = true;
+          clearTimeout(stuckTimeout);
           return;
         }
         
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        console.log('🔐 Initial auth state loaded:', session?.user?.id ? 'authenticated' : 'not authenticated');
+        console.log('🔐 Initial session check:', session?.user?.id ? 'authenticated' : 'not authenticated');
+        
+        // Don't set state here - let onAuthStateChange handle it
+        // This prevents race conditions between getSession and onAuthStateChange
+        authInitialized = true;
+        clearTimeout(stuckTimeout);
       } catch (error) {
         console.error('❌ Session loading failed:', error);
-        clearTimeout(emergencyTimeout);
         setAuthError('Failed to connect to authentication service');
         setLoading(false);
+        authInitialized = true;
+        clearTimeout(stuckTimeout);
       }
     };
 
@@ -167,37 +222,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       subscription.unsubscribe();
-      clearTimeout(emergencyTimeout);
+      clearTimeout(stuckTimeout);
     };
-  }, []);
+  }, [debugMode]);
 
   const signOut = async () => {
     try {
-      // Log sign out activity if user exists
-      if (user) {
-        try {
-          await supabase.from('user_activity_log').insert({
-            user_id: user.id,
-            activity_type: 'sign_out_initiated',
-            description: 'User initiated sign out',
-            user_agent: navigator.userAgent,
-          });
-        } catch (error) {
-          console.error('Error logging sign out activity:', error);
-        }
-      }
+      console.log('🔐 Signing out...');
       
       // Clear local state first
       setSession(null);
       setUser(null);
       setAuthError(null);
       setLoading(false);
+      setIsStuck(false);
       
       // Clear storage
       clearAllStorage();
       
       // Sign out from Supabase
       await supabase.auth.signOut();
+      
+      console.log('👋 Sign out complete');
     } catch (error) {
       console.error('Sign out error:', error);
       // If signOut fails, force nuclear reset
@@ -212,6 +258,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     nuclearReset,
     authError,
+    isStuck,
+    forceRestore,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

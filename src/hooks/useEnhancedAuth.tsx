@@ -30,6 +30,9 @@ export function useEnhancedAuth() {
   const [authEvents, setAuthEvents] = useState<AuthEvent[]>([]);
   const [isMonitoring, setIsMonitoring] = useState(false);
   const sessionIdRef = useRef<string | null>(null);
+  
+  // TEMPORARY: Disable enhanced auth to prevent interference
+  const ENHANCED_AUTH_DISABLED = true;
 
   // Generate browser fingerprint for enhanced security
   const generateBrowserFingerprint = () => {
@@ -358,6 +361,8 @@ export function useEnhancedAuth() {
 
   // Start monitoring when user logs in - defer to prevent blocking auth
   useEffect(() => {
+    if (ENHANCED_AUTH_DISABLED) return;
+    
     if (user && !loading && !isMonitoring) {
       // Defer enhanced auth to prevent blocking main auth flow
       setTimeout(() => {
@@ -374,6 +379,8 @@ export function useEnhancedAuth() {
 
   // Log authentication state changes - defer to prevent blocking auth
   useEffect(() => {
+    if (ENHANCED_AUTH_DISABLED) return;
+    
     if (!loading) {
       setTimeout(() => {
         if (user) {
