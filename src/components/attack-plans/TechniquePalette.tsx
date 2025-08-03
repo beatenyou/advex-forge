@@ -154,15 +154,15 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
                       </div>
                       <Button
                         size="sm"
-                        variant="ghost"
-                        className="ml-2 p-1 h-6 w-6"
+                        variant="outline"
+                        className="ml-2 p-1 h-8 w-8 hover:bg-primary hover:text-primary-foreground"
                         onClick={(e) => {
                           e.stopPropagation();
                           console.log('Button clicked for technique:', technique.title);
                           onAddTechnique(technique);
                         }}
                       >
-                        <Plus className="w-3 h-3" />
+                        <Plus className="w-4 h-4" />
                       </Button>
                     </div>
                   </CardContent>
