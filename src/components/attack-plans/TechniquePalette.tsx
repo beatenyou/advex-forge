@@ -38,22 +38,17 @@ interface TechniquePaletteProps {
 // Function to map database phase names to Quick Navigation labels
 const mapPhaseToQuickNavLabel = (phaseName: string): string => {
   const phaseMapping: { [key: string]: string } = {
-    'Reconnaissance': 'Active Reconnaissance',
+    'foothold': 'Establish Foothold',
+    'enum': 'Enumeration',
+    'collection': 'Collection',
+    'lateral_mvmnt': 'Lateral Movement',
+    'pe': 'Privilege Escalation',
     'recon': 'Active Reconnaissance',
-    'Weaponization': 'Establish Foothold',
-    'weaponization': 'Establish Foothold',
-    'Delivery': 'Deliver Payload',
-    'delivery': 'Deliver Payload',
-    'Exploitation': 'Exploit Target',
-    'exploitation': 'Exploit Target',
-    'Installation': 'Install Persistence',
-    'installation': 'Install Persistence',
-    'Command & Control': 'Maintain Access',
-    'c2': 'Maintain Access',
-    'command-control': 'Maintain Access',
-    'Actions': 'Execute Objectives',
-    'actions': 'Execute Objectives',
-    'actions-on-objectives': 'Execute Objectives'
+    'remote_enum': 'Remote Enumeration',
+    'system_persistence': 'System Persistence',
+    'user_persistence': 'User Persistence',
+    'c2': 'C2',
+    'effects': 'Effects'
   };
   
   return phaseMapping[phaseName] || phaseName;
@@ -96,13 +91,17 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
     
     // Map phase labels to actual phase names in the database
     const phaseMap: { [key: string]: string[] } = {
-      'Active Reconnaissance': ['Reconnaissance', 'recon'],
-      'Establish Foothold': ['Weaponization', 'weaponization'],
-      'Deliver Payload': ['Delivery', 'delivery'],
-      'Exploit Target': ['Exploitation', 'exploitation'],
-      'Install Persistence': ['Installation', 'installation'],
-      'Maintain Access': ['Command & Control', 'c2', 'command-control'],
-      'Execute Objectives': ['Actions', 'actions', 'actions-on-objectives']
+      'Active Reconnaissance': ['recon'],
+      'Establish Foothold': ['foothold'],
+      'Enumeration': ['enum'],
+      'Remote Enumeration': ['remote_enum'],
+      'Privilege Escalation': ['pe'],
+      'Lateral Movement': ['lateral_mvmnt'],
+      'System Persistence': ['system_persistence'],
+      'User Persistence': ['user_persistence'],
+      'Collection': ['collection'],
+      'C2': ['c2'],
+      'Effects': ['effects']
     };
     
     // Get possible phase names for the selected phase
