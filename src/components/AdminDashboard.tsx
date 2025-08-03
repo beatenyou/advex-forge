@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { useProfile } from "@/hooks/useProfile";
 import { Settings, FileText, Globe, Users, Database, Shield, Target, Rocket, Wrench, BookOpen, Link, Bot, Key, Megaphone, HelpCircle, MessageSquare, Upload, BarChart3, Navigation, FileEdit, Hash } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,7 +30,7 @@ interface AdminDashboardProps {
 
 export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
   const navigate = useNavigate();
-  const { isAdmin, loading: adminLoading } = useAuth();
+  const { isAdmin, loading: adminLoading } = useProfile();
   const [activeTab, setActiveTab] = useState("guidance");
 
   // Show loading state while checking admin status

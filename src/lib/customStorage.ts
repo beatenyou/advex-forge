@@ -37,29 +37,10 @@ class MemoryStorage implements StorageAdapter {
 
 class SmartStorageAdapter implements StorageAdapter {
   private fallbackStorage = new MemoryStorage();
-  private storageType: 'localStorage' | 'memory' = 'memory';
-  private testKey = '__supabase_storage_test__';
+  private storageType: 'localStorage' = 'localStorage';
 
   constructor() {
-    this.detectStorageCapability();
-    this.setupBroadcastListener();
-  }
-
-  private detectStorageCapability() {
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        // Test if localStorage is actually writable
-        localStorage.setItem(this.testKey, 'test');
-        localStorage.removeItem(this.testKey);
-        this.storageType = 'localStorage';
-        console.log('[STORAGE] Using localStorage');
-      } else {
-        console.log('[STORAGE] localStorage not available, using memory storage');
-      }
-    } catch (error) {
-      console.warn('[STORAGE] localStorage test failed, falling back to memory storage:', error);
-      this.storageType = 'memory';
-    }
+    console.log('[STORAGE] Using localStorage');
   }
 
   private setupBroadcastListener() {
@@ -84,47 +65,33 @@ class SmartStorageAdapter implements StorageAdapter {
 
   getItem(key: string): string | null {
     try {
-      if (this.storageType === 'localStorage') {
-        return localStorage.getItem(key);
-      }
+      return localStorage.getItem(key);
     } catch (error) {
-      console.warn('[STORAGE] localStorage.getItem failed:', error);
-      this.storageType = 'memory';
+      console.warn('[STORAGE] localStorage.getItem failed, using fallback:', error);
+      return this.fallbackStorage.getItem(key);
     }
-    
-    return this.fallbackStorage.getItem(key);
   }
 
   setItem(key: string, value: string): void {
     try {
-      if (this.storageType === 'localStorage') {
-        localStorage.setItem(key, value);
-        return;
-      }
+      localStorage.setItem(key, value);
     } catch (error) {
-      console.warn('[STORAGE] localStorage.setItem failed:', error);
-      this.storageType = 'memory';
+      console.warn('[STORAGE] localStorage.setItem failed, using fallback:', error);
+      this.fallbackStorage.setItem(key, value);
     }
-    
-    this.fallbackStorage.setItem(key, value);
   }
 
   removeItem(key: string): void {
     try {
-      if (this.storageType === 'localStorage') {
-        localStorage.removeItem(key);
-        return;
-      }
+      localStorage.removeItem(key);
     } catch (error) {
-      console.warn('[STORAGE] localStorage.removeItem failed:', error);
-      this.storageType = 'memory';
+      console.warn('[STORAGE] localStorage.removeItem failed, using fallback:', error);
+      this.fallbackStorage.removeItem(key);
     }
-    
-    this.fallbackStorage.removeItem(key);
   }
 
   isUsingMemoryStorage(): boolean {
-    return this.storageType === 'memory';
+    return false;
   }
 }
 

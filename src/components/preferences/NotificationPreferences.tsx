@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useProfile } from '@/hooks/useProfile';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Save, Bell, Mail, Globe, Clock } from 'lucide-react';
 
 export default function NotificationPreferences() {
-  const { user, isAdmin } = useAuth();
+  const { isAdmin } = useProfile();
+  const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [preferences, setPreferences] = useState({
