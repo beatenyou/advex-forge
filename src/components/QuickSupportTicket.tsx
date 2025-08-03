@@ -124,8 +124,8 @@ Submitted via Quick Support Ticket`;
               <HelpCircle className="w-3 h-3" />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>
-            <p>Suggest card improvement</p>
+          <TooltipContent side="top" className="bg-popover border border-border shadow-lg">
+            <p className="text-sm font-medium">Suggest improvement for this technique card</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
