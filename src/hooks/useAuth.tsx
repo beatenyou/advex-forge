@@ -208,38 +208,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    addDebugInfo('Initializing auth system');
+    addDebugInfo('Initializing auth system - SINGLE LISTENER');
     
-    // Check for circuit breaker
+    // Check for circuit breaker - but don't block initialization
     if (redirectCount >= 3) {
       addDebugInfo(`Circuit breaker activated - redirect count: ${redirectCount}`);
       setIsStuck(true);
       setLoading(false);
       setAuthInitialized(true);
-      return;
+      // Don't return here - we still need to set up the listener
     }
     
-    let localAuthInitialized = false;
-    let sessionCheckComplete = false;
+    let initializeTimeoutId: NodeJS.Timeout;
     
-    // Increase timeout to 10 seconds for slow networks
-    const stuckTimeout = setTimeout(() => {
-      if (!localAuthInitialized || !sessionCheckComplete) {
-        addDebugInfo('Auth timeout reached - system appears stuck');
-        setIsStuck(true);
-        setLoading(false);
-        setAuthInitialized(true);
-      }
-    }, 10000);
-
-    // Set up auth state listener FIRST - this is the single source of truth
+    // Set up auth state listener - this is the ONLY listener we need
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         addDebugInfo(`Auth event: ${event}, session: ${session ? `valid (${session.user?.email})` : 'null'}`);
         
-        localAuthInitialized = true;
+        // Clear the initialization timeout since we got an auth event
+        if (initializeTimeoutId) {
+          clearTimeout(initializeTimeoutId);
+        }
+        
         setAuthInitialized(true);
-        clearTimeout(stuckTimeout);
         setIsStuck(false);
         setRedirecting(false);
         
@@ -257,7 +249,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuthError(null);
         setLoading(false);
         
-        // Handle auth events
+        // Handle specific auth events
         if (event === 'SIGNED_OUT') {
           addDebugInfo('User signed out - clearing state');
           setSession(null);
@@ -280,21 +272,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // Get initial session with proper error handling
+    // Get initial session with timeout
     const getInitialSession = async () => {
       try {
         addDebugInfo('Checking for existing session...');
         const { data: { session }, error } = await supabase.auth.getSession();
-        
-        sessionCheckComplete = true;
         
         if (error) {
           addDebugInfo(`Session check error: ${error.message}`);
           setAuthError(`Session error: ${error.message}`);
           setLoading(false);
           setAuthInitialized(true);
-          localAuthInitialized = true;
-          clearTimeout(stuckTimeout);
           return;
         }
         
@@ -304,30 +292,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           addDebugInfo('No existing session found');
         }
         
-        // Let onAuthStateChange handle the state updates to prevent race conditions
-        if (!localAuthInitialized) {
-          localAuthInitialized = true;
+        // The onAuthStateChange will handle state updates
+        if (!session) {
+          // Only set initialized if there's no session
+          // If there is a session, onAuthStateChange will fire
           setAuthInitialized(true);
-          clearTimeout(stuckTimeout);
+          setLoading(false);
         }
       } catch (error) {
         addDebugInfo(`Session initialization failed: ${error}`);
         setAuthError('Authentication service unavailable');
         setLoading(false);
         setAuthInitialized(true);
-        localAuthInitialized = true;
-        sessionCheckComplete = true;
-        clearTimeout(stuckTimeout);
       }
     };
+
+    // Set a timeout for initialization
+    initializeTimeoutId = setTimeout(() => {
+      addDebugInfo('Auth initialization timeout - marking as initialized');
+      setAuthInitialized(true);
+      setLoading(false);
+      if (redirectCount >= 3) {
+        setIsStuck(true);
+      }
+    }, 5000); // Reduced to 5 seconds
 
     getInitialSession();
 
     return () => {
+      addDebugInfo('Cleaning up auth listener');
       subscription.unsubscribe();
-      clearTimeout(stuckTimeout);
+      if (initializeTimeoutId) {
+        clearTimeout(initializeTimeoutId);
+      }
     };
-  }, []);
+  }, []); // CRITICAL: Empty dependency array to prevent multiple listeners
 
   const signOut = async () => {
     try {

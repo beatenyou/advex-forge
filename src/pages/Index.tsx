@@ -25,28 +25,15 @@ const Index = () => {
   const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => {
-    // Circuit breaker: stop redirecting after 3 attempts
-    if (redirectCount >= 3) {
-      console.log('Circuit breaker activated - stopping redirect loop');
-      return;
+    // Simple redirect logic: only redirect once when auth is ready and no user
+    if (authInitialized && !loading && !user && !authError && !isStuck) {
+      console.log('Redirecting to auth page - no authenticated user');
+      navigate("/auth", { replace: true });
     }
+  }, [authInitialized, loading, user, authError, isStuck, navigate]);
 
-    // Only redirect if ALL conditions are met:
-    // 1. Auth system is fully initialized
-    // 2. Not currently loading
-    // 3. No user authenticated
-    // 4. No authentication errors
-    // 5. System is not stuck
-    // 6. Not already redirecting
-    if (authInitialized && !loading && !user && !authError && !isStuck && !redirecting) {
-      console.log('All conditions met for redirect to auth page');
-      incrementRedirectCount();
-      navigate("/auth");
-    }
-  }, [authInitialized, loading, user, authError, isStuck, redirecting, redirectCount, navigate, incrementRedirectCount]);
-
-  // Show loading or circuit breaker state
-  if (loading || (!user && authInitialized && redirectCount < 3) || redirecting) {
+  // Show loading state
+  if (loading || !authInitialized) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <Card className="border-border/50 shadow-lg shadow-primary/5 max-w-md w-full">

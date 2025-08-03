@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { RefreshCw, Trash2, AlertTriangle, CheckCircle } from 'lucide-react';
-import { EnhancedAuthDashboard } from '@/components/EnhancedAuthDashboard';
+
 
 export default function AuthDebug() {
   const { user, session, loading, authError, nuclearReset } = useAuth();
@@ -145,8 +145,6 @@ export default function AuthDebug() {
           </CardContent>
         </Card>
 
-        {/* Enhanced Authentication Dashboard */}
-        <EnhancedAuthDashboard />
 
         {/* localStorage */}
         <Card>
