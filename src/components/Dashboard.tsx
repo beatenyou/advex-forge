@@ -86,8 +86,8 @@ export const Dashboard = ({
     isChatVisible: isChatVisible || false,
     isWideScreen: isWideScreen || false,
     sidebarVisible: !isMobile,
-    minCardWidth: 240,
-    gap: 20
+    minCardWidth: 220,
+    gap: 16
   });
 
   // Force grid recalculation after layout changes
@@ -493,7 +493,7 @@ Can you help me understand this scenario and provide guidance on the techniques,
             <div 
               ref={containerRef} 
               style={gridStyle} 
-              className="w-full"
+              className="w-full min-w-0"
             >
               {filteredTechniques.map(technique => (
                 <TechniqueCard 

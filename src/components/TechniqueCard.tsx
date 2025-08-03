@@ -206,7 +206,7 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat }: Tec
   return (
     <>
       <Card 
-        className="group bg-gradient-card border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 cursor-pointer"
+        className="group bg-gradient-card border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 cursor-pointer w-full min-w-0"
         onClick={() => {
           // Track technique viewed
           const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
