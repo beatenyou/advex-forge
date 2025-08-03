@@ -230,53 +230,106 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, cardW
                   {extractCleanMitreId(technique.mitre_id)}
                 </Badge>
               )}
-              {/* Phase badge - adaptive display */}
-              {technique.phases && technique.phases.length > 0 && showFullContent && (
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {getDisplayPhases(technique).slice(0, isNarrow ? 1 : 2).map((phase, index) => (
-                    <Badge 
-                      key={index} 
-                      variant="outline" 
-                      className={cn("text-xs px-2 py-0.5", getPhaseColor(phase))}
-                    >
-                      {phase}
-                    </Badge>
-                  ))}
-                  {getDisplayPhases(technique).length > (isNarrow ? 1 : 2) && (
-                    <Badge 
-                      variant="outline" 
-                      className="text-xs px-2 py-0.5 text-muted-foreground border-muted-foreground/30 bg-muted/5"
-                    >
-                      +{getDisplayPhases(technique).length - (isNarrow ? 1 : 2)}
-                    </Badge>
-                  )}
-                </div>
-              )}
+              {/* Phase badges - always visible */}
+              <div className="flex flex-wrap gap-1 mt-1">
+                {getDisplayPhases(technique).slice(0, isNarrow ? 1 : 2).map((phase, index) => (
+                  <Badge 
+                    key={index} 
+                    variant="outline" 
+                    className={cn("text-xs px-2 py-0.5", getPhaseColor(phase))}
+                  >
+                    {phase}
+                  </Badge>
+                ))}
+                {getDisplayPhases(technique).length > (isNarrow ? 1 : 2) && (
+                  <Badge 
+                    variant="outline" 
+                    className="text-xs px-2 py-0.5 text-muted-foreground border-muted-foreground/30 bg-muted/5"
+                  >
+                    +{getDisplayPhases(technique).length - (isNarrow ? 1 : 2)}
+                  </Badge>
+                )}
+              </div>
             </div>
             
-            {/* Star button */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 w-6 p-0 text-muted-foreground hover:text-amber-500 transition-colors shrink-0"
-                    onClick={toggleStar}
-                    disabled={isToggling}
-                  >
-                    {isToggling ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Star className={cn("w-3 h-3", technique.starred && "fill-amber-500 text-amber-500")} />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{!user ? "Sign in to save favorites" : technique.starred ? "Remove favorite" : "Add favorite"}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            {/* Top-right action icons */}
+            <div className="flex items-center gap-1 shrink-0">
+              {/* Star button */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 w-6 p-0 text-muted-foreground hover:text-amber-500 transition-colors"
+                      onClick={toggleStar}
+                      disabled={isToggling}
+                    >
+                      {isToggling ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Star className={cn("w-3 h-3", technique.starred && "fill-amber-500 text-amber-500")} />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{!user ? "Sign in to save favorites" : technique.starred ? "Remove favorite" : "Add favorite"}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {/* AI Chat button */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
+                      onClick={handleAIChatClick}
+                    >
+                      <MessageSquare className="w-3 h-3" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Ask AI about this technique</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {/* Generate Commands */}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        
+                        // Track command generation
+                        const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
+                        trackTechniqueCommandGenerated({
+                          techniqueId: technique.id,
+                          techniqueTitle: technique.title,
+                          mitreId: technique.mitre_id,
+                          phase: primaryPhase,
+                          category: technique.category
+                        });
+                        
+                        setIsCommandGenOpen(true);
+                      }}
+                    >
+                      <Bolt className="w-3 h-3 text-cyber-blue" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Generate Commands</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
           </div>
 
           {/* Description - adaptive length */}
@@ -310,154 +363,58 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, cardW
             </div>
           )}
 
-          {/* Tools - hide in very narrow layouts */}
-          {technique.tools && technique.tools.length > 0 && showFullContent && (
+          {/* Tools - always show indicator */}
+          {technique.tools && technique.tools.length > 0 && (
             <div className="mb-4">
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Zap className="w-3 h-3" />
                 <span>
-                  {technique.tools.slice(0, isNarrow ? 2 : 3).join(", ")}
-                  {technique.tools.length > (isNarrow ? 2 : 3) && ` +${technique.tools.length - (isNarrow ? 2 : 3)} more`}
+                  {showFullContent 
+                    ? `${technique.tools.slice(0, isNarrow ? 2 : 3).join(", ")}${technique.tools.length > (isNarrow ? 2 : 3) ? ` +${technique.tools.length - (isNarrow ? 2 : 3)} more` : ''}`
+                    : `${technique.tools.length} tool${technique.tools.length > 1 ? 's' : ''}`
+                  }
                 </span>
               </div>
             </div>
           )}
 
-          {/* Footer with action buttons - adaptive layout */}
-          <div className="flex items-center justify-between pt-2 border-t border-border/30 min-h-[28px]">
-            {/* AI Chat button - show in wider layouts */}
-            {showSecondaryActions && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary"
-                      onClick={handleAIChatClick}
-                    >
-                      <MessageSquare className="w-3 h-3" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Ask AI about this technique</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
-            
-            {/* Primary action buttons container */}
-            <div className={cn(
-              "flex items-center gap-1 overflow-hidden",
-              !showSecondaryActions && "w-full justify-center"
-            )}>
-              {/* Generate Commands - always visible */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary flex-shrink-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        
-                        // Track command generation
-                        const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
-                        trackTechniqueCommandGenerated({
-                          techniqueId: technique.id,
-                          techniqueTitle: technique.title,
-                          mitreId: technique.mitre_id,
-                          phase: primaryPhase,
-                          category: technique.category
-                        });
-                        
-                        setIsCommandGenOpen(true);
-                      }}
-                    >
-                      <Bolt className="w-3 h-3 text-cyber-blue" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Generate Commands</p>
-                  </TooltipContent>
+          {/* Footer with action buttons - bottom right only */}
+          <div className="flex items-center justify-end gap-1 pt-2 border-t border-border/30 min-h-[28px]">
+            {/* View Details */}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary flex-shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      
+                      // Track modal open
+                      const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
+                      trackTechniqueModalOpened({
+                        techniqueId: technique.id,
+                        techniqueTitle: technique.title,
+                        mitreId: technique.mitre_id,
+                        phase: primaryPhase,
+                        category: technique.category
+                      });
+                      
+                      setIsModalOpen(true);
+                    }}
+                  >
+                    <Eye className="w-3 h-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>View details</p>
+                </TooltipContent>
                 </Tooltip>
               </TooltipProvider>
 
-              {/* View Details - always visible */}
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary flex-shrink-0"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        
-                        // Track modal open
-                        const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
-                        trackTechniqueModalOpened({
-                          techniqueId: technique.id,
-                          techniqueTitle: technique.title,
-                          mitreId: technique.mitre_id,
-                          phase: primaryPhase,
-                          category: technique.category
-                        });
-                        
-                        setIsModalOpen(true);
-                      }}
-                    >
-                      <Eye className="w-3 h-3" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>View details</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-
-              {/* Support Ticket - show in wider layouts */}
+              {/* Support Ticket */}
               {showSecondaryActions && <QuickSupportTicket technique={technique} />}
-
-              {/* MITRE Link - always visible if available */}
-              {(technique.mitre_id && isValidMitreId(technique.mitre_id)) && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-6 w-6 p-0 hover:bg-primary/10 hover:text-primary flex-shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          
-                          // Track MITRE link access
-                          const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
-                          trackTechniqueMitreLinkAccessed({
-                            techniqueId: technique.id,
-                            techniqueTitle: technique.title,
-                            mitreId: technique.mitre_id,
-                            phase: primaryPhase,
-                            category: technique.category
-                          });
-                          
-                          const mitreUrl = generateMitreUrl(technique.mitre_id!);
-                          if (mitreUrl) {
-                            window.open(mitreUrl, '_blank', 'noopener,noreferrer');
-                          }
-                        }}
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>View MITRE ATT&CK reference</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </div>
           </div>
         </CardContent>
       </Card>
