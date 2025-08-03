@@ -50,6 +50,13 @@ const Index = () => {
                   >
                     Go to Login
                   </Button>
+                  <Button 
+                    onClick={() => navigate("/auth-debug")}
+                    variant="outline"
+                    className="w-full"
+                  >
+                    Enhanced Debug
+                  </Button>
                 </div>
               </div>
             )}

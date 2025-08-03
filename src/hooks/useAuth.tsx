@@ -50,6 +50,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const nuclearReset = async () => {
     console.log('🚨 NUCLEAR RESET: Clearing all auth data');
     
+    // Log the nuclear reset event for enhanced monitoring
+    if (user?.id) {
+      try {
+        await supabase.from('auth_events').insert({
+          user_id: user.id,
+          event_type: 'nuclear_reset_initiated',
+          event_data: {
+            reason: 'User initiated nuclear reset',
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent
+          },
+          severity: 'warning'
+        });
+      } catch (error) {
+        console.error('Failed to log nuclear reset event:', error);
+      }
+    }
+    
     // Clear browser storage first
     clearAllStorage();
     

@@ -351,6 +351,63 @@ export type Database = {
         }
         Relationships: []
       }
+      auth_events: {
+        Row: {
+          created_at: string | null
+          event_data: Json | null
+          event_type: string
+          id: string
+          resolved: boolean | null
+          severity: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type: string
+          id?: string
+          resolved?: boolean | null
+          severity?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          event_data?: Json | null
+          event_type?: string
+          id?: string
+          resolved?: boolean | null
+          severity?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      auth_health_metrics: {
+        Row: {
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          metric_type: string
+          metric_value: number
+          time_window: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_type: string
+          metric_value: number
+          time_window: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          metric_type?: string
+          metric_value?: number
+          time_window?: string
+        }
+        Relationships: []
+      }
       billing_plans: {
         Row: {
           ai_quota_monthly: number | null
@@ -1480,6 +1537,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      calculate_auth_health_metrics: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       calculate_daily_stats: {
         Args: { target_date?: string }
         Returns: undefined
@@ -1559,6 +1620,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      log_auth_event: {
+        Args: {
+          p_user_id: string
+          p_event_type: string
+          p_event_data?: Json
+          p_severity?: string
+        }
+        Returns: undefined
+      }
       log_session_activity: {
         Args: {
           p_user_id: string
@@ -1573,6 +1643,14 @@ export type Database = {
       nuclear_auth_reset: {
         Args: { target_user_id?: string }
         Returns: undefined
+      }
+      validate_session_health: {
+        Args: { p_user_id: string; p_session_id: string }
+        Returns: {
+          is_valid: boolean
+          issues: Json
+          recommendations: Json
+        }[]
       }
     }
     Enums: {
