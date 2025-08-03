@@ -10,7 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Building2, Users, Settings, Plus, UserPlus, CreditCard, BarChart3, Zap, DollarSign, TrendingUp, Edit3, Trash2, AlertTriangle } from 'lucide-react';
+import { Building2, Users, Settings, Plus, UserPlus, CreditCard, BarChart3, Zap, DollarSign, TrendingUp, Edit3, Trash2, AlertTriangle, Search, UserCheck, UserMinus, ArrowRight } from 'lucide-react';
 
 interface EnhancedOrganization {
   id: string;
@@ -51,6 +51,17 @@ interface OrganizationAnalytics {
   top_users: any[];
 }
 
+interface AvailableUser {
+  user_id: string;
+  email: string;
+  display_name: string;
+  role_enum: string;
+  is_pro: boolean;
+  organization_id?: string;
+  organization_name?: string;
+  current_org_role?: string;
+}
+
 export function EnhancedOrganizationManager() {
   const [organizations, setOrganizations] = useState<EnhancedOrganization[]>([]);
   const [members, setMembers] = useState<OrganizationMember[]>([]);
@@ -62,7 +73,15 @@ export function EnhancedOrganizationManager() {
   const [isBulkCreditDialogOpen, setIsBulkCreditDialogOpen] = useState(false);
   const [isEditSeatsDialogOpen, setIsEditSeatsDialogOpen] = useState(false);
   const [isDeleteOrgDialogOpen, setIsDeleteOrgDialogOpen] = useState(false);
+  const [isAddUsersDialogOpen, setIsAddUsersDialogOpen] = useState(false);
+  const [isEditOrgDialogOpen, setIsEditOrgDialogOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  // Available users state
+  const [availableUsers, setAvailableUsers] = useState<AvailableUser[]>([]);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userFilterType, setUserFilterType] = useState<'all' | 'personal' | 'other-orgs'>('all');
   const { toast } = useToast();
 
   // Form states
@@ -76,6 +95,12 @@ export function EnhancedOrganizationManager() {
   const [bulkCreditAmount, setBulkCreditAmount] = useState('');
   const [newSeatLimit, setNewSeatLimit] = useState('');
   const [orgToDelete, setOrgToDelete] = useState<string | null>(null);
+  
+  // Edit organization form states
+  const [editOrgName, setEditOrgName] = useState('');
+  const [editOrgDomain, setEditOrgDomain] = useState('');
+  const [editOrgAccessLevel, setEditOrgAccessLevel] = useState('user');
+  const [orgToEdit, setOrgToEdit] = useState<EnhancedOrganization | null>(null);
 
   useEffect(() => {
     fetchOrganizations();
@@ -87,6 +112,12 @@ export function EnhancedOrganizationManager() {
       fetchAnalytics(selectedOrg);
     }
   }, [selectedOrg]);
+
+  useEffect(() => {
+    if (isAddUsersDialogOpen && selectedOrg) {
+      fetchAvailableUsers();
+    }
+  }, [isAddUsersDialogOpen, selectedOrg]);
 
   const fetchOrganizations = async () => {
     try {
@@ -499,6 +530,212 @@ export function EnhancedOrganizationManager() {
     setIsDeleteOrgDialogOpen(true);
   };
 
+  const fetchAvailableUsers = async () => {
+    try {
+      const { data: allUsers, error: usersError } = await supabase
+        .from('profiles')
+        .select(`
+          user_id,
+          email,
+          display_name,
+          role_enum,
+          is_pro,
+          organization_id
+        `);
+
+      if (usersError) throw usersError;
+
+      if (!allUsers) {
+        setAvailableUsers([]);
+        return;
+      }
+
+      // Get organization names for users who are in organizations
+      const orgIds = [...new Set(allUsers.map(u => u.organization_id).filter(Boolean))];
+      let orgData: any[] = [];
+      
+      if (orgIds.length > 0) {
+        const { data: orgsData, error: orgsError } = await supabase
+          .from('organizations')
+          .select('id, name')
+          .in('id', orgIds);
+        
+        if (!orgsError) {
+          orgData = orgsData || [];
+        }
+      }
+
+      // Get organization member roles
+      const { data: memberRoles, error: rolesError } = await supabase
+        .from('organization_members')
+        .select('user_id, role, organization_id')
+        .eq('is_active', true);
+
+      if (rolesError) {
+        console.warn('Could not fetch member roles:', rolesError);
+      }
+
+      const enrichedUsers: AvailableUser[] = allUsers.map(user => {
+        const org = orgData.find(o => o.id === user.organization_id);
+        const memberRole = memberRoles?.find(m => m.user_id === user.user_id && m.organization_id === user.organization_id);
+        
+        return {
+          ...user,
+          organization_name: org?.name,
+          current_org_role: memberRole?.role
+        };
+      });
+
+      setAvailableUsers(enrichedUsers);
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch available users',
+        variant: 'destructive',
+      });
+      setAvailableUsers([]);
+    }
+  };
+
+  const openEditOrgDialog = (org: EnhancedOrganization) => {
+    setOrgToEdit(org);
+    setEditOrgName(org.name);
+    setEditOrgDomain(org.domain || '');
+    setEditOrgAccessLevel(org.default_member_access_level);
+    setIsEditOrgDialogOpen(true);
+  };
+
+  const updateOrganization = async () => {
+    if (!orgToEdit || !editOrgName) {
+      toast({
+        title: 'Error',
+        description: 'Organization name is required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('organizations')
+        .update({
+          name: editOrgName,
+          domain: editOrgDomain || null,
+          default_member_access_level: editOrgAccessLevel
+        })
+        .eq('id', orgToEdit.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'Organization updated successfully',
+      });
+
+      setIsEditOrgDialogOpen(false);
+      setOrgToEdit(null);
+      fetchOrganizations();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update organization',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const addUsersToOrganization = async () => {
+    if (!selectedOrg || selectedUsers.length === 0) {
+      toast({
+        title: 'Error',
+        description: 'Please select users to add',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      
+      // Add users to organization
+      const memberInserts = selectedUsers.map(userId => ({
+        organization_id: selectedOrg,
+        user_id: userId,
+        role: 'member',
+        invited_by: userData.user?.id
+      }));
+
+      const { error: memberError } = await supabase
+        .from('organization_members')
+        .insert(memberInserts);
+
+      if (memberError) throw memberError;
+
+      // Update user profiles to reflect organization membership
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          organization_id: selectedOrg,
+          role_enum: 'user',
+          is_pro: false
+        })
+        .in('user_id', selectedUsers);
+
+      if (profileError) {
+        console.warn('Some user profiles could not be updated:', profileError);
+      }
+
+      toast({
+        title: 'Success',
+        description: `Added ${selectedUsers.length} users to organization`,
+      });
+
+      setIsAddUsersDialogOpen(false);
+      setSelectedUsers([]);
+      setUserSearchQuery('');
+      fetchMembers(selectedOrg);
+      fetchOrganizations();
+    } catch (error: any) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to add users',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const getFilteredUsers = () => {
+    let filtered = availableUsers;
+
+    // Filter by type
+    if (userFilterType === 'personal') {
+      filtered = filtered.filter(user => !user.organization_id);
+    } else if (userFilterType === 'other-orgs') {
+      filtered = filtered.filter(user => user.organization_id && user.organization_id !== selectedOrg);
+    }
+
+    // Filter by search query
+    if (userSearchQuery) {
+      const query = userSearchQuery.toLowerCase();
+      filtered = filtered.filter(user => 
+        user.email.toLowerCase().includes(query) ||
+        (user.display_name && user.display_name.toLowerCase().includes(query))
+      );
+    }
+
+    return filtered;
+  };
+
+  const getSeatUtilization = (org: EnhancedOrganization) => {
+    const percentage = (org.seat_used / org.seat_limit) * 100;
+    let colorClass = 'bg-success';
+    
+    if (percentage >= 90) colorClass = 'bg-destructive';
+    else if (percentage >= 75) colorClass = 'bg-warning';
+    
+    return { percentage, colorClass };
+  };
+
   const selectedOrgData = organizations.find(org => org.id === selectedOrg);
 
   if (loading) {
@@ -614,6 +851,197 @@ export function EnhancedOrganizationManager() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Organization Dialog */}
+      <Dialog open={isEditOrgDialogOpen} onOpenChange={setIsEditOrgDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Organization</DialogTitle>
+            <DialogDescription>
+              Update organization details and settings.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="editOrgName">Organization Name</Label>
+              <Input
+                id="editOrgName"
+                value={editOrgName}
+                onChange={(e) => setEditOrgName(e.target.value)}
+                placeholder="Enter organization name"
+              />
+            </div>
+            <div>
+              <Label htmlFor="editOrgDomain">Domain (Optional)</Label>
+              <Input
+                id="editOrgDomain"
+                value={editOrgDomain}
+                onChange={(e) => setEditOrgDomain(e.target.value)}
+                placeholder="company.com"
+              />
+            </div>
+            <div>
+              <Label>Default Member Access Level</Label>
+              <Select value={editOrgAccessLevel} onValueChange={setEditOrgAccessLevel}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">User Access</SelectItem>
+                  <SelectItem value="pro">Pro Access</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={updateOrganization} className="flex-1">
+                Update Organization
+              </Button>
+              <Button variant="outline" onClick={() => setIsEditOrgDialogOpen(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Users Dialog */}
+      <Dialog open={isAddUsersDialogOpen} onOpenChange={setIsAddUsersDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add Available Users</DialogTitle>
+            <DialogDescription>
+              Add existing users to this organization. User role changes will be handled in the User Management section.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* Search and Filter */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by email or name..."
+                  value={userSearchQuery}
+                  onChange={(e) => setUserSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={userFilterType} onValueChange={(value: any) => setUserFilterType(value)}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Users</SelectItem>
+                  <SelectItem value="personal">Personal Accounts</SelectItem>
+                  <SelectItem value="other-orgs">Other Organizations</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* User List */}
+            <div className="border rounded-lg max-h-96 overflow-y-auto">
+              <div className="p-2 border-b bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Available Users ({getFilteredUsers().length})</span>
+                  <span className="text-xs text-muted-foreground">
+                    {selectedUsers.length} selected
+                  </span>
+                </div>
+              </div>
+              <div className="p-2 space-y-1">
+                {getFilteredUsers().map((user) => {
+                  const isSelected = selectedUsers.includes(user.user_id);
+                  const isCurrentOrg = user.organization_id === selectedOrg;
+                  
+                  return (
+                    <div
+                      key={user.user_id}
+                      className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                        isSelected ? 'bg-primary/10 border-primary' : 
+                        isCurrentOrg ? 'bg-muted cursor-not-allowed opacity-50' :
+                        'hover:bg-muted border-transparent'
+                      }`}
+                      onClick={() => {
+                        if (isCurrentOrg) return;
+                        
+                        if (isSelected) {
+                          setSelectedUsers(prev => prev.filter(id => id !== user.user_id));
+                        } else {
+                          setSelectedUsers(prev => [...prev, user.user_id]);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                            isSelected ? 'bg-primary border-primary' : 'border-muted-foreground'
+                          }`}>
+                            {isSelected && <UserCheck className="h-3 w-3 text-primary-foreground" />}
+                          </div>
+                          <div>
+                            <h4 className="font-medium text-sm">{user.display_name || 'Unknown'}</h4>
+                            <p className="text-xs text-muted-foreground">{user.email}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={user.is_pro ? 'default' : 'secondary'}>
+                            {user.role_enum || 'user'}
+                          </Badge>
+                          {user.organization_name && (
+                            <div className="text-right">
+                              <p className="text-xs text-muted-foreground">{user.organization_name}</p>
+                              {user.current_org_role && (
+                                <Badge variant="outline" className="text-xs">
+                                  {user.current_org_role}
+                                </Badge>
+                              )}
+                            </div>
+                          )}
+                          {isCurrentOrg && (
+                            <span className="text-xs text-muted-foreground">Already member</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-between items-center">
+              <div className="text-sm text-muted-foreground">
+                {selectedUsers.length > 0 && (
+                  <>
+                    {selectedUsers.length} user{selectedUsers.length !== 1 ? 's' : ''} selected
+                    {selectedUsers.some(id => getFilteredUsers().find(u => u.user_id === id && u.organization_id)) && (
+                      <span className="ml-2 text-warning">⚠️ Some users will be transferred from other organizations</span>
+                    )}
+                  </>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsAddUsersDialogOpen(false);
+                    setSelectedUsers([]);
+                    setUserSearchQuery('');
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={addUsersToOrganization}
+                  disabled={selectedUsers.length === 0}
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add {selectedUsers.length} User{selectedUsers.length !== 1 ? 's' : ''}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Organization Dialog */}
       <Dialog open={isDeleteOrgDialogOpen} onOpenChange={setIsDeleteOrgDialogOpen}>
         <DialogContent>
@@ -676,58 +1104,112 @@ export function EnhancedOrganizationManager() {
             <CardDescription>Select an organization to manage</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {organizations.map((org) => (
-              <div
-                key={org.id}
-                className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                  selectedOrg === org.id
-                    ? 'bg-primary/10 border border-primary'
-                    : 'hover:bg-muted'
-                }`}
-                onClick={() => setSelectedOrg(org.id)}
-              >
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4" />
-                  <div className="flex-1">
-                    <h4 className="font-medium text-sm">{org.name}</h4>
-                    <p className="text-xs text-muted-foreground">
-                      {org.seat_used}/{org.seat_limit} seats
-                    </p>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Zap className="h-3 w-3 text-yellow-500" />
-                      <span className="text-xs">{org.ai_credits_pool - org.ai_credits_used}</span>
+            {organizations.map((org) => {
+              const seatUtilization = getSeatUtilization(org);
+              return (
+                <div
+                  key={org.id}
+                  className={`p-4 rounded-lg cursor-pointer transition-all border ${
+                    selectedOrg === org.id
+                      ? 'bg-primary/10 border-primary shadow-sm'
+                      : 'hover:bg-muted border-border'
+                  }`}
+                  onClick={() => setSelectedOrg(org.id)}
+                >
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="h-4 w-4" />
+                        <div>
+                          <h4 className="font-semibold text-sm">{org.name}</h4>
+                          <p className="text-xs text-muted-foreground">{org.domain || 'No domain'}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditOrgDialog(org);
+                          }}
+                          title="Edit Organization"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openDeleteOrgDialog(org);
+                          }}
+                          title="Delete Organization"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <Badge variant="outline" className="text-xs">{org.default_member_access_level}</Badge>
-                    <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEditSeatsDialog(org);
-                        }}
-                      >
-                        <Edit3 className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openDeleteOrgDialog(org);
-                        }}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                    
+                    {/* Seat Utilization */}
+                    <div className="space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-muted-foreground">Seats</span>
+                        <span className="text-xs font-medium">{org.seat_used}/{org.seat_limit}</span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-1.5">
+                        <div 
+                          className={`h-1.5 rounded-full transition-all ${seatUtilization.colorClass}`}
+                          style={{ width: `${Math.min(seatUtilization.percentage, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Credits */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1">
+                        <Zap className="h-3 w-3 text-yellow-500" />
+                        <span className="text-xs text-muted-foreground">Credits</span>
+                      </div>
+                      <span className="text-xs font-medium">{org.ai_credits_pool - org.ai_credits_used}</span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <Badge variant="outline" className="text-xs">{org.default_member_access_level}</Badge>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 px-2 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedOrg(org.id);
+                            setIsAddUsersDialogOpen(true);
+                          }}
+                          title="Add Users"
+                        >
+                          <UserPlus className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-6 px-2 text-xs"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditSeatsDialog(org);
+                          }}
+                          title="Edit Seats"
+                        >
+                          {org.seat_limit}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </CardContent>
         </Card>
 
@@ -808,7 +1290,16 @@ export function EnhancedOrganizationManager() {
               <TabsContent value="members" className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-semibold">Organization Members</h3>
-                  <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+                  <div className="flex gap-2">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => setIsAddUsersDialogOpen(true)}
+                    >
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Add Available Users
+                    </Button>
+                    <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
                     <DialogTrigger asChild>
                       <Button size="sm">
                         <UserPlus className="mr-2 h-4 w-4" />
@@ -850,7 +1341,8 @@ export function EnhancedOrganizationManager() {
                         </Button>
                       </div>
                     </DialogContent>
-                  </Dialog>
+                    </Dialog>
+                  </div>
                 </div>
                 <div className="space-y-3">
                   {members.map((member) => (
@@ -860,6 +1352,10 @@ export function EnhancedOrganizationManager() {
                         <div>
                           <h4 className="font-medium">{member.profiles?.display_name || 'Unknown'}</h4>
                           <p className="text-sm text-muted-foreground">{member.profiles?.email}</p>
+                          <p className="text-xs text-muted-foreground">
+                            To edit user roles and details, go to User Management tab
+                            <ArrowRight className="inline h-3 w-3 ml-1" />
+                          </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
