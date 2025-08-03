@@ -25,6 +25,7 @@ import { TagManager } from "@/components/admin/TagManager";
 import { MaintenanceManager } from "@/components/admin/MaintenanceManager";
 import { OrganizationManager } from "@/components/enterprise/OrganizationManager";
 import { BulkUserManager } from "@/components/enterprise/BulkUserManager";
+import { EnterpriseAnalytics } from "@/components/enterprise/EnterpriseAnalytics";
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -80,147 +81,140 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
 
         <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="p-6">
-            <TabsList className="flex flex-col gap-2 h-auto bg-muted/50 p-3 items-start">
-              {/* First Row - Core Management */}
-              <div className="flex flex-wrap gap-2 justify-start">
-                <TabsTrigger 
-                  value="guidance" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <BookOpen className="w-4 h-4" />
-                  Guidance
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="techniques" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <Shield className="w-4 h-4" />
-                  Techniques
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="cheatsheets" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <FileText className="w-4 h-4" />
-                  Cheat Sheets
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="linktabs" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <Link className="w-4 h-4" />
-                  Link Tabs
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="scenarios" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <Target className="w-4 h-4" />
-                  Scenarios
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="users" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <Users className="w-4 h-4" />
-                  Users
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="navigation" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <Navigation className="w-4 h-4" />
-                  Navigation
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="enterprise" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-accent/10 hover:bg-accent/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <Building2 className="w-4 h-4" />
-                  Enterprise
-                </TabsTrigger>
-              </div>
-              
-              {/* Second Row - System & Support */}
-              <div className="flex flex-wrap gap-2 justify-start">
-                <TabsTrigger 
-                  value="ai-providers" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <Bot className="w-4 h-4" />
-                  AI Chat
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="model-access" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <Key className="w-4 h-4" />
-                  Model Access
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="announcements" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <Megaphone className="w-4 h-4" />
-                  Announcements
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="faq" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <HelpCircle className="w-4 h-4" />
-                  FAQ
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="support" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  Support
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="bulk-import" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <Upload className="w-4 h-4" />
-                  Bulk Import
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="statistics" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  Statistics
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="admin-notes" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <FileEdit className="w-4 h-4" />
-                  Admin Notes
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="technique-analytics" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-primary/10 hover:bg-primary/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <Target className="w-4 h-4" />
-                  Technique Analytics
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="tags" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-secondary/10 hover:bg-secondary/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <Hash className="w-4 h-4" />
-                  Tags
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="maintenance" 
-                  className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 flex-shrink-0 bg-destructive/10 hover:bg-destructive/20 data-[state=active]:text-foreground min-w-[120px]"
-                >
-                  <Wrench className="w-4 h-4" />
-                  Maintenance
-                </TabsTrigger>
-              </div>
+            <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 h-auto bg-muted/50 p-4">
+              <TabsTrigger 
+                value="guidance" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-primary/10 hover:bg-primary/20"
+              >
+                <BookOpen className="w-4 h-4" />
+                Guidance
+              </TabsTrigger>
+              <TabsTrigger 
+                value="enterprise" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-accent/10 hover:bg-accent/20"
+              >
+                <Building2 className="w-4 h-4" />
+                Enterprise
+              </TabsTrigger>
+              <TabsTrigger 
+                value="techniques" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-secondary/10 hover:bg-secondary/20"
+              >
+                <Shield className="w-4 h-4" />
+                Techniques
+              </TabsTrigger>
+              <TabsTrigger 
+                value="users" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-secondary/10 hover:bg-secondary/20"
+              >
+                <Users className="w-4 h-4" />
+                Users
+              </TabsTrigger>
+              <TabsTrigger 
+                value="ai-providers" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-primary/10 hover:bg-primary/20"
+              >
+                <Bot className="w-4 h-4" />
+                AI Chat
+              </TabsTrigger>
+              <TabsTrigger 
+                value="statistics" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-primary/10 hover:bg-primary/20"
+              >
+                <BarChart3 className="w-4 h-4" />
+                Statistics
+              </TabsTrigger>
+              <TabsTrigger 
+                value="cheatsheets" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-primary/10 hover:bg-primary/20"
+              >
+                <FileText className="w-4 h-4" />
+                Cheat Sheets
+              </TabsTrigger>
+              <TabsTrigger 
+                value="scenarios" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-primary/10 hover:bg-primary/20"
+              >
+                <Target className="w-4 h-4" />
+                Scenarios
+              </TabsTrigger>
+              <TabsTrigger 
+                value="linktabs" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-secondary/10 hover:bg-secondary/20"
+              >
+                <Link className="w-4 h-4" />
+                Link Tabs
+              </TabsTrigger>
+              <TabsTrigger 
+                value="navigation" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-primary/10 hover:bg-primary/20"
+              >
+                <Navigation className="w-4 h-4" />
+                Navigation
+              </TabsTrigger>
+              <TabsTrigger 
+                value="model-access" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-secondary/10 hover:bg-secondary/20"
+              >
+                <Key className="w-4 h-4" />
+                Model Access
+              </TabsTrigger>
+              <TabsTrigger 
+                value="announcements" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-primary/10 hover:bg-primary/20"
+              >
+                <Megaphone className="w-4 h-4" />
+                Announcements
+              </TabsTrigger>
+              <TabsTrigger 
+                value="faq" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-secondary/10 hover:bg-secondary/20"
+              >
+                <HelpCircle className="w-4 h-4" />
+                FAQ
+              </TabsTrigger>
+              <TabsTrigger 
+                value="support" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-primary/10 hover:bg-primary/20"
+              >
+                <MessageSquare className="w-4 h-4" />
+                Support
+              </TabsTrigger>
+              <TabsTrigger 
+                value="bulk-import" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-secondary/10 hover:bg-secondary/20"
+              >
+                <Upload className="w-4 h-4" />
+                Bulk Import
+              </TabsTrigger>
+              <TabsTrigger 
+                value="admin-notes" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-secondary/10 hover:bg-secondary/20"
+              >
+                <FileEdit className="w-4 h-4" />
+                Admin Notes
+              </TabsTrigger>
+              <TabsTrigger 
+                value="technique-analytics" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-primary/10 hover:bg-primary/20"
+              >
+                <Target className="w-4 h-4" />
+                Technique Analytics
+              </TabsTrigger>
+              <TabsTrigger 
+                value="tags" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-secondary/10 hover:bg-secondary/20"
+              >
+                <Hash className="w-4 h-4" />
+                Tags
+              </TabsTrigger>
+              <TabsTrigger 
+                value="maintenance" 
+                className="flex items-center gap-2 data-[state=active]:bg-background text-sm px-3 py-2 bg-destructive/10 hover:bg-destructive/20"
+              >
+                <Wrench className="w-4 h-4" />
+                Maintenance
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="guidance" className="space-y-6">
@@ -592,16 +586,11 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
                       Enterprise Analytics
                     </CardTitle>
                     <CardDescription>
-                      Advanced analytics and reporting for enterprise customers
+                      Organization metrics, user analytics, and usage reporting
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="text-center py-8">
-                    <BarChart3 className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-muted-foreground">
-                      Enterprise analytics dashboard coming soon. 
-                      This will include organization-level usage reports, 
-                      user activity analytics, and compliance reporting.
-                    </p>
+                  <CardContent>
+                    <EnterpriseAnalytics />
                   </CardContent>
                 </Card>
 
