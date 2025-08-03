@@ -12,6 +12,7 @@ import {
   OnConnect,
   ReactFlowInstance
 } from '@xyflow/react';
+import TechniqueNode from './TechniqueNode';
 
 interface AttackPlanCanvasProps {
   nodes: Node[];
@@ -22,6 +23,10 @@ interface AttackPlanCanvasProps {
   onNodeClick?: (event: React.MouseEvent, node: Node) => void;
   onInit?: (instance: ReactFlowInstance) => void;
 }
+
+const nodeTypes: NodeTypes = {
+  technique: TechniqueNode,
+};
 
 export const AttackPlanCanvas: React.FC<AttackPlanCanvasProps> = ({
   nodes,
@@ -42,6 +47,7 @@ export const AttackPlanCanvas: React.FC<AttackPlanCanvasProps> = ({
         onConnect={onConnect}
         onNodeClick={onNodeClick}
         onInit={onInit}
+        nodeTypes={nodeTypes}
         fitView
         className="bg-background"
       >

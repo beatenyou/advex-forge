@@ -340,7 +340,7 @@ const AttackPlansPage: React.FC = () => {
             
             const newNode: Node = {
               id: `technique-${Date.now()}-${nodeCounter.current}`,
-              type: 'default',
+              type: 'technique',
               position: { x, y },
               data: { 
                 label: technique.title,
