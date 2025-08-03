@@ -21,29 +21,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let authResolved = false;
     
-    // Add timeout fallback to prevent infinite loading
-    const loadingTimeout = setTimeout(() => {
-      if (mounted && loading) {
-        console.warn('Auth initialization timed out, setting loading to false');
+    console.log('AuthProvider: Starting initialization');
+    
+    // Shorter timeout for emergency bypass
+    const emergencyTimeout = setTimeout(() => {
+      if (mounted && !authResolved) {
+        console.warn('AuthProvider: Emergency timeout triggered - forcing resolution');
         setLoading(false);
-        setError('Authentication initialization timed out');
+        setError('Authentication took too long. You can try logging in manually or continue without authentication.');
       }
-    }, 10000); // 10 second timeout
+    }, 5000); // 5 second emergency timeout
 
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (!mounted) return;
         
-        console.log('Auth state change:', event, session?.user?.id);
+        console.log('AuthProvider: Auth state change:', event, 'Session exists:', !!session, 'User ID:', session?.user?.id);
+        authResolved = true;
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
         setError(null);
         
         // Clear timeout since auth resolved
-        clearTimeout(loadingTimeout);
+        clearTimeout(emergencyTimeout);
         
         // Defer database operations to prevent infinite loops
         if (session?.user && event === 'SIGNED_IN') {
@@ -80,33 +84,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (!mounted) return;
-      
-      if (error) {
-        console.error('Error getting session:', error);
-        setError(error.message);
+    // THEN check for existing session with multiple attempts
+    const checkSession = async () => {
+      try {
+        console.log('AuthProvider: Checking existing session...');
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+        
+        if (error) {
+          console.error('AuthProvider: Error getting session:', error);
+          setError(`Session error: ${error.message}`);
+        } else {
+          console.log('AuthProvider: Session check complete:', !!session, session?.user?.id);
+        }
+        
+        authResolved = true;
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+        
+        // Clear timeout since we got a response
+        clearTimeout(emergencyTimeout);
+      } catch (err) {
+        if (!mounted) return;
+        
+        console.error('AuthProvider: Failed to get session:', err);
+        authResolved = true;
+        setError('Failed to initialize authentication');
+        setLoading(false);
+        clearTimeout(emergencyTimeout);
       }
-      
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      
-      // Clear timeout since we got a response
-      clearTimeout(loadingTimeout);
-    }).catch((err) => {
-      if (!mounted) return;
-      
-      console.error('Failed to get session:', err);
-      setError('Failed to initialize authentication');
-      setLoading(false);
-      clearTimeout(loadingTimeout);
-    });
+    };
+
+    // Try to get session immediately
+    checkSession();
 
     return () => {
+      console.log('AuthProvider: Cleanup called');
       mounted = false;
-      clearTimeout(loadingTimeout);
+      clearTimeout(emergencyTimeout);
       subscription.unsubscribe();
     };
   }, []); // Remove problematic dependency that was causing infinite loop
@@ -129,14 +146,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const retry = () => {
+    console.log('AuthProvider: Manual retry triggered');
     setLoading(true);
     setError(null);
+    
     supabase.auth.getSession().then(({ data: { session }, error }) => {
+      console.log('AuthProvider: Retry result:', !!session, error?.message);
       if (error) {
-        setError(error.message);
+        setError(`Retry failed: ${error.message}`);
       }
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
+    }).catch((err) => {
+      console.error('AuthProvider: Retry error:', err);
+      setError('Retry failed - please try signing in manually');
       setLoading(false);
     });
   };

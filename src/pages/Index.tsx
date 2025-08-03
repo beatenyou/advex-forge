@@ -12,10 +12,12 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log('Index: Auth state changed - loading:', loading, 'user:', !!user, 'error:', !!error);
     if (!loading && !user) {
+      console.log('Index: No user found, redirecting to auth');
       navigate("/auth");
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, error]);
 
   if (loading) {
     return (
@@ -28,11 +30,20 @@ const Index = () => {
                 <span className="text-lg">Loading...</span>
               </div>
               {error && (
-                <div className="text-center space-y-2">
-                  <p className="text-sm text-destructive">{error}</p>
-                  <Button onClick={retry} variant="outline" size="sm">
-                    Try Again
-                  </Button>
+                <div className="text-center space-y-3">
+                  <p className="text-sm text-destructive max-w-md">{error}</p>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Button onClick={retry} variant="outline" size="sm">
+                      Try Again
+                    </Button>
+                    <Button 
+                      onClick={() => navigate('/auth')} 
+                      variant="default" 
+                      size="sm"
+                    >
+                      Sign In Manually
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
