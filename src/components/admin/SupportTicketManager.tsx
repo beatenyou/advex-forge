@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useAdminCheck } from '@/hooks/useAdminCheck';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -44,8 +43,7 @@ interface TicketMessage {
 }
 
 export default function SupportTicketManager() {
-  const { user } = useAuth();
-  const { isAdmin, loading: adminLoading } = useAdminCheck();
+  const { user, isAdmin, loading: adminLoading } = useAuth();
   const { toast } = useToast();
   
   const [tickets, setTickets] = useState<SupportTicket[]>([]);

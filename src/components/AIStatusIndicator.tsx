@@ -2,7 +2,7 @@ import { Circle, AlertTriangle, XCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAIStatus, AIStatusType } from '@/hooks/useAIStatus';
-import { useAdminCheck } from '@/hooks/useAdminCheck';
+import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
 
 interface AIStatusIndicatorProps {
@@ -59,7 +59,7 @@ export const AIStatusIndicator = ({
   readOnly = false 
 }: AIStatusIndicatorProps) => {
   const { status: aiStatus, loading, refresh } = useAIStatus();
-  const { isAdmin } = useAdminCheck();
+  const { isAdmin } = useAuth();
   const statusConfig = getStatusConfig(aiStatus.status);
   
   console.log('🖥️ AIStatusIndicator render - status:', aiStatus.status, 'message:', aiStatus.message, 'details:', aiStatus.details, 'className:', className);

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { useAdminCheck } from '@/hooks/useAdminCheck';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { X, Info, AlertTriangle, CheckCircle, AlertCircle } from 'lucide-react';
@@ -15,8 +14,7 @@ interface Announcement {
 }
 
 export default function AnnouncementBanner() {
-  const { user } = useAuth();
-  const { isAdmin } = useAdminCheck();
+  const { user, isAdmin } = useAuth();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [dismissedBanners, setDismissedBanners] = useState<Set<string>>(new Set());
   const [userPreferences, setUserPreferences] = useState<{ app_notifications: boolean } | null>(null);

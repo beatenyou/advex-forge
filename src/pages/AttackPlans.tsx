@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useProPlanCheck } from '@/hooks/useProPlanCheck';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,7 +35,7 @@ interface AttackPlan {
 }
 
 const AttackPlansPage: React.FC = () => {
-  const { isProUser, loading: proLoading } = useProPlanCheck();
+  const { isProUser, loading: proLoading } = useAuth();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);

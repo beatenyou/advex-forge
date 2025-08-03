@@ -14,7 +14,7 @@ import AdminStats from "./pages/AdminStats";
 import UserPreferences from "./pages/UserPreferences";
 import FullScreenChat from "./pages/FullScreenChat";
 import AttackPlans from "./pages/AttackPlans";
-import AuthDebug from "./pages/AuthDebug";
+// import AuthDebug from "./pages/AuthDebug"; // Removed - using simplified auth
 import NotFound from "./pages/NotFound";
 import { MaintenancePage } from "./pages/MaintenancePage";
 
@@ -71,7 +71,7 @@ const App = () => (
                 <Route path="/attack-plans" element={<AttackPlans />} />
                 <Route path="/chat" element={<FullScreenChat />} />
                 <Route path="/chat/:sessionId" element={<FullScreenChat />} />
-                <Route path="/auth-debug" element={<AuthDebug />} />
+                {/* Auth debug route removed - using simplified auth */}
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

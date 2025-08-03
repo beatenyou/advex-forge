@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useAdminCheck } from '@/hooks/useAdminCheck';
 
 interface MaintenanceData {
   id: string;
@@ -13,8 +12,7 @@ interface MaintenanceData {
 }
 
 export const useMaintenanceCheck = () => {
-  const { user } = useAuth();
-  const { isAdmin } = useAdminCheck();
+  const { user, isAdmin } = useAuth();
   const [maintenanceData, setMaintenanceData] = useState<MaintenanceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);

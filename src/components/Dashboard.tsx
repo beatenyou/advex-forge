@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Search, Shield, Users, Settings, Star, Hash, Filter, LogOut, UserCog, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useAdminCheck } from "@/hooks/useAdminCheck";
 import { useNavigationPhases } from "@/hooks/useNavigationPhases";
 import { useResponsiveCardGrid } from '@/hooks/useResponsiveCardGrid';
 import { useToast } from "@/hooks/use-toast";
@@ -60,7 +59,7 @@ export const Dashboard = ({
   const {
     isAdmin,
     loading: adminLoading
-  } = useAdminCheck();
+  } = useAuth();
   const {
     phases: navigationPhases,
     loading: phasesLoading
