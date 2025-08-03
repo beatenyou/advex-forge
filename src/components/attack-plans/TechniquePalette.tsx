@@ -40,7 +40,12 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPhase, setSelectedPhase] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const { phases: navigationPhases } = useNavigationPhases();
+  const { phases: navigationPhases, loading: phasesLoading } = useNavigationPhases();
+
+  // Reset selected phase when navigation phases change
+  useEffect(() => {
+    setSelectedPhase(null);
+  }, [navigationPhases]);
 
   // Debug navigation phases
   useEffect(() => {
@@ -108,28 +113,35 @@ export const TechniquePalette: React.FC<TechniquePaletteProps> = ({ onAddTechniq
           </div>
           
           {/* Phase Filter */}
-          <div className="flex flex-wrap gap-1">
-            <Button
-              variant={selectedPhase === null ? "default" : "outline"}
-              size="sm"
-              onClick={() => setSelectedPhase(null)}
-            >
-              All
-            </Button>
-            {navigationPhases.map(phase => (
+          {!phasesLoading && navigationPhases.length > 0 && (
+            <div className="flex flex-wrap gap-1" key={`phases-${navigationPhases.length}`}>
               <Button
-                key={phase.name}
-                variant={selectedPhase === phase.label ? "default" : "outline"}
+                variant={selectedPhase === null ? "default" : "outline"}
                 size="sm"
-                onClick={() => setSelectedPhase(phase.label)}
-                draggable
-                onDragStart={(e) => handlePhaseDragStart(e, phase)}
-                className="text-xs cursor-grab active:cursor-grabbing hover:cursor-grab"
+                onClick={() => setSelectedPhase(null)}
               >
-                {phase.icon} {phase.label}
+                All
               </Button>
-            ))}
-          </div>
+              {navigationPhases.map(phase => (
+                <Button
+                  key={phase.name}
+                  variant={selectedPhase === phase.label ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedPhase(phase.label)}
+                  draggable
+                  onDragStart={(e) => handlePhaseDragStart(e, phase)}
+                  className="text-xs cursor-grab active:cursor-grabbing hover:cursor-grab"
+                >
+                  {phase.icon} {phase.label}
+                </Button>
+              ))}
+            </div>
+          )}
+          {phasesLoading && (
+            <div className="text-center py-2 text-muted-foreground text-sm">
+              Loading phases...
+            </div>
+          )}
         </div>
       </CardHeader>
       
