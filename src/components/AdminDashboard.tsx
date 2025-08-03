@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheatSheetManager } from "@/components/CheatSheetManager";
 import { LinkTabsManager } from "@/components/LinkTabsManager";
 import { ScenarioManager } from "@/components/ScenarioManager";
-import { UserManager } from "@/components/UserManager";
+import { EnhancedUserManager } from "@/components/EnhancedUserManager";
 import AIProviderManager from "@/components/AIProviderManager";
 import ModelAccessManager from "@/components/admin/ModelAccessManager";
 import AnnouncementManager from "@/components/admin/AnnouncementManager";
@@ -26,6 +26,7 @@ import { MaintenanceManager } from "@/components/admin/MaintenanceManager";
 import { OrganizationManager } from "@/components/enterprise/OrganizationManager";
 import { BulkUserManager } from "@/components/enterprise/BulkUserManager";
 import { EnterpriseAnalytics } from "@/components/enterprise/EnterpriseAnalytics";
+import { OrganizationProvider } from "@/hooks/useOrganizationContext";
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -69,7 +70,8 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
   }
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <OrganizationProvider>
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
       <div className="bg-card border border-border rounded-lg shadow-lg w-full max-w-6xl max-h-[90vh] overflow-hidden">
         <div className="flex items-center justify-between p-6 border-b border-border">
           <div className="flex items-center gap-3">
@@ -490,7 +492,7 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
             </TabsContent>
 
             <TabsContent value="users" className="space-y-6">
-              <UserManager />
+              <EnhancedUserManager />
             </TabsContent>
 
             <TabsContent value="ai-providers" className="space-y-6 overflow-y-auto max-h-[calc(90vh-200px)]">
@@ -578,6 +580,7 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
           </Tabs>
         </div>
       </div>
-    </div>
+      </div>
+    </OrganizationProvider>
   );
 };

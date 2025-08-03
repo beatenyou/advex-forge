@@ -52,6 +52,9 @@ export function UserManager() {
   const [newUserEmail, setNewUserEmail] = useState('');
   const [newUserPassword, setNewUserPassword] = useState('');
   const [newUserRole, setNewUserRole] = useState<'user' | 'admin'>('user');
+  const [newUserOrgId, setNewUserOrgId] = useState<string>('');
+  const [newUserOrgRole, setNewUserOrgRole] = useState<string>('member');
+  const [organizations, setOrganizations] = useState<any[]>([]);
   const [isAddingUser, setIsAddingUser] = useState(false);
   const [grantDialogOpen, setGrantDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -76,6 +79,7 @@ export function UserManager() {
     fetchProfiles();
     fetchUserBilling();
     fetchBillingPlans();
+    fetchOrganizations();
   }, []);
 
   const fetchProfiles = async () => {
@@ -156,6 +160,21 @@ export function UserManager() {
     }
   };
 
+  const fetchOrganizations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('is_active', true)
+        .order('name');
+
+      if (error) throw error;
+      setOrganizations(data || []);
+    } catch (error) {
+      console.error('Error fetching organizations:', error);
+    }
+  };
+
   const handleAddUser = async () => {
     if (!newUserEmail || !newUserPassword) {
       toast({
@@ -173,7 +192,9 @@ export function UserManager() {
         body: {
           email: newUserEmail,
           password: newUserPassword,
-          role: newUserRole
+          role: newUserRole,
+          organization_id: newUserOrgId || null,
+          organization_role: newUserOrgRole
         }
       });
 
@@ -191,6 +212,8 @@ export function UserManager() {
       setNewUserEmail('');
       setNewUserPassword('');
       setNewUserRole('user');
+      setNewUserOrgId('');
+      setNewUserOrgRole('member');
       fetchProfiles();
     } catch (error: any) {
       console.error('Error creating user:', error);
@@ -528,7 +551,7 @@ export function UserManager() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="email">Email</Label>
               <Input
@@ -550,7 +573,7 @@ export function UserManager() {
               />
             </div>
             <div>
-              <Label htmlFor="role">Role</Label>
+              <Label htmlFor="role">System Role</Label>
               <Select value={newUserRole} onValueChange={(value: 'user' | 'admin') => setNewUserRole(value)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select role" />
@@ -561,6 +584,37 @@ export function UserManager() {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label htmlFor="organization">Organization (Optional)</Label>
+              <Select value={newUserOrgId} onValueChange={setNewUserOrgId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select organization" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No organization</SelectItem>
+                  {organizations.map((org) => (
+                    <SelectItem key={org.id} value={org.id}>
+                      {org.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {newUserOrgId && (
+              <div>
+                <Label htmlFor="orgRole">Organization Role</Label>
+                <Select value={newUserOrgRole} onValueChange={setNewUserOrgRole}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="member">Member</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="owner">Owner</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="flex items-end">
               <Button 
                 onClick={handleAddUser} 
