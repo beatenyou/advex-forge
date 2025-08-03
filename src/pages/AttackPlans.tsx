@@ -318,13 +318,46 @@ const AttackPlansPage: React.FC = () => {
       
       ${techniqueNodes.length > 0 ? `
         <h2>Techniques</h2>
-        ${techniqueNodes.map((node: Node) => `
+        ${techniqueNodes.map((node: Node) => {
+          const technique = node.data.technique as any;
+          if (!technique) return '';
+          
+          return `
           <div class="node technique-node">
-            <h3>${(node.data.technique as any)?.name || 'Technique'}</h3>
-            <p><strong>Phase:</strong> ${(node.data.technique as any)?.phase || 'N/A'}</p>
-            <p><strong>Description:</strong> ${(node.data.technique as any)?.description || 'No description'}</p>
+            <h3>${technique.title || technique.name || 'Technique'}</h3>
+            <p><strong>Description:</strong> ${technique.description || 'No description'}</p>
+            <p><strong>Phase:</strong> ${technique.phase || 'N/A'}</p>
+            <p><strong>Category:</strong> ${technique.category || 'N/A'}</p>
+            ${technique.tags && technique.tags.length > 0 ? `<p><strong>Tags:</strong> ${technique.tags.join(', ')}</p>` : ''}
+            
+            ${technique.how_to_use && technique.how_to_use.length > 0 ? `
+              <div><strong>How to Use:</strong></div>
+              <ol>
+                ${technique.how_to_use.map((step: string) => `<li>${step}</li>`).join('')}
+              </ol>
+            ` : ''}
+            
+            ${technique.when_to_use && technique.when_to_use.length > 0 ? `
+              <div><strong>When to Use:</strong></div>
+              <ul>
+                ${technique.when_to_use.map((item: string) => `<li>${item}</li>`).join('')}
+              </ul>
+            ` : ''}
+            
+            ${technique.tools && technique.tools.length > 0 ? `
+              <p><strong>Tools:</strong> ${technique.tools.map((tool: string) => `<span style="background: #f0f0f0; padding: 2px 6px; margin: 2px; border-radius: 4px; display: inline-block;">${tool}</span>`).join(' ')}</p>
+            ` : ''}
+            
+            ${technique.commands && technique.commands.length > 0 ? `
+              <div><strong>Commands:</strong></div>
+              ${technique.commands.map((cmd: any) => {
+                const command = typeof cmd === 'string' ? cmd : cmd.command || cmd.text || JSON.stringify(cmd);
+                return `<pre style="background: #f5f5f5; padding: 8px; margin: 4px 0; border-radius: 4px; overflow-x: auto;"><code>${command}</code></pre>`;
+              }).join('')}
+            ` : ''}
           </div>
-        `).join('')}
+          `;
+        }).join('')}
       ` : ''}
       
       ${textNodes.length > 0 ? `
@@ -357,9 +390,45 @@ const AttackPlansPage: React.FC = () => {
     if (techniqueNodes.length > 0) {
       markdown += `## Techniques\n\n`;
       techniqueNodes.forEach((node: Node) => {
-        markdown += `### ${(node.data.technique as any)?.name || 'Technique'}\n`;
-        markdown += `**Phase:** ${(node.data.technique as any)?.phase || 'N/A'}\n\n`;
-        markdown += `${(node.data.technique as any)?.description || 'No description'}\n\n`;
+        const technique = node.data.technique as any;
+        if (!technique) return;
+        
+        markdown += `### ${technique.title || technique.name || 'Technique'}\n\n`;
+        markdown += `${technique.description || 'No description'}\n\n`;
+        markdown += `**Phase:** ${technique.phase || 'N/A'}\n\n`;
+        markdown += `**Category:** ${technique.category || 'N/A'}\n\n`;
+        
+        if (technique.tags && technique.tags.length > 0) {
+          markdown += `**Tags:** ${technique.tags.join(', ')}\n\n`;
+        }
+        
+        if (technique.how_to_use && technique.how_to_use.length > 0) {
+          markdown += `**How to Use:**\n\n`;
+          technique.how_to_use.forEach((step: string, index: number) => {
+            markdown += `${index + 1}. ${step}\n`;
+          });
+          markdown += `\n`;
+        }
+        
+        if (technique.when_to_use && technique.when_to_use.length > 0) {
+          markdown += `**When to Use:**\n\n`;
+          technique.when_to_use.forEach((item: string) => {
+            markdown += `- ${item}\n`;
+          });
+          markdown += `\n`;
+        }
+        
+        if (technique.tools && technique.tools.length > 0) {
+          markdown += `**Tools:** \`${technique.tools.join('`, `')}\`\n\n`;
+        }
+        
+        if (technique.commands && technique.commands.length > 0) {
+          markdown += `**Commands:**\n\n`;
+          technique.commands.forEach((cmd: any) => {
+            const command = typeof cmd === 'string' ? cmd : cmd.command || cmd.text || JSON.stringify(cmd);
+            markdown += `\`\`\`\n${command}\n\`\`\`\n\n`;
+          });
+        }
       });
     }
     
@@ -374,19 +443,46 @@ const AttackPlansPage: React.FC = () => {
   };
 
   const generateCSVContent = (planData: any) => {
-    const headers = ['Type', 'Name', 'Description', 'Phase', 'Content'];
+    const headers = ['Type', 'Name', 'Description', 'Phase', 'Category', 'Tags', 'How to Use', 'When to Use', 'Tools', 'Commands', 'Content'];
     const rows = [headers.join(',')];
     
     planData.nodes.forEach((node: Node) => {
-      const row = [
-        node.type,
-        node.type === 'text' ? 'Text Box' : ((node.data.technique as any)?.name || node.data.label || (node.data.phase as any)?.name || ''),
-        node.type === 'technique' ? ((node.data.technique as any)?.description || '') : '',
-        node.type === 'technique' ? ((node.data.technique as any)?.phase || '') : node.type === 'phase' ? ((node.data.phase as any)?.name || '') : '',
-        node.type === 'text' ? (node.data.content || '') : ''
-      ].map(field => `"${(field || '').toString().replace(/"/g, '""')}"`);
-      
-      rows.push(row.join(','));
+      if (node.type === 'technique') {
+        const technique = node.data.technique as any;
+        const row = [
+          'technique',
+          technique?.title || technique?.name || '',
+          technique?.description || '',
+          technique?.phase || '',
+          technique?.category || '',
+          technique?.tags ? technique.tags.join('; ') : '',
+          technique?.how_to_use ? technique.how_to_use.join('; ') : '',
+          technique?.when_to_use ? technique.when_to_use.join('; ') : '',
+          technique?.tools ? technique.tools.join('; ') : '',
+          technique?.commands ? technique.commands.map((cmd: any) => 
+            typeof cmd === 'string' ? cmd : cmd.command || cmd.text || JSON.stringify(cmd)
+          ).join('; ') : '',
+          ''
+        ].map(field => `"${(field || '').toString().replace(/"/g, '""')}"`);
+        
+        rows.push(row.join(','));
+      } else {
+        const row = [
+          node.type,
+          node.type === 'text' ? 'Text Box' : ((node.data.phase as any)?.name || node.data.label || ''),
+          '',
+          node.type === 'phase' ? ((node.data.phase as any)?.name || '') : '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          node.type === 'text' ? (node.data.content || '') : ''
+        ].map(field => `"${(field || '').toString().replace(/"/g, '""')}"`);
+        
+        rows.push(row.join(','));
+      }
     });
     
     return rows.join('\n');
