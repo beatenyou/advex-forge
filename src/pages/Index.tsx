@@ -15,7 +15,8 @@ const Index = () => {
     authError, 
     isRecovering, 
     recoverSession, 
-    emergencyAdminAccess 
+    emergencyAdminAccess,
+    isStorageRestricted
   } = useAuth();
   const navigate = useNavigate();
 
@@ -71,6 +72,15 @@ const Index = () => {
               <AlertTriangle className="h-4 w-4" />
               <AlertDescription>{authError}</AlertDescription>
             </Alert>
+            
+            {isStorageRestricted && (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Your browser is restricting storage access. Session data will not persist across page reloads in this preview environment.
+                </AlertDescription>
+              </Alert>
+            )}
             
             <div className="space-y-3">
               <Button 

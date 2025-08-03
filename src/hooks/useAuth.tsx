@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { customStorage } from '@/lib/customStorage';
 
 // Circuit breaker to prevent infinite auth loops
 let authRetryCount = 0;
@@ -33,6 +34,7 @@ interface AuthContextType {
   isRecovering: boolean;
   recoverSession: () => Promise<boolean>;
   emergencyAdminAccess: () => Promise<boolean>;
+  isStorageRestricted: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -361,6 +363,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return profile?.permissions?.includes(permission) || false;
   };
 
+  const isStorageRestricted = customStorage.isUsingMemoryStorage();
+
   const value = {
     user,
     session,
@@ -374,6 +378,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isRecovering,
     recoverSession,
     emergencyAdminAccess,
+    isStorageRestricted,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
