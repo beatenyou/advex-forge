@@ -20,6 +20,7 @@ import { useChatContext } from '@/contexts/ChatContext';
 import { useLocation } from 'react-router-dom';
 import { AIStatusRecovery } from '@/components/AIStatusRecovery';
 import { useChatSystemValidation } from '@/hooks/useChatSystemValidation';
+import { AIHealthIndicator } from '@/components/AIHealthIndicator';
 
 interface ChatMessage {
   id: string;
@@ -718,29 +719,32 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
         }
       });
 
-      // Enhanced request with multiple transmission paths
-      const result = await Promise.race([
-        supabase.functions.invoke('ai-chat-router', {
-          body: requestPayload,
-          headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'Cache-Control': 'no-cache',
-            // Triple redundancy: send ALL critical data via headers as fallback
-            'X-Message': encodeURIComponent(requestPayload.message),
-            'X-Model-Id': requestPayload.selectedModelId,
-            'X-Session-Id': requestPayload.sessionId,
-            'X-Conversation-Id': requestPayload.conversationId,
-            'X-Request-Id': requestPayload.requestId,
-            'X-User-Id': user?.id || '',
-            'X-Timestamp': requestPayload.timestamp,
-            'X-Client-Version': requestPayload.clientVersion,
-            // Add validation headers
-            'X-Message-Length': requestPayload.message.length.toString(),
-            'X-Messages-Count': requestPayload.messages.length.toString(),
-            'X-Validation-Token': `${requestPayload.sessionId}-${requestPayload.selectedModelId}`
-          }
-        }),
+      // Enhanced request with multiple transmission paths and fallbacks
+      let result;
+      try {
+        console.log('🚀 Attempting Supabase client method first');
+        result = await Promise.race([
+          supabase.functions.invoke('ai-chat-router', {
+            body: requestPayload,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache',
+              // Triple redundancy: send ALL critical data via headers as fallback
+              'X-Message': encodeURIComponent(requestPayload.message),
+              'X-Model-Id': requestPayload.selectedModelId,
+              'X-Session-Id': requestPayload.sessionId,
+              'X-Conversation-Id': requestPayload.conversationId,
+              'X-Request-Id': requestPayload.requestId,
+              'X-User-Id': user?.id || '',
+              'X-Timestamp': requestPayload.timestamp,
+              'X-Client-Version': requestPayload.clientVersion,
+              // Add validation headers
+              'X-Message-Length': requestPayload.message.length.toString(),
+              'X-Messages-Count': requestPayload.messages.length.toString(),
+              'X-Validation-Token': `${requestPayload.sessionId}-${requestPayload.selectedModelId}`
+            }
+          }),
         // Enhanced timeout with progressive messaging
         new Promise<never>((_, reject) => {
           const timeoutId = setTimeout(() => {
@@ -754,7 +758,40 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
           
           return () => clearTimeout(timeoutId);
         })
-      ]) as { data: any; error: any };
+      ]);
+      } catch (supabaseError) {
+        console.warn('❌ Supabase client failed, trying direct HTTP fallback:', supabaseError);
+        
+        // Direct HTTP fallback
+        const session = await supabase.auth.getSession();
+        if (!session.data.session) {
+          throw new Error('Authentication session expired');
+        }
+
+        const SUPABASE_URL = "https://csknxtzjfdqoaoforrfm.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNza254dHpqZmRxb2FvZm9ycmZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3MTczMTgsImV4cCI6MjA2OTI5MzMxOH0.MNglSbyBWQw2BcxTzC0stq13FNyi9Hxsv3sSGYP_G1M";
+
+        const httpResponse = await fetch(`${SUPABASE_URL}/functions/v1/ai-chat-router`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.data.session.access_token}`,
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_KEY,
+            'X-Message': encodeURIComponent(requestPayload.message),
+            'X-Model-Id': requestPayload.selectedModelId,
+            'X-Session-Id': requestPayload.sessionId,
+            'X-User-Id': user?.id || '',
+          },
+          body: JSON.stringify(requestPayload),
+        });
+
+        if (!httpResponse.ok) {
+          const errorText = await httpResponse.text();
+          throw new Error(`HTTP ${httpResponse.status}: ${errorText}`);
+        }
+
+        result = { data: await httpResponse.json(), error: null };
+      }
       
       const { data, error } = result;
       console.log('🤖 AI chat router response received:', { 
@@ -1083,17 +1120,20 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
 
   return (
     <div className="flex flex-col h-full max-h-full min-h-0 relative">
-      <ChatHeader
-        currentUsage={currentUsage}
-        quotaLimit={quotaLimit}
-        planName={planName}
-        canUseAI={canUseAI}
-        onNewChat={createNewSession}
-        currentSessionId={currentSession?.id}
-        onSessionSelect={handleSessionSelect}
-        showHistory={showHistory}
-        onToggleHistory={handleToggleHistory}
-      />
+      <div className="flex items-center justify-between">
+        <ChatHeader
+          currentUsage={currentUsage}
+          quotaLimit={quotaLimit}
+          planName={planName}
+          canUseAI={canUseAI}
+          onNewChat={createNewSession}
+          currentSessionId={currentSession?.id}
+          onSessionSelect={handleSessionSelect}
+          showHistory={showHistory}
+          onToggleHistory={handleToggleHistory}
+        />
+        <AIHealthIndicator />
+      </div>
 
       <div className="flex-1 overflow-hidden min-h-0">
         {showHistory ? (
