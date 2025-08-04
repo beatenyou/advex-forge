@@ -20,27 +20,31 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Log all incoming headers for debugging
-  const allHeaders = {};
-  for (const [key, value] of req.headers.entries()) {
-    allHeaders[key.toLowerCase()] = value;
+  // Add simple health check endpoint
+  const url = new URL(req.url);
+  if (url.pathname === '/health' || req.method === 'GET') {
+    console.log('🏥 Health check requested');
+    return new Response(JSON.stringify({ 
+      status: 'healthy', 
+      service: 'ai-chat-router',
+      timestamp: new Date().toISOString(),
+      version: '1.0.0'
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
   }
-  
+
   console.log('🚀 AI Chat Router: Request received', { 
     method: req.method, 
     url: req.url,
-    contentType: req.headers.get('content-type'),
-    contentLength: req.headers.get('content-length'),
-    hasAuth: !!req.headers.get('authorization'),
-    allHeaders: Object.keys(allHeaders),
-    customHeaders: Object.keys(allHeaders).filter(h => h.startsWith('x-'))
+    hasAuth: !!req.headers.get('authorization')
   });
 
   try {
-    // Get user from auth header
+    // Simplified authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error('Authentication required for AI chat');
+      throw new Error('Authentication required');
     }
 
     const authToken = authHeader.replace('Bearer ', '');
@@ -51,148 +55,46 @@ serve(async (req) => {
     }
 
     const userId = userData.user.id;
-    console.log('✅ User authenticated:', userId);
     
-    // Enhanced request body reconstruction with multiple fallback mechanisms
+    // Simplified request parsing
     let requestData: any = {};
-    let rawBodyText = '';
-    let bodyParsingSuccess = false;
     
-    // Step 1: Try to get the raw request body
     try {
-      const clonedRequest = req.clone();
-      rawBodyText = await clonedRequest.text();
-      console.log('📥 Raw body received:', { 
-        length: rawBodyText.length, 
-        hasContent: rawBodyText.trim().length > 0,
-        preview: rawBodyText.substring(0, 100)
-      });
-      
-      if (rawBodyText && rawBodyText.trim().length > 0) {
-        try {
-          requestData = JSON.parse(rawBodyText);
-          bodyParsingSuccess = true;
-          console.log('✅ Body parsed successfully:', {
-            hasMessage: !!requestData.message,
-            hasMessages: !!requestData.messages,
-            hasSessionId: !!requestData.sessionId,
-            hasSelectedModelId: !!requestData.selectedModelId
-          });
-        } catch (jsonError) {
-          console.log('⚠️ JSON parsing failed:', jsonError.message);
-        }
+      const body = await req.text();
+      if (body) {
+        requestData = JSON.parse(body);
       }
-    } catch (bodyError) {
-      console.log('⚠️ Body reading failed:', bodyError.message);
-    }
-    
-    // Step 2: Enhanced header fallback reconstruction (case-insensitive)
-    if (!bodyParsingSuccess) {
-      console.log('🔄 Reconstructing request from headers...');
+    } catch (error) {
+      // Fallback to headers
+      const message = req.headers.get('X-Message');
+      const modelId = req.headers.get('X-Model-Id');
+      const sessionId = req.headers.get('X-Session-Id');
       
-      // Helper function for case-insensitive header retrieval
-      const getHeader = (name) => {
-        return req.headers.get(name) || req.headers.get(name.toLowerCase()) || req.headers.get(name.toUpperCase());
-      };
-      
-      const headerMessage = getHeader('X-Message');
-      const headerModelId = getHeader('X-Model-Id');
-      const headerSessionId = getHeader('X-Session-Id');
-      const headerConversationHistory = getHeader('X-Conversation-History');
-      
-      if (headerMessage || headerModelId || headerSessionId) {
+      if (message) {
         requestData = {
-          message: headerMessage ? decodeURIComponent(headerMessage) : '',
-          selectedModelId: headerModelId || '',
-          sessionId: headerSessionId || '',
-          conversationId: headerSessionId || '',
-          messages: headerConversationHistory ? JSON.parse(decodeURIComponent(headerConversationHistory)) : []
+          message: decodeURIComponent(message),
+          selectedModelId: modelId || '',
+          sessionId: sessionId || `simple-${Date.now()}`
         };
-        
-        console.log('✅ Request reconstructed from headers:', {
-          messageLength: requestData.message.length,
-          hasSessionId: !!requestData.sessionId,
-          hasSelectedModelId: !!requestData.selectedModelId
-        });
-        
-        bodyParsingSuccess = true;
       }
     }
     
-    // Step 3: URL parameter fallback
-    if (!bodyParsingSuccess) {
-      console.log('🔄 Trying URL parameter fallback...');
-      const url = new URL(req.url);
-      
-      if (url.searchParams.has('message')) {
-        requestData = {
-          message: url.searchParams.get('message') || '',
-          selectedModelId: url.searchParams.get('selectedModelId') || '',
-          sessionId: url.searchParams.get('sessionId') || '',
-          conversationId: url.searchParams.get('conversationId') || '',
-          messages: []
-        };
-        bodyParsingSuccess = true;
-        console.log('✅ Request reconstructed from URL parameters');
-      }
-    }
-    
-    // Validate reconstructed request data (updated after simple mode processing)
+    // Basic validation and defaults
     const message = requestData.message || '';
-    const messages = requestData.messages || [];
     let selectedModelId = requestData.selectedModelId || '';
-    let sessionId = requestData.sessionId || '';
-    let conversationId = requestData.conversationId || sessionId;
+    let sessionId = requestData.sessionId || `session-${Date.now()}`;
     
-    console.log('📋 Final request validation:', {
-      hasMessage: message.length > 0,
-      hasMessages: messages.length > 0,
-      hasSelectedModelId: selectedModelId.length > 0,
-      hasSessionId: sessionId.length > 0,
-      messagePreview: message.substring(0, 50)
-    });
-    
-    // Check for simple mode header (for Q&A widgets)
-    const isSimpleMode = req.headers.get('X-Simple-Mode') === 'true';
-    console.log('🎯 Simple mode detected:', isSimpleMode);
-    
-    // Enhanced validation with simple mode support
-    if (!message && (!messages || messages.length === 0)) {
-      throw new Error('Request validation failed: No message content provided. This usually indicates a request body transmission issue.');
+    if (!message) {
+      throw new Error('No message provided');
     }
     
-    // Relaxed validation for simple mode (Q&A widgets)
-    if (!isSimpleMode) {
-      if (!selectedModelId) {
-        throw new Error('Request validation failed: No AI model selected. Please ensure a model is selected before sending messages.');
-      }
-      
-      if (!sessionId) {
-        throw new Error('Request validation failed: No session ID provided. Please ensure the chat session is properly initialized.');
-      }
-    } else {
-      // Simple mode: provide defaults if missing
-      if (!selectedModelId) {
-        console.log('🔧 Simple mode: Getting default model for user');
-        const { data: defaultConfig } = await supabase
-          .from('ai_chat_config')
-          .select('default_user_primary_model_id')
-          .single();
-        
-        if (defaultConfig?.default_user_primary_model_id) {
-          selectedModelId = defaultConfig.default_user_primary_model_id;
-          requestData.selectedModelId = selectedModelId;
-          console.log('✅ Simple mode: Using default model:', selectedModelId);
-        }
-      }
-      
-      if (!sessionId) {
-        sessionId = `simple-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        conversationId = sessionId;
-        requestData.sessionId = sessionId;
-        requestData.conversationId = conversationId;
-        console.log('✅ Simple mode: Generated session ID:', sessionId);
-      }
+    // Simple mode defaults
+    if (!selectedModelId) {
+      const { data: config } = await supabase
+        .from('ai_chat_config')
+        .select('default_user_primary_model_id')
+        .single();
+      selectedModelId = config?.default_user_primary_model_id || '';
     }
     
     // Check AI quota with enhanced error handling
@@ -339,270 +241,54 @@ serve(async (req) => {
     const functionName = provider.type === 'openai' ? 'ai-chat-openai' : 'ai-chat-mistral';
     console.log('🔗 Routing to provider function:', functionName, 'for provider:', provider.name);
     
-    // Prepare conversation context with enhanced validation
-    let conversationMessages = [];
-    if (messages && Array.isArray(messages) && messages.length > 0) {
-      conversationMessages = messages.slice(-20).map((msg: any) => ({
-        role: msg.role || 'user',
-        content: msg.content || ''
-      })).filter(msg => msg.content.trim().length > 0);
-      console.log('💬 Using conversation context:', conversationMessages.length, 'messages');
-    } else if (message) {
-      conversationMessages = [{ role: 'user', content: message }];
-      console.log('💬 Using single message context');
-    }
+    // Simple conversation setup
+    const conversationMessages = requestData.messages || [{ role: 'user', content: message }];
     
-    if (conversationMessages.length === 0) {
-      throw new Error('No valid conversation messages to process');
-    }
-    
-    // Enhanced payload for provider function with redundant data transmission
+    // Basic payload for provider function
     const providerPayload = {
-      message: message || conversationMessages[conversationMessages.length - 1]?.content,
+      message: message,
       messages: conversationMessages,
       model: provider.model_name,
       systemPrompt: config.system_prompt,
       maxTokens: config.max_tokens,
       temperature: parseFloat(config.temperature),
       agentId: provider.agent_id,
-      conversationId: conversationId,
-      baseUrl: provider.base_url,
-      // Add redundant fields for robustness
-      requestId: `${userId}-${Date.now()}`,
-      timestamp: new Date().toISOString()
+      conversationId: sessionId,
+      baseUrl: provider.base_url
     };
     
-    console.log('📤 Sending to provider function:', {
-      functionName,
-      messageLength: providerPayload.message?.length || 0,
-      messagesCount: providerPayload.messages?.length || 0,
-      model: providerPayload.model,
-      hasAgentId: !!providerPayload.agentId,
-      payloadSize: JSON.stringify(providerPayload).length
-    });
+    console.log('📤 Calling provider:', functionName);
     
-    // Enhanced provider function call with multiple transmission methods
+    // Call provider function
     const providerResponse = await supabase.functions.invoke(functionName, {
-      body: providerPayload,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        // Triple redundancy: send critical data via headers as fallback
-        'X-Message': encodeURIComponent(providerPayload.message || ''),
-        'X-Model-Id': provider.id,
-        'X-Session-Id': sessionId || '',
-        'X-Agent-Id': provider.agent_id || '',
-        'X-Model-Name': provider.model_name || '',
-        'X-Request-Id': providerPayload.requestId,
-        'X-Simple-Mode': 'true',
-        // Add additional debugging headers
-        'X-Debug-Provider': provider.name,
-        'X-Debug-Type': provider.type,
-        'X-Debug-Timestamp': providerPayload.timestamp
-      }
-    });
-
-    // Enhanced provider response handling
-    console.log('📥 Provider response received:', {
-      hasError: !!providerResponse.error,
-      hasData: !!providerResponse.data,
-      errorMessage: providerResponse.error?.message,
-      dataKeys: providerResponse.data ? Object.keys(providerResponse.data) : []
+      body: providerPayload
     });
 
     if (providerResponse.error) {
-      console.error('❌ Provider function error:', providerResponse.error);
-      
-      // Classify provider errors for better user experience
-      let errorMessage = 'AI provider error: ' + (providerResponse.error.message || 'Unknown provider error');
-      
-      if (providerResponse.error.message?.includes('timeout')) {
-        errorMessage = 'AI provider timeout - please try again with a shorter message';
-      } else if (providerResponse.error.message?.includes('quota') || providerResponse.error.message?.includes('limit')) {
-        errorMessage = 'AI provider quota exceeded - please try again later';
-      } else if (providerResponse.error.message?.includes('API key') || providerResponse.error.message?.includes('authentication')) {
-        errorMessage = 'AI provider authentication error - please contact support';
-      } else if (providerResponse.error.message?.includes('model')) {
-        errorMessage = 'AI model error - please try selecting a different model';
-      }
-      
-      throw new Error(errorMessage);
+      throw new Error(providerResponse.error.message);
     }
 
     if (!providerResponse.data) {
-      throw new Error('No response data received from AI provider');
+      throw new Error('No response from AI provider');
     }
 
     const result = providerResponse.data;
-    console.log('✅ Provider response validated:', {
-      hasMessage: !!result.message,
-      messageLength: result.message?.length || 0,
-      tokensUsed: result.tokensUsed || 0,
-      providerId: result.providerId || 'unknown'
-    });
-
-    // Enhanced usage tracking with better error handling
-    console.log('📊 Tracking usage for successful request...');
-    try {
-      // Track general AI usage
-      const { error: usageError } = await supabase.rpc('increment_ai_usage', {
-        user_id_param: userId
-      });
-      
-      if (usageError) {
-        console.error('❌ Failed to increment AI usage:', usageError);
-      } else {
-        console.log('✅ AI usage incremented for user:', userId);
-      }
-      
-      // Track model-specific usage
-      const { error: modelUsageError } = await supabase.rpc('increment_model_usage', {
-        user_id_param: userId,
-        provider_id_param: provider.id,
-        tokens_used_param: result.tokensUsed || 1,
-        session_id_param: sessionId
-      });
-      
-      if (modelUsageError) {
-        console.error('❌ Failed to increment model usage:', modelUsageError);
-      } else {
-        console.log('✅ Model usage incremented:', {
-          provider: provider.name,
-          tokens: result.tokensUsed || 1,
-          session: sessionId
-        });
-      }
-      
-      // Log successful interaction for analytics
-      await supabase
-        .from('ai_interactions')
-        .insert({
-          user_id: userId,
-          session_id: sessionId,
-          provider_name: provider.name,
-          success: true,
-          tokens_used: result.tokensUsed || 1,
-          response_time_ms: Date.now() - Date.parse(new Date().toISOString()), // Approximate
-          request_type: 'chat',
-          created_at: new Date().toISOString()
-        });
-        
-    } catch (usageError) {
-      console.error('❌ Error tracking AI usage (non-critical):', usageError);
-      // Don't throw here - usage tracking failure shouldn't break the response
-    }
-
-    // Enhanced response with debugging information
-    const enhancedResult = {
-      ...result,
-      providerId: provider.id,
-      providerName: provider.name,
-      modelName: provider.model_name,
-      requestTimestamp: new Date().toISOString(),
-      // Add debugging info in non-production
-      debug: {
-        userId: userId.substring(0, 8) + '...',
-        sessionId: sessionId.substring(0, 8) + '...',
-        messageLength: message.length,
-        tokensUsed: result.tokensUsed || 1
-      }
-    };
     
-    console.log('🎉 Successfully processed AI request:', {
-      provider: provider.name,
-      messageLength: message.length,
-      responseLength: result.message?.length || 0,
-      tokensUsed: result.tokensUsed || 1,
-      processingComplete: true
-    });
+    // Track usage
+    await supabase.rpc('increment_ai_usage', { user_id_param: userId });
 
-    return new Response(JSON.stringify(enhancedResult), {
-      headers: { 
-        ...corsHeaders, 
-        'Content-Type': 'application/json',
-        'X-Provider-Used': provider.name,
-        'X-Model-Used': provider.model_name,
-        'X-Request-Success': 'true'
-      },
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
-    console.error('❌ Critical error in ai-chat-router function:', error);
+    console.error('❌ Router error:', error);
     
-    // Enhanced error classification for better debugging
-    let errorType = 'system_error';
-    let errorStatus = 500;
-    let userFriendlyMessage = 'An unexpected error occurred. Please try again.';
-    
-    if (error.message?.includes('Authentication')) {
-      errorType = 'auth_error';
-      errorStatus = 401;
-      userFriendlyMessage = 'Authentication failed. Please refresh the page and try again.';
-    } else if (error.message?.includes('quota')) {
-      errorType = 'quota_error';
-      errorStatus = 429;
-      userFriendlyMessage = error.message; // Keep quota messages as-is
-    } else if (error.message?.includes('validation') || error.message?.includes('required')) {
-      errorType = 'validation_error';
-      errorStatus = 400;
-      userFriendlyMessage = 'Request validation failed. Please ensure all required fields are provided.';
-    } else if (error.message?.includes('Provider') || error.message?.includes('model')) {
-      errorType = 'provider_error';
-      errorStatus = 503;
-      userFriendlyMessage = 'AI service temporarily unavailable. Please try again in a moment.';
-    } else if (error.message?.includes('timeout')) {
-      errorType = 'timeout_error';
-      errorStatus = 504;
-      userFriendlyMessage = 'Request timed out. Please try again with a shorter message.';
-    }
-    
-    // Enhanced error logging with more context
-    try {
-      await supabase
-        .from('ai_interactions')
-        .insert({
-          user_id: null, // We might not have userId if auth failed early
-          success: false,
-          error_type: errorType,
-          provider_name: 'router',
-          request_type: 'chat_router',
-          error_details: { 
-            message: error.message,
-            stack: error.stack,
-            userAgent: 'edge-function',
-            timestamp: new Date().toISOString()
-          },
-          created_at: new Date().toISOString()
-        });
-    } catch (logError) {
-      console.error('❌ Failed to log error to database:', logError);
-    }
-
-    // Return structured error response
-    const errorResponse = {
-      error: userFriendlyMessage,
-      error_type: errorType,
-      error_code: errorStatus,
-      timestamp: new Date().toISOString(),
-      debug_message: error.message, // For debugging purposes
-      retry_suggested: !['auth_error', 'validation_error'].includes(errorType)
-    };
-
-    console.log('🚨 Returning error response:', {
-      type: errorType,
-      status: errorStatus,
-      message: userFriendlyMessage,
-      originalError: error.message
-    });
-
-    return new Response(JSON.stringify(errorResponse), {
-      status: errorStatus,
-      headers: { 
-        ...corsHeaders, 
-        'Content-Type': 'application/json',
-        'X-Error-Type': errorType,
-        'X-Request-Success': 'false'
-      },
+    return new Response(JSON.stringify({ 
+      error: error.message || 'Internal server error' 
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 });
