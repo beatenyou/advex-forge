@@ -4,7 +4,9 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-message, x-model-id, x-session-id, x-simple-mode',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-message, x-model-id, x-session-id, x-simple-mode, x-conversation-history, x-request-id, x-user-id, x-timestamp, x-client-version, x-message-length, x-messages-count, x-validation-token, x-conversation-id, x-agent-id, x-model-name, x-debug-provider, x-debug-type, x-debug-timestamp',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 };
 
 const supabase = createClient(
@@ -18,12 +20,20 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Log all incoming headers for debugging
+  const allHeaders = {};
+  for (const [key, value] of req.headers.entries()) {
+    allHeaders[key.toLowerCase()] = value;
+  }
+  
   console.log('🚀 AI Chat Router: Request received', { 
     method: req.method, 
     url: req.url,
     contentType: req.headers.get('content-type'),
     contentLength: req.headers.get('content-length'),
-    hasAuth: !!req.headers.get('authorization')
+    hasAuth: !!req.headers.get('authorization'),
+    allHeaders: Object.keys(allHeaders),
+    customHeaders: Object.keys(allHeaders).filter(h => h.startsWith('x-'))
   });
 
   try {
@@ -76,13 +86,19 @@ serve(async (req) => {
       console.log('⚠️ Body reading failed:', bodyError.message);
     }
     
-    // Step 2: Enhanced header fallback reconstruction
+    // Step 2: Enhanced header fallback reconstruction (case-insensitive)
     if (!bodyParsingSuccess) {
       console.log('🔄 Reconstructing request from headers...');
       
-      const headerMessage = req.headers.get('X-Message');
-      const headerModelId = req.headers.get('X-Model-Id');
-      const headerSessionId = req.headers.get('X-Session-Id');
+      // Helper function for case-insensitive header retrieval
+      const getHeader = (name) => {
+        return req.headers.get(name) || req.headers.get(name.toLowerCase()) || req.headers.get(name.toUpperCase());
+      };
+      
+      const headerMessage = getHeader('X-Message');
+      const headerModelId = getHeader('X-Model-Id');
+      const headerSessionId = getHeader('X-Session-Id');
+      const headerConversationHistory = getHeader('X-Conversation-History');
       
       if (headerMessage || headerModelId || headerSessionId) {
         requestData = {
@@ -90,7 +106,7 @@ serve(async (req) => {
           selectedModelId: headerModelId || '',
           sessionId: headerSessionId || '',
           conversationId: headerSessionId || '',
-          messages: [] // Will be reconstructed if needed
+          messages: headerConversationHistory ? JSON.parse(decodeURIComponent(headerConversationHistory)) : []
         };
         
         console.log('✅ Request reconstructed from headers:', {

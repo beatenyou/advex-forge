@@ -25,31 +25,39 @@ export const AIHealthIndicator = () => {
     const startTime = Date.now();
     
     try {
-      const SUPABASE_URL = "https://csknxtzjfdqoaoforrfm.supabase.co";
-      const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNza254dHpqZmRxb2FvZm9ycmZtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3MTczMTgsImV4cCI6MjA2OTI5MzMxOH0.MNglSbyBWQw2BcxTzC0stq13FNyi9Hxsv3sSGYP_G1M";
-      
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/ai-chat-router`, {
-        method: 'OPTIONS',
-        headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-          'apikey': SUPABASE_KEY,
-        },
-      });
-      
+      // Use the new dedicated health check endpoint
+      const response = await supabase.functions.invoke('ai-health-check');
       const responseTime = Date.now() - startTime;
-      
-      setHealthStatus({
-        isHealthy: response.ok,
-        lastChecked: new Date(),
-        responseTime,
-        error: response.ok ? undefined : `HTTP ${response.status}`
-      });
+
+      if (response.error) {
+        setHealthStatus({
+          isHealthy: false,
+          lastChecked: new Date(),
+          responseTime,
+          error: response.error.message
+        });
+      } else if (response.data) {
+        const healthData = response.data;
+        setHealthStatus({
+          isHealthy: healthData.status === 'healthy',
+          lastChecked: new Date(),
+          responseTime: healthData.responseTime || responseTime,
+          error: healthData.status !== 'healthy' ? `System ${healthData.status}` : undefined
+        });
+      } else {
+        setHealthStatus({
+          isHealthy: true,
+          lastChecked: new Date(),
+          responseTime,
+          error: undefined
+        });
+      }
     } catch (error: any) {
       setHealthStatus({
         isHealthy: false,
         lastChecked: new Date(),
         responseTime: Date.now() - startTime,
-        error: error.message
+        error: error.message || 'Network connectivity issue'
       });
     } finally {
       setIsChecking(false);
@@ -69,7 +77,7 @@ export const AIHealthIndicator = () => {
   };
 
   const getStatusColor = () => {
-    if (isChecking) return "default";
+    if (isChecking) return "secondary";
     return healthStatus.isHealthy ? "default" : "destructive";
   };
 
