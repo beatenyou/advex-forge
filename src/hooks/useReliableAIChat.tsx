@@ -11,8 +11,11 @@ interface ReliableAIChatOptions {
 interface AIRequestData {
   message: string;
   sessionId: string;
-  modelId: string;
+  selectedModelId: string;
   conversationHistory: any[];
+  conversationId?: string;
+  requestId?: string;
+  timestamp?: string;
 }
 
 export const useReliableAIChat = (options: ReliableAIChatOptions = {}) => {
@@ -62,7 +65,7 @@ export const useReliableAIChat = (options: ReliableAIChatOptions = {}) => {
         // Send data in headers as backup
         'X-Message': encodeURIComponent(requestData.message),
         'X-Session-Id': requestData.sessionId,
-        'X-Model-Id': requestData.modelId,
+        'X-Model-Id': requestData.selectedModelId,
         'X-Conversation-History': encodeURIComponent(JSON.stringify(requestData.conversationHistory)),
       },
       body: JSON.stringify(requestData),
@@ -86,7 +89,7 @@ export const useReliableAIChat = (options: ReliableAIChatOptions = {}) => {
         // Send data in headers as backup
         'X-Message': encodeURIComponent(requestData.message),
         'X-Session-Id': requestData.sessionId,
-        'X-Model-Id': requestData.modelId,
+        'X-Model-Id': requestData.selectedModelId,
         'X-Conversation-History': encodeURIComponent(JSON.stringify(requestData.conversationHistory)),
       },
     });
@@ -158,7 +161,15 @@ export const useReliableAIChat = (options: ReliableAIChatOptions = {}) => {
 
   const sendMessage = useCallback(async (requestData: AIRequestData) => {
     try {
-      const result = await sendWithRetry(requestData);
+      // Ensure required fields are present
+      const enhancedRequestData = {
+        ...requestData,
+        conversationId: requestData.conversationId || requestData.sessionId,
+        requestId: requestData.requestId || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: requestData.timestamp || new Date().toISOString()
+      };
+      
+      const result = await sendWithRetry(enhancedRequestData);
       return result;
     } catch (error: any) {
       console.error('🔥 Final AI request failure:', error);

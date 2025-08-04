@@ -51,10 +51,13 @@ serve(async (req) => {
       const functionName = provider.type === 'openai' ? 'ai-chat-openai' : 'ai-chat-mistral';
       
       try {
+        // Use correct model name for each provider type
+        const testModel = provider.type === 'openai' ? 'gpt-4o-mini' : 'mistral-large-latest';
+        
         const testResponse = await supabase.functions.invoke(functionName, {
           body: { 
             message: 'health check',
-            model: 'gpt-4o-mini', 
+            model: testModel, 
             systemPrompt: 'Respond with "OK"',
             maxTokens: 10,
             temperature: 0.1,
