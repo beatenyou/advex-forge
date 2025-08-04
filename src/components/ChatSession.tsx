@@ -205,7 +205,6 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
     try {
       const messageData = {
         session_id: sessionId,
-        user_id: user?.id,
         role,
         content,
         ...(providerName && { provider_name: providerName }),
