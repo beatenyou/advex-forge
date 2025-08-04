@@ -47,9 +47,9 @@ export const useSimpleAIChat = () => {
         throw new Error(error.message || 'Failed to call AI service');
       }
 
-      if (!data || !data.response) {
-        console.error('❌ Invalid AI response structure:', data);
-        throw new Error('Invalid response from AI service');
+      if (!data) {
+        console.error('❌ No response data received:', data);
+        throw new Error('No response from AI service');
       }
 
       console.log('✅ AI request successful:', data);
