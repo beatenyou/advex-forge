@@ -11,10 +11,7 @@ import { MarkdownRenderer } from "./MarkdownRenderer";
 import { useAIUsage } from "@/hooks/useAIUsage";
 import { useUserModelAccess } from "@/hooks/useUserModelAccess";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import { useAIChatDebugger } from "@/hooks/useAIChatDebugger";
-import { useAIChatErrorHandler } from "@/hooks/useAIChatErrorHandler";
-import { useReliableAIChat } from "@/hooks/useReliableAIChat";
-import { ChatDebugPanel } from "./ChatDebugPanel";
+import { useSimpleAIChat } from "@/hooks/useSimpleAIChat";
 import TextareaAutosize from 'react-textarea-autosize';
 
 interface ChatMessage {
@@ -46,17 +43,9 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
   const { toast } = useToast();
   const { trackActivity } = useAnalytics();
   
-  // Optional debugging - can be disabled if causing issues
-  const [debugEnabled, setDebugEnabled] = useState(false);
-  const aiDebugger = useAIChatDebugger();
-  const errorHandler = useAIChatErrorHandler();
   
-  // Reliable AI chat with enhanced retry logic
-  const reliableAIChat = useReliableAIChat({
-    maxRetries: 3,
-    retryDelay: 1000,
-    useProgressiveFallback: true
-  });
+  // Simple AI chat
+  const aiChat = useSimpleAIChat();
   
   // Core state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -348,9 +337,6 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
         throw new Error('No AI model selected. Please select a model first.');
       }
       
-      if (debugEnabled) {
-        aiDebugger.startRequestTracking(requestId, modelIdToUse, modelName);
-      }
 
       // Save user message immediately
       const userMessage = await saveMessage(currentSession.id, 'user', userQuestion);
@@ -387,8 +373,8 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
 
       
 
-      // Use reliable AI chat with enhanced error handling and retries
-      const data = await reliableAIChat.sendMessage(requestPayload);
+      // Use simple AI chat
+      const data = await aiChat.sendMessage(requestPayload);
 
       if (!data) {
         throw new Error('No response received from AI service');
@@ -421,28 +407,12 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
       
       setMessages(prev => [...prev, assistantMessage as ChatMessage]);
 
-      // End request tracking with success (only if debugging enabled)
-      if (debugEnabled) {
-        aiDebugger.endRequestTracking(
-          requestId,
-          modelIdToUse,
-          true,
-          data.tokens_used
-        );
-
-        // Update session debug info
-        aiDebugger.updateSessionDebugInfo(
-          currentSession.id,
-          messages.length + 2, // +2 for user and assistant messages just added
-          (messages.reduce((sum, msg) => sum + (msg.tokens_used || 0), 0)) + (data.tokens_used || 0)
-        );
-      }
 
       console.log('✅ Chat interaction completed successfully');
       
       // Track successful interaction
       await trackActivity('ai_interaction_success', 
-        `Provider: ${data.provider_used}, Tokens: ${data.tokens_used || 0}, Retries: ${reliableAIChat.retryCount}`
+        `Provider: ${data.provider_used}, Tokens: ${data.tokens_used || 0}`
       );
 
     } catch (error: any) {
@@ -452,29 +422,17 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
       const currentSelectedModel = getSelectedModel();
       const modelIdForError = currentSelectedModel?.provider_id || 'unknown';
       
-      // End request tracking with failure (only if debugging enabled)
-      if (debugEnabled) {
-        aiDebugger.endRequestTracking(
-          requestId,
-          modelIdForError,
-          false,
-          undefined,
-          error.name || 'unknown_error',
-          error.message
-        );
-      }
-
-      // Handle error with user-friendly messaging
-      errorHandler.handleError(error, {
-        requestId,
-        sessionId: currentSession.id,
-        modelId: modelIdForError
-      });
-      
       // Track failed interaction
       await trackActivity('ai_interaction_failed', 
-        `Error: ${error.message}, Retries: ${reliableAIChat.retryCount}`
+        `Error: ${error.message}`
       );
+      
+      // Show user-friendly error
+      toast({
+        title: "AI Request Failed",
+        description: error.message || "Failed to send message",
+        variant: "destructive",
+      });
       
     } finally {
       isRequestActiveRef.current = false;
@@ -587,13 +545,6 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
           <span className="font-medium">AI Chat</span>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setDebugEnabled(!debugEnabled)}
-          >
-            Debug {debugEnabled ? 'ON' : 'OFF'}
-          </Button>
           {showScrollToBottomButton && (
             <Button
               variant="outline"
@@ -740,14 +691,6 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
         )}
       </div>
 
-      {/* Debug Panel - only show when debug mode is enabled */}
-      {debugEnabled && (
-        <ChatDebugPanel 
-          sessionId={currentSession?.id}
-          messageCount={messages.length}
-          totalTokensUsed={messages.reduce((sum, msg) => sum + (msg.tokens_used || 0), 0)}
-        />
-      )}
     </div>
   );
 };
