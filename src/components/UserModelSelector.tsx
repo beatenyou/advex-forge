@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown, Bot, Zap, Sparkles, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useUserModelAccess } from '@/hooks/useUserModelAccess';
 import { useModelQuotas } from '@/hooks/useModelQuotas';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export function UserModelSelector({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
@@ -92,6 +93,31 @@ export function UserModelSelector({ compact = false }: { compact?: boolean }) {
       setRefreshing(false);
     }
   };
+
+  // Listen for admin default provider changes and refresh automatically
+  useEffect(() => {
+    const handleDefaultProviderChanged = () => {
+      console.log('🔄 UserModelSelector: Default provider changed, refreshing models');
+      handleRefresh();
+    };
+
+    const channel = supabase
+      .channel('default-provider-listener')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public', 
+        table: 'ai_chat_config'
+      }, handleDefaultProviderChanged)
+      .subscribe();
+
+    // Also listen for broadcast notifications
+    window.addEventListener('defaultProviderChanged', handleDefaultProviderChanged);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('defaultProviderChanged', handleDefaultProviderChanged);
+    };
+  }, []);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

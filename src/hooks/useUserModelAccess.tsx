@@ -304,9 +304,28 @@ export function useUserModelAccess() {
       }
     };
 
+    // Listen for default provider changes from admin
+    const handleDefaultProviderChanged = () => {
+      console.log('🔄 useUserModelAccess: Default provider changed, reloading models');
+      loadModels();
+    };
+
+    const channel = supabase
+      .channel('default-provider-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'ai_chat_config'
+      }, handleDefaultProviderChanged)
+      .subscribe();
+
     window.addEventListener('aiSystemRefresh', handleAISystemRefresh as EventListener);
+    window.addEventListener('defaultProviderChanged', handleDefaultProviderChanged as EventListener);
+    
     return () => {
       window.removeEventListener('aiSystemRefresh', handleAISystemRefresh as EventListener);
+      window.removeEventListener('defaultProviderChanged', handleDefaultProviderChanged as EventListener);
+      supabase.removeChannel(channel);
     };
   }, [selectedModelId]);
 

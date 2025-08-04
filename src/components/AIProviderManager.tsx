@@ -333,6 +333,15 @@ const AIProviderManager = () => {
     if (!config) return;
 
     try {
+      // Use the new admin function to update defaults and clear user preferences
+      const { error: adminError } = await supabase.rpc('admin_update_default_provider', {
+        new_primary_model_id: config.default_user_primary_model_id,
+        new_secondary_model_id: config.default_user_secondary_model_id
+      });
+
+      if (adminError) throw adminError;
+
+      // Update other config settings normally
       const { error } = await supabase
         .from('ai_chat_config')
         .update({
