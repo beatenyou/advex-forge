@@ -356,16 +356,40 @@ export function useUserModelAccess() {
   useEffect(() => {
     const loadSavedPreference = async () => {
       if (userModels.length > 0 && !selectedModelId && user) {
-        const savedModelId = await loadUserModelPreference();
+        // First check for admin-configured default
+        const { data: configData, error: configError } = await supabase
+          .from('ai_chat_config')
+          .select('default_user_primary_model_id')
+          .single();
+
+        let priorityModelId = null;
         
-        if (savedModelId && userModels.find(m => m.provider_id === savedModelId)) {
-          console.log('🔄 Restoring saved model from database:', savedModelId);
-          setSelectedModelId(savedModelId);
-        } else if (userModels.length > 0) {
-          // Set first available model as default
-          const defaultModel = userModels[0];
-          console.log('🎯 Setting default model:', defaultModel.provider_id);
-          setSelectedModelId(defaultModel.provider_id);
+        // If admin has set a default and user has access to it, use admin default
+        if (configData?.default_user_primary_model_id) {
+          const adminDefaultAvailable = userModels.find(m => m.provider_id === configData.default_user_primary_model_id);
+          if (adminDefaultAvailable) {
+            console.log('🎯 Using admin-configured default model:', configData.default_user_primary_model_id);
+            priorityModelId = configData.default_user_primary_model_id;
+          }
+        }
+        
+        // Only check user preference if no admin default available
+        if (!priorityModelId) {
+          const savedModelId = await loadUserModelPreference();
+          if (savedModelId && userModels.find(m => m.provider_id === savedModelId)) {
+            console.log('🔄 Restoring saved user preference:', savedModelId);
+            priorityModelId = savedModelId;
+          }
+        }
+        
+        // Fallback to first available model
+        if (!priorityModelId && userModels.length > 0) {
+          priorityModelId = userModels[0].provider_id;
+          console.log('🎯 Using first available model as fallback:', priorityModelId);
+        }
+        
+        if (priorityModelId) {
+          setSelectedModelId(priorityModelId);
         }
       }
     };
