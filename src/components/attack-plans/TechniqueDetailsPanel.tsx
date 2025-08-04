@@ -24,9 +24,10 @@ interface Technique {
 
 interface TechniqueDetailsPanelProps {
   selectedNode: Node | null;
+  onAskAI?: (technique: Technique) => void;
 }
 
-export const TechniqueDetailsPanel: React.FC<TechniqueDetailsPanelProps> = ({ selectedNode }) => {
+export const TechniqueDetailsPanel: React.FC<TechniqueDetailsPanelProps> = ({ selectedNode, onAskAI }) => {
   if (!selectedNode) {
     return (
       <div className="h-full flex flex-col">
@@ -199,7 +200,12 @@ export const TechniqueDetailsPanel: React.FC<TechniqueDetailsPanelProps> = ({ se
 
             {/* AI Chat Integration */}
             <div className="pt-4">
-              <Button className="w-full" variant="outline">
+              <Button 
+                className="w-full" 
+                variant="outline"
+                onClick={() => onAskAI?.(technique)}
+                disabled={!onAskAI}
+              >
                 <MessageSquare className="w-4 h-4 mr-2" />
                 Ask AI about this technique
               </Button>

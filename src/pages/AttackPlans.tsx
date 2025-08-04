@@ -24,6 +24,7 @@ import { Crown, Save, Download, Plus, FileText, FileSpreadsheet, Lock, ArrowLeft
 import { useNavigate } from 'react-router-dom';
 import { TechniquePalette } from '@/components/attack-plans/TechniquePalette';
 import { TechniqueDetailsPanel } from '@/components/attack-plans/TechniqueDetailsPanel';
+import { TechniqueAIChatDrawer } from '@/components/attack-plans/TechniqueAIChatDrawer';
 import { AttackPlanCanvas } from '@/components/attack-plans/AttackPlanCanvas';
 
 interface AttackPlan {
@@ -73,6 +74,10 @@ const AttackPlansPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [reactFlowInstance, setReactFlowInstance] = useState<ReactFlowInstance | null>(null);
   const nodeCounter = useRef(0);
+  
+  // AI Chat Drawer state
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+  const [selectedTechnique, setSelectedTechnique] = useState<any>(null);
 
   // Session storage persistence for state
   useEffect(() => {
@@ -196,6 +201,12 @@ const AttackPlansPage: React.FC = () => {
     };
     
     setNodes((nds) => [...nds, newNode]);
+  };
+
+  // Handle AI chat request for a technique
+  const handleAskAI = (technique: any) => {
+    setSelectedTechnique(technique);
+    setAiChatOpen(true);
   };
 
   const handleCanvasDrop = (event: React.DragEvent) => {
@@ -914,9 +925,19 @@ const AttackPlansPage: React.FC = () => {
 
         {/* Right Sidebar - Technique Details */}
         <div className="w-96 border-l bg-card">
-          <TechniqueDetailsPanel selectedNode={selectedNode} />
+          <TechniqueDetailsPanel 
+            selectedNode={selectedNode} 
+            onAskAI={handleAskAI}
+          />
         </div>
       </div>
+
+      {/* AI Chat Drawer */}
+      <TechniqueAIChatDrawer
+        technique={selectedTechnique}
+        open={aiChatOpen}
+        onOpenChange={setAiChatOpen}
+      />
     </div>
   );
 };
