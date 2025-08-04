@@ -53,14 +53,35 @@ export const AIQAWidget = () => {
 
     setIsLoading(true);
     try {
-      // Call the AI chat router function with hybrid approach
+      // Generate unique IDs for this Q&A session
+      const sessionId = `qa-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const conversationId = sessionId;
+      const requestId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      
+      // Get user's default model or use OpenAI as fallback
+      const { data: configData } = await supabase
+        .from('ai_chat_config')
+        .select('default_user_primary_model_id')
+        .single();
+      
+      const selectedModelId = configData?.default_user_primary_model_id || '';
+      
+      // Call the AI chat router function with complete request structure
       const { data, error } = await supabase.functions.invoke('ai-chat-router', {
         body: {
-          message: question
+          message: question,
+          selectedModelId: selectedModelId,
+          sessionId: sessionId,
+          conversationId: conversationId,
+          requestId: requestId,
+          timestamp: new Date().toISOString(),
+          messages: [{ role: 'user', content: question }]
         },
         // Add fallback headers for Supabase infrastructure issue
         headers: {
           'X-Message': encodeURIComponent(question),
+          'X-Model-Id': selectedModelId,
+          'X-Session-Id': sessionId,
           'X-Simple-Mode': 'true'
         }
       });

@@ -137,12 +137,12 @@ serve(async (req) => {
       }
     }
     
-    // Validate reconstructed request data
+    // Validate reconstructed request data (updated after simple mode processing)
     const message = requestData.message || '';
     const messages = requestData.messages || [];
-    const selectedModelId = requestData.selectedModelId || '';
-    const sessionId = requestData.sessionId || '';
-    const conversationId = requestData.conversationId || sessionId;
+    let selectedModelId = requestData.selectedModelId || '';
+    let sessionId = requestData.sessionId || '';
+    let conversationId = requestData.conversationId || sessionId;
     
     console.log('📋 Final request validation:', {
       hasMessage: message.length > 0,
@@ -152,17 +152,47 @@ serve(async (req) => {
       messagePreview: message.substring(0, 50)
     });
     
-    // Enhanced validation with specific error messages
+    // Check for simple mode header (for Q&A widgets)
+    const isSimpleMode = req.headers.get('X-Simple-Mode') === 'true';
+    console.log('🎯 Simple mode detected:', isSimpleMode);
+    
+    // Enhanced validation with simple mode support
     if (!message && (!messages || messages.length === 0)) {
       throw new Error('Request validation failed: No message content provided. This usually indicates a request body transmission issue.');
     }
     
-    if (!selectedModelId) {
-      throw new Error('Request validation failed: No AI model selected. Please ensure a model is selected before sending messages.');
-    }
-    
-    if (!sessionId) {
-      throw new Error('Request validation failed: No session ID provided. Please ensure the chat session is properly initialized.');
+    // Relaxed validation for simple mode (Q&A widgets)
+    if (!isSimpleMode) {
+      if (!selectedModelId) {
+        throw new Error('Request validation failed: No AI model selected. Please ensure a model is selected before sending messages.');
+      }
+      
+      if (!sessionId) {
+        throw new Error('Request validation failed: No session ID provided. Please ensure the chat session is properly initialized.');
+      }
+    } else {
+      // Simple mode: provide defaults if missing
+      if (!selectedModelId) {
+        console.log('🔧 Simple mode: Getting default model for user');
+        const { data: defaultConfig } = await supabase
+          .from('ai_chat_config')
+          .select('default_user_primary_model_id')
+          .single();
+        
+        if (defaultConfig?.default_user_primary_model_id) {
+          selectedModelId = defaultConfig.default_user_primary_model_id;
+          requestData.selectedModelId = selectedModelId;
+          console.log('✅ Simple mode: Using default model:', selectedModelId);
+        }
+      }
+      
+      if (!sessionId) {
+        sessionId = `simple-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        conversationId = sessionId;
+        requestData.sessionId = sessionId;
+        requestData.conversationId = conversationId;
+        console.log('✅ Simple mode: Generated session ID:', sessionId);
+      }
     }
     
     // Check AI quota with enhanced error handling
