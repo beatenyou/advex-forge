@@ -2209,6 +2209,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      reset_user_to_admin_defaults: {
+        Args: { target_user_id: string }
+        Returns: boolean
+      }
       validate_session_health: {
         Args: { p_user_id: string; p_session_id: string }
         Returns: {
