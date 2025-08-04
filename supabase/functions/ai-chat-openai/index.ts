@@ -12,6 +12,19 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Health check endpoint
+  if (req.url.includes('/health') || req.method === 'GET') {
+    const hasApiKey = !!Deno.env.get('OPENAI_API_KEY');
+    return new Response(JSON.stringify({ 
+      status: hasApiKey ? 'healthy' : 'unhealthy',
+      provider: 'openai',
+      timestamp: new Date().toISOString(),
+      hasApiKey
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+    });
+  }
+
   try {
     console.log('ai-chat-openai: Processing request');
     
