@@ -1900,6 +1900,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      admin_update_default_provider: {
+        Args: {
+          new_primary_model_id: string
+          new_secondary_model_id?: string
+          admin_user_id?: string
+        }
+        Returns: boolean
+      }
       allocate_organization_credits: {
         Args: {
           org_id: string
@@ -2065,6 +2073,14 @@ export type Database = {
           quota_used: number
           quota_limit: number
           plan_name: string
+        }[]
+      }
+      get_user_effective_model: {
+        Args: { target_user_id: string }
+        Returns: {
+          provider_id: string
+          provider_name: string
+          is_user_preference: boolean
         }[]
       }
       get_user_organization_context: {
