@@ -11,6 +11,10 @@ import { MarkdownRenderer } from "./MarkdownRenderer";
 import { useAIUsage } from "@/hooks/useAIUsage";
 import { useUserModelAccess } from "@/hooks/useUserModelAccess";
 import { useAnalytics } from "@/hooks/useAnalytics";
+import { useAIChatDebugger } from "@/hooks/useAIChatDebugger";
+import { useAIChatErrorHandler } from "@/hooks/useAIChatErrorHandler";
+import { useReliableAIChat } from "@/hooks/useReliableAIChat";
+import { ChatDebugPanel } from "./ChatDebugPanel";
 import TextareaAutosize from 'react-textarea-autosize';
 
 interface ChatMessage {
@@ -42,6 +46,28 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
   const { toast } = useToast();
   const { trackActivity } = useAnalytics();
   
+  // Enhanced debugging and error handling
+  const {
+    debugMode,
+    startRequestTracking,
+    endRequestTracking,
+    logError,
+    logStateTransition,
+    updateSessionDebugInfo
+  } = useAIChatDebugger();
+  
+  const {
+    handleError,
+    attemptAutoRecovery
+  } = useAIChatErrorHandler();
+  
+  // Reliable AI chat with enhanced retry logic
+  const reliableAIChat = useReliableAIChat({
+    maxRetries: 3,
+    retryDelay: 1000,
+    useProgressiveFallback: true
+  });
+  
   // Core state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentSession, setCurrentSession] = useState<ChatSession | null>(null);
@@ -52,7 +78,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
   const [collapsedMessages, setCollapsedMessages] = useState<Record<string, boolean>>({});
   
   // AI usage and model state
-  const { canUseAI, currentUsage, quotaLimit, refreshQuota, planName } = useAIUsage();
+  const { canUseAI, currentUsage, quotaLimit, incrementUsage, refreshQuota, planName } = useAIUsage();
   const { getSelectedModel } = useUserModelAccess();
   
   // Ref to prevent multiple requests
@@ -231,53 +257,78 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
     // Basic validation
     if (!question.trim()) {
       console.log('❌ Empty question submitted');
+      logStateTransition('idle', 'validation_failed', { reason: 'empty_question' });
       return;
     }
 
     if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please log in to use the AI chat.",
-        variant: "destructive",
-      });
+      const error = new Error('Authentication required');
+      handleError(error, { requestId: `auth-${Date.now()}` });
+      logStateTransition('idle', 'auth_error');
       return;
     }
 
     if (!currentSession) {
-      toast({
-        title: "Session Error",
-        description: "No chat session available. Please refresh the page.",
-        variant: "destructive",
-      });
+      const error = new Error('No chat session available');
+      handleError(error, { sessionId: 'none' });
+      logStateTransition('idle', 'session_error');
       return;
     }
 
     // Check AI quota
     if (!canUseAI) {
+      const error = new Error(`AI usage limit reached: ${planName} plan (${quotaLimit} interactions)`);
+      handleError(error, { sessionId: currentSession.id }, false);
       toast({
         title: "AI Usage Limit Reached",
         description: `You've reached your ${planName} plan limit of ${quotaLimit} AI interactions this month.`,
         variant: "destructive"
       });
+      logStateTransition('idle', 'quota_exceeded', { planName, quotaLimit });
       return;
     }
 
     // Prevent multiple simultaneous requests
     if (isRequestActiveRef.current) {
       console.log('⚠️ Request already in progress, ignoring new submission');
+      logStateTransition('processing', 'request_blocked', { reason: 'already_processing' });
       return;
     }
 
     const userQuestion = question.trim();
+    const requestId = `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
     setQuestion(''); // Clear input immediately
     isRequestActiveRef.current = true;
     setIsLoading(true);
+    
+    logStateTransition('idle', 'processing', { 
+      requestId, 
+      messageLength: userQuestion.length,
+      sessionId: currentSession.id 
+    });
 
     console.log('🚀 Starting AI request - User:', user.id, 'Session:', currentSession.id);
 
     try {
-      // Save user message immediately
-      const userMessage = await saveMessage(currentSession.id, 'user', userQuestion);
+      // Start request tracking
+      const currentSelectedModel = getSelectedModel();
+      const modelIdToUse = currentSelectedModel?.provider_id;
+      const modelName = 'AI Model'; // Simplified for now
+      
+      if (!modelIdToUse) {
+        throw new Error('No AI model selected. Please select a model first.');
+      }
+      
+      startRequestTracking(requestId, modelIdToUse, modelName);
+      logStateTransition('processing', 'saving_user_message');
+
+      // Save user message immediately with error handling
+      const userMessage = await attemptAutoRecovery(
+        () => saveMessage(currentSession.id, 'user', userQuestion),
+        2,
+        500
+      );
       setMessages(prev => [...prev, userMessage as ChatMessage]);
 
       // Update session title if this is the first message
@@ -285,104 +336,152 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
         await updateSessionTitle(currentSession.id, userQuestion);
       }
 
-      // Get the selected model
-      const currentSelectedModel = getSelectedModel();
-      const modelIdToUse = currentSelectedModel?.provider_id;
+      logStateTransition('saving_user_message', 'preparing_ai_request', { modelId: modelIdToUse });
       
-      console.log('🤖 Making AI request with model:', modelIdToUse);
-      
-      // Validate model selection
-      if (!modelIdToUse) {
-        throw new Error('No AI model selected. Please select a model first.');
-      }
-      
-      // Prepare request payload - exactly like SimpleChatTest
+      // Prepare request payload for reliable AI chat
       const requestPayload = {
         message: userQuestion,
         sessionId: currentSession.id,
-        selectedModelId: modelIdToUse
+        selectedModelId: modelIdToUse,
+        conversationHistory: messages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        })),
+        conversationId: currentSession.id,
+        requestId,
+        timestamp: new Date().toISOString()
       };
-      
-      console.log('🚀 Making AI request:', requestPayload);
 
-      // Make the request - exactly like SimpleChatTest
-      const { data, error } = await supabase.functions.invoke('ai-chat-router', {
-        body: requestPayload
+      console.log('📤 Request payload prepared:', {
+        messageLength: userQuestion.length,
+        historyLength: messages.length,
+        modelId: modelIdToUse,
+        sessionId: currentSession.id,
+        requestId
       });
 
-      if (error) {
-        console.error('❌ AI Chat Router Error:', error);
-        throw error;
+      logStateTransition('preparing_ai_request', 'sending_ai_request');
+
+      // Use reliable AI chat with enhanced error handling and retries
+      const data = await reliableAIChat.sendMessage(requestPayload);
+
+      if (!data) {
+        throw new Error('No response received from AI service');
       }
 
-      if (!data || !data.message) {
-        throw new Error('No response received from AI');
+      console.log('✅ AI response received:', {
+        responseLength: data.response?.length,
+        success: data.success,
+        provider: data.provider_used,
+        tokensUsed: data.tokens_used,
+        requestId
+      });
+
+      // Validate response
+      if (!data.success || !data.response) {
+        throw new Error(data.error || 'Invalid response from AI service');
       }
 
-      console.log('✅ AI response received:', data);
+      logStateTransition('sending_ai_request', 'processing_response');
 
-      // Save AI response immediately - no streaming simulation
-      const aiMessage = await saveMessage(
-        currentSession.id, 
-        'assistant', 
-        data.message,
-        data.providerName,
-        data.tokensUsed
+      // Increment AI usage with error handling
+      const usageIncremented = await attemptAutoRecovery(
+        () => incrementUsage(),
+        2,
+        500
       );
       
-      setMessages(prev => [...prev, aiMessage as ChatMessage]);
-
-      // Auto-collapse long AI responses
-      const shouldAutoCollapse = (
-        data.message.length > 500 ||
-        data.message.split('\n').length > 8 ||
-        (data.message.match(/```/g) || []).length >= 2 ||
-        (data.message.match(/^[\s]*[-\*\+]\s/gm) || []).length > 5
-      );
-
-      if (shouldAutoCollapse) {
-        setCollapsedMessages(prev => ({
-          ...prev,
-          [aiMessage.id]: true
-        }));
+      if (!usageIncremented) {
+        console.warn('⚠️ Failed to increment AI usage, but continuing...');
       }
 
-      // Track successful AI response
-      await trackActivity('ai_response_received', `Received response from ${data.providerName || 'unknown'}`);
+      // Save assistant message with error handling
+      const assistantMessage = await attemptAutoRecovery(
+        () => saveMessage(
+          currentSession.id, 
+          'assistant', 
+          data.response,
+          data.provider_used,
+          data.tokens_used
+        ),
+        2,
+        500
+      );
+      
+      setMessages(prev => [...prev, assistantMessage as ChatMessage]);
 
-      // Update session timestamp
-      await supabase
-        .from('chat_sessions')
-        .update({ updated_at: new Date().toISOString() })
-        .eq('id', currentSession.id);
+      // End request tracking with success
+      endRequestTracking(
+        requestId,
+        modelIdToUse,
+        true,
+        data.tokens_used,
+        undefined,
+        undefined,
+        reliableAIChat.retryCount
+      );
 
-      // Refresh quota after successful use
-      await refreshQuota();
+      logStateTransition('processing_response', 'completed', {
+        tokensUsed: data.tokens_used,
+        provider: data.provider_used,
+        retryCount: reliableAIChat.retryCount
+      });
+
+      // Update session debug info
+      updateSessionDebugInfo(
+        currentSession.id,
+        messages.length + 2, // +2 for user and assistant messages just added
+        (messages.reduce((sum, msg) => sum + (msg.tokens_used || 0), 0)) + (data.tokens_used || 0)
+      );
+
+      console.log('✅ Chat interaction completed successfully');
+      
+      // Track successful interaction
+      await trackActivity('ai_interaction_success', 
+        `Provider: ${data.provider_used}, Tokens: ${data.tokens_used || 0}, Retries: ${reliableAIChat.retryCount}`
+      );
 
     } catch (error: any) {
-      console.error('❌ AI Chat Error:', error);
+      console.error('🔥 AI request failed:', error);
+      
+      // Get model info for error tracking
+      const currentSelectedModel = getSelectedModel();
+      const modelIdForError = currentSelectedModel?.provider_id || 'unknown';
+      
+      // End request tracking with failure
+      endRequestTracking(
+        requestId,
+        modelIdForError,
+        false,
+        undefined,
+        error.name || 'unknown_error',
+        error.message,
+        reliableAIChat.retryCount
+      );
 
-      await trackActivity('ai_response_error', `AI response failed: ${error.message}`);
-      
-      // Simplified error handling
-      let errorTitle = "AI Chat Error";
-      let errorDescription = error.message || "Failed to get AI response. Please try again.";
-      
-      // Handle quota errors specifically
-      if (error.message?.includes('quota exceeded')) {
-        errorTitle = "AI Limit Reached";
-        errorDescription = "You've reached your AI interaction limit. Purchase more credits in your billing preferences to continue using AI features.";
-      }
-      
-      toast({
-        title: errorTitle,
-        description: errorDescription,
-        variant: "destructive",
+      // Handle error with user-friendly messaging
+      handleError(error, {
+        requestId,
+        sessionId: currentSession.id,
+        modelId: modelIdForError,
+        userMessage: userQuestion
       });
+
+      logStateTransition('sending_ai_request', 'error', {
+        errorType: error.name,
+        errorMessage: error.message,
+        retryCount: reliableAIChat.retryCount
+      });
+      
+      // Track failed interaction
+      await trackActivity('ai_interaction_failed', 
+        `Error: ${error.message}, Retries: ${reliableAIChat.retryCount}`
+      );
+      
     } finally {
-      // Clean up states
       isRequestActiveRef.current = false;
       setIsLoading(false);
+      logStateTransition('processing', 'idle');
     }
   };
 
@@ -621,6 +720,13 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
           </div>
         )}
       </div>
+
+      {/* Debug Panel - only show in development or when debug mode is enabled */}
+      <ChatDebugPanel 
+        sessionId={currentSession?.id}
+        messageCount={messages.length}
+        totalTokensUsed={messages.reduce((sum, msg) => sum + (msg.tokens_used || 0), 0)}
+      />
     </div>
   );
 };
