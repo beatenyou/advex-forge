@@ -49,8 +49,8 @@ export const TechniqueAIChatDrawer: React.FC<TechniqueAIChatDrawerProps> = ({
     if (technique && open) {
       const prompt = generateTechniquePrompt(technique);
       setInitialPrompt(prompt);
-      // Reset session to start fresh for each technique
-      setSessionId(null);
+      // Don't reset session to null - let ChatSession manage it properly
+      // This ensures the same battle-tested session management as sidebar/fullscreen
     }
   }, [technique, open]);
 
