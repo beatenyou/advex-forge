@@ -1,12 +1,10 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-message, x-model-id, x-session-id, x-simple-mode, x-conversation-history, x-request-id, x-user-id, x-timestamp, x-client-version, x-message-length, x-messages-count, x-validation-token, x-conversation-id, x-agent-id, x-model-name, x-debug-provider, x-debug-type, x-debug-timestamp',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'Access-Control-Max-Age': '86400',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-message, x-model-id, x-session-id',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
 };
 
 const supabase = createClient(
@@ -15,277 +13,153 @@ const supabase = createClient(
 );
 
 serve(async (req) => {
-  // Handle CORS preflight requests
+  console.log('🚀 AI Router starting - Method:', req.method);
+
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
+    console.log('✅ CORS preflight handled');
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Add simple health check endpoint
-  const url = new URL(req.url);
-  if (url.pathname === '/health' || req.method === 'GET') {
-    console.log('🏥 Health check requested');
+  // Health check
+  if (req.url.includes('/health') || req.method === 'GET') {
+    console.log('✅ Health check OK');
     return new Response(JSON.stringify({ 
-      status: 'healthy', 
-      service: 'ai-chat-router',
-      timestamp: new Date().toISOString(),
-      version: '1.0.0'
+      status: 'healthy',
+      timestamp: new Date().toISOString()
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
   }
 
-  console.log('🚀 AI Chat Router: Request received', { 
-    method: req.method, 
-    url: req.url,
-    hasAuth: !!req.headers.get('authorization')
-  });
-
   try {
-    // Simplified authentication
+    // Basic auth
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      throw new Error('Authentication required');
+      throw new Error('No auth header');
     }
 
-    const authToken = authHeader.replace('Bearer ', '');
-    const { data: userData, error: userError } = await supabase.auth.getUser(authToken);
+    const { data: userData, error: userError } = await supabase.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
     
-    if (userError || !userData.user) {
-      throw new Error('Invalid authentication token');
+    if (userError || !userData?.user) {
+      throw new Error('Auth failed');
     }
 
     const userId = userData.user.id;
+    console.log('✅ User authenticated:', userId);
     
-    // Simplified request parsing
+    // Parse request
     let requestData: any = {};
     
     try {
       const body = await req.text();
-      if (body) {
-        requestData = JSON.parse(body);
-      }
-    } catch (error) {
-      // Fallback to headers
-      const message = req.headers.get('X-Message');
-      const modelId = req.headers.get('X-Model-Id');
-      const sessionId = req.headers.get('X-Session-Id');
-      
-      if (message) {
+      requestData = body ? JSON.parse(body) : {};
+    } catch {
+      // Try headers as fallback
+      const headerMessage = req.headers.get('X-Message');
+      if (headerMessage) {
         requestData = {
-          message: decodeURIComponent(message),
-          selectedModelId: modelId || '',
-          sessionId: sessionId || `simple-${Date.now()}`
+          message: decodeURIComponent(headerMessage),
+          selectedModelId: req.headers.get('X-Model-Id') || '',
+          sessionId: req.headers.get('X-Session-Id') || `session-${Date.now()}`
         };
       }
     }
     
-    // Basic validation and defaults
     const message = requestData.message || '';
-    let selectedModelId = requestData.selectedModelId || '';
-    let sessionId = requestData.sessionId || `session-${Date.now()}`;
-    
     if (!message) {
-      throw new Error('No message provided');
+      throw new Error('No message');
     }
     
-    // Simple mode defaults
-    if (!selectedModelId) {
-      const { data: config } = await supabase
-        .from('ai_chat_config')
-        .select('default_user_primary_model_id')
-        .single();
-      selectedModelId = config?.default_user_primary_model_id || '';
-    }
+    console.log('✅ Message parsed:', message.substring(0, 50) + '...');
     
-    // Check AI quota with enhanced error handling
-    console.log('🔍 Checking AI quota for user:', userId);
+    // Quick quota check
     const { data: quotaData, error: quotaError } = await supabase.rpc('check_ai_quota', {
       user_id_param: userId
     });
 
-    if (quotaError) {
-      console.error('❌ Quota check failed:', quotaError);
-      throw new Error('Failed to check AI usage quota: ' + quotaError.message);
-    }
-
-    if (!quotaData || quotaData.length === 0 || !quotaData[0].can_use_ai) {
-      console.log('⚠️ Quota exceeded for user:', userId, quotaData?.[0]);
-      return new Response(JSON.stringify({ 
-        error: 'AI usage quota exceeded',
-        quota_exceeded: true,
-        current_usage: quotaData?.[0]?.current_usage || 0,
-        quota_limit: quotaData?.[0]?.quota_limit || 50,
-        plan_name: quotaData?.[0]?.plan_name || 'Unknown'
-      }), {
-        status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (quotaError || !quotaData?.[0]?.can_use_ai) {
+      throw new Error('Quota exceeded');
     }
     
-    console.log('✅ Quota check passed:', {
-      currentUsage: quotaData[0].current_usage,
-      quotaLimit: quotaData[0].quota_limit,
-      planName: quotaData[0].plan_name
-    });
+    console.log('✅ Quota OK');
 
-    console.log('🎯 Processing validated request:', { 
-      userId, 
-      selectedModelId, 
-      messageLength: message.length,
-      sessionId: sessionId
-    });
-
-    // Get AI configuration
-    const { data: config, error: configError } = await supabase
+    // Get default provider (simplified)
+    const { data: config } = await supabase
       .from('ai_chat_config')
-      .select('*')
-      .eq('is_enabled', true)
+      .select('default_user_primary_model_id, system_prompt, max_tokens, temperature')
       .single();
-
-    if (configError || !config) {
-      throw new Error('AI chat is not configured or disabled');
-    }
-
-    // Check if user is admin
-    const { data: profileData } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('user_id', userId)
-      .single();
-
-    const isAdmin = profileData?.role === 'admin';
-    let targetProviderId = null;
-
-    if (selectedModelId) {
-      // User has selected a specific model - verify access
-      if (isAdmin) {
-        // Admin can use any active model
-        const { data: selectedProvider } = await supabase
-          .from('ai_providers')
-          .select('*')
-          .eq('id', selectedModelId)
-          .eq('is_active', true)
-          .single();
-
-        if (selectedProvider) {
-          targetProviderId = selectedModelId;
-          console.log('Admin using selected model:', selectedProvider.name);
-        }
-      } else {
-        // Regular user - check model access
-        const { data: userAccess } = await supabase
-          .from('user_model_access')
-          .select('provider_id, ai_providers!inner(name, type, is_active)')
-          .eq('user_id', userId)
-          .eq('provider_id', selectedModelId)
-          .eq('is_enabled', true)
-          .eq('ai_providers.is_active', true)
-          .single();
-
-        if (userAccess && userAccess.ai_providers) {
-          targetProviderId = selectedModelId;
-          console.log('User using selected model:', userAccess.ai_providers.name);
-        }
-      }
-    }
-
-    // Fallback if no valid selection
+    
+    let targetProviderId = requestData.selectedModelId || config?.default_user_primary_model_id;
+    
     if (!targetProviderId) {
-      if (isAdmin) {
-        // Admin fallback to first active model
-        const { data: firstProvider } = await supabase
-          .from('ai_providers')
-          .select('id, name')
-          .eq('is_active', true)
-          .limit(1)
-          .single();
-        targetProviderId = firstProvider?.id;
-        console.log('Admin fallback to:', firstProvider?.name);
-      } else {
-        // Regular user - get first available model
-        const { data: userModels } = await supabase
-          .from('user_model_access')
-          .select('provider_id, ai_providers!inner(id, is_active)')
-          .eq('user_id', userId)
-          .eq('is_enabled', true)
-          .eq('ai_providers.is_active', true)
-          .limit(1)
-          .single();
-
-        if (userModels) {
-          targetProviderId = userModels.provider_id;
-          console.log('User fallback to provider:', targetProviderId);
-        }
-      }
+      // Fallback to first available provider
+      const { data: firstProvider } = await supabase
+        .from('ai_providers')
+        .select('id')
+        .eq('is_active', true)
+        .limit(1)
+        .single();
+      targetProviderId = firstProvider?.id;
     }
 
     if (!targetProviderId) {
-      throw new Error('No AI provider available for this user');
+      throw new Error('No provider available');
     }
 
-    // Get provider details
-    const { data: provider, error: providerError } = await supabase
+    console.log('✅ Using provider:', targetProviderId);
+
+    // Get provider
+    const { data: provider } = await supabase
       .from('ai_providers')
-      .select('*')
+      .select('type, model_name, base_url')
       .eq('id', targetProviderId)
-      .eq('is_active', true)
       .single();
 
-    if (providerError || !provider) {
-      throw new Error('AI provider not found or inactive');
+    if (!provider) {
+      throw new Error('Provider not found');
     }
 
-    console.log('Using provider:', provider.name, 'Type:', provider.type);
-
-    // Route to appropriate provider function with enhanced error handling
+    // Route to provider function
     const functionName = provider.type === 'openai' ? 'ai-chat-openai' : 'ai-chat-mistral';
-    console.log('🔗 Routing to provider function:', functionName, 'for provider:', provider.name);
+    console.log('✅ Calling:', functionName);
     
-    // Simple conversation setup
-    const conversationMessages = requestData.messages || [{ role: 'user', content: message }];
-    
-    // Basic payload for provider function
-    const providerPayload = {
-      message: message,
-      messages: conversationMessages,
+    const payload = {
+      message,
       model: provider.model_name,
-      systemPrompt: config.system_prompt,
-      maxTokens: config.max_tokens,
-      temperature: parseFloat(config.temperature),
-      agentId: provider.agent_id,
-      conversationId: sessionId,
-      baseUrl: provider.base_url
+      systemPrompt: config?.system_prompt || 'You are a helpful assistant.',
+      maxTokens: config?.max_tokens || 1000,
+      temperature: parseFloat(config?.temperature || '0.7')
     };
     
-    console.log('📤 Calling provider:', functionName);
-    
-    // Call provider function
-    const providerResponse = await supabase.functions.invoke(functionName, {
-      body: providerPayload
+    const { data, error } = await supabase.functions.invoke(functionName, {
+      body: payload
     });
 
-    if (providerResponse.error) {
-      throw new Error(providerResponse.error.message);
+    if (error) {
+      throw new Error(`Provider error: ${error.message}`);
     }
 
-    if (!providerResponse.data) {
-      throw new Error('No response from AI provider');
+    if (!data) {
+      throw new Error('No response from provider');
     }
 
-    const result = providerResponse.data;
-    
     // Track usage
     await supabase.rpc('increment_ai_usage', { user_id_param: userId });
 
-    return new Response(JSON.stringify(result), {
+    console.log('✅ Success!');
+    
+    return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
-  } catch (error) {
-    console.error('❌ Router error:', error);
+  } catch (error: any) {
+    console.error('❌ Error:', error.message);
     
     return new Response(JSON.stringify({ 
-      error: error.message || 'Internal server error' 
+      error: error.message || 'Server error' 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

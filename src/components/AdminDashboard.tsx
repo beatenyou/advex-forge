@@ -27,6 +27,8 @@ import { OrganizationManager } from "@/components/enterprise/OrganizationManager
 import { BulkUserManager } from "@/components/enterprise/BulkUserManager";
 import { EnterpriseAnalytics } from "@/components/enterprise/EnterpriseAnalytics";
 import { OrganizationProvider } from "@/hooks/useOrganizationContext";
+import { AIFunctionMonitor } from "@/components/AIFunctionMonitor";
+import { SimpleChatTest } from "@/components/SimpleChatTest";
 
 interface AdminDashboardProps {
   onClose: () => void;
@@ -496,7 +498,11 @@ export const AdminDashboard = ({ onClose }: AdminDashboardProps) => {
             </TabsContent>
 
             <TabsContent value="ai-providers" className="space-y-6 overflow-y-auto max-h-[calc(90vh-200px)]">
-              <AIProviderManager />
+              <div className="space-y-6">
+                <AIFunctionMonitor />
+                <SimpleChatTest />
+                <AIProviderManager />
+              </div>
             </TabsContent>
 
             <TabsContent value="model-access" className="space-y-6 overflow-y-auto max-h-[calc(90vh-200px)]">
