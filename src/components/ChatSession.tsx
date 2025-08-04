@@ -46,7 +46,8 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
   const { toast } = useToast();
   const { trackActivity } = useAnalytics();
   
-  // Simplified debugging to fix network issues
+  // Optional debugging - can be disabled if causing issues
+  const [debugEnabled, setDebugEnabled] = useState(false);
   const aiDebugger = useAIChatDebugger();
   const errorHandler = useAIChatErrorHandler();
   
@@ -73,11 +74,48 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
   // Ref to prevent multiple requests
   const isRequestActiveRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
-  // Auto-scroll to bottom
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
+  // Smart scrolling - only scroll if user is at bottom
+  const scrollToBottom = useCallback((force = false) => {
+    if (!messagesEndRef.current || (!shouldAutoScroll && !force)) return;
+    
+    // Check if user is near the bottom before auto-scrolling
+    if (scrollAreaRef.current && !force) {
+      const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollContainer) {
+        const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+        const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+        
+        if (!isNearBottom && !isUserScrolledUp) {
+          setIsUserScrolledUp(true);
+          return;
+        }
+      }
+    }
+    
+    messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    setIsUserScrolledUp(false);
+  }, [shouldAutoScroll, isUserScrolledUp]);
+
+  // Handle scroll events to detect user scrolling
+  const handleScroll = useCallback(() => {
+    if (!scrollAreaRef.current) return;
+    
+    const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
+    if (scrollContainer) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 50;
+      
+      if (isAtBottom && isUserScrolledUp) {
+        setIsUserScrolledUp(false);
+      } else if (!isAtBottom && !isUserScrolledUp) {
+        setIsUserScrolledUp(true);
+      }
+    }
+  }, [isUserScrolledUp]);
 
   // Load or create session
   useEffect(() => {
@@ -98,10 +136,17 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
     initializeSession();
   }, [user, sessionId]);
 
-  // Auto-scroll when messages change
+  // Only auto-scroll for new messages, not on initial load
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+    if (messages.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      // Only auto-scroll for new assistant messages or if user is at bottom
+      if (lastMessage.role === 'assistant' || !isUserScrolledUp) {
+        const timer = setTimeout(() => scrollToBottom(), 100);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [messages.length, scrollToBottom, isUserScrolledUp]);
 
   const loadSpecificSession = async (sessionId: string) => {
     try {
@@ -302,7 +347,9 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
         throw new Error('No AI model selected. Please select a model first.');
       }
       
-      aiDebugger.startRequestTracking(requestId, modelIdToUse, modelName);
+      if (debugEnabled) {
+        aiDebugger.startRequestTracking(requestId, modelIdToUse, modelName);
+      }
 
       // Save user message immediately
       const userMessage = await saveMessage(currentSession.id, 'user', userQuestion);
@@ -373,20 +420,22 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
       
       setMessages(prev => [...prev, assistantMessage as ChatMessage]);
 
-      // End request tracking with success
-      aiDebugger.endRequestTracking(
-        requestId,
-        modelIdToUse,
-        true,
-        data.tokens_used
-      );
+      // End request tracking with success (only if debugging enabled)
+      if (debugEnabled) {
+        aiDebugger.endRequestTracking(
+          requestId,
+          modelIdToUse,
+          true,
+          data.tokens_used
+        );
 
-      // Update session debug info
-      aiDebugger.updateSessionDebugInfo(
-        currentSession.id,
-        messages.length + 2, // +2 for user and assistant messages just added
-        (messages.reduce((sum, msg) => sum + (msg.tokens_used || 0), 0)) + (data.tokens_used || 0)
-      );
+        // Update session debug info
+        aiDebugger.updateSessionDebugInfo(
+          currentSession.id,
+          messages.length + 2, // +2 for user and assistant messages just added
+          (messages.reduce((sum, msg) => sum + (msg.tokens_used || 0), 0)) + (data.tokens_used || 0)
+        );
+      }
 
       console.log('✅ Chat interaction completed successfully');
       
@@ -402,15 +451,17 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
       const currentSelectedModel = getSelectedModel();
       const modelIdForError = currentSelectedModel?.provider_id || 'unknown';
       
-      // End request tracking with failure
-      aiDebugger.endRequestTracking(
-        requestId,
-        modelIdForError,
-        false,
-        undefined,
-        error.name || 'unknown_error',
-        error.message
-      );
+      // End request tracking with failure (only if debugging enabled)
+      if (debugEnabled) {
+        aiDebugger.endRequestTracking(
+          requestId,
+          modelIdForError,
+          false,
+          undefined,
+          error.name || 'unknown_error',
+          error.message
+        );
+      }
 
       // Handle error with user-friendly messaging
       errorHandler.handleError(error, {
@@ -538,6 +589,23 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
           <Button
             variant="outline"
             size="sm"
+            onClick={() => setDebugEnabled(!debugEnabled)}
+          >
+            Debug {debugEnabled ? 'ON' : 'OFF'}
+          </Button>
+          {isUserScrolledUp && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => scrollToBottom(true)}
+            >
+              <ChevronDown className="h-4 w-4 mr-1" />
+              Scroll to bottom
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setShowHistory(true)}
           >
             <History className="h-4 w-4 mr-1" />
@@ -553,7 +621,11 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
         </div>
       </div>
       
-      <ScrollArea className="flex-1 p-4">
+      <ScrollArea 
+        ref={scrollAreaRef}
+        className="flex-1 p-4"
+        onScrollCapture={handleScroll}
+      >
         <div className="space-y-4">
           {messages.map((message) => (
             <div
@@ -666,12 +738,14 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
         )}
       </div>
 
-      {/* Debug Panel - only show in development or when debug mode is enabled */}
-      <ChatDebugPanel 
-        sessionId={currentSession?.id}
-        messageCount={messages.length}
-        totalTokensUsed={messages.reduce((sum, msg) => sum + (msg.tokens_used || 0), 0)}
-      />
+      {/* Debug Panel - only show when debug mode is enabled */}
+      {debugEnabled && (
+        <ChatDebugPanel 
+          sessionId={currentSession?.id}
+          messageCount={messages.length}
+          totalTokensUsed={messages.reduce((sum, msg) => sum + (msg.tokens_used || 0), 0)}
+        />
+      )}
     </div>
   );
 };
