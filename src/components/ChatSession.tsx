@@ -77,6 +77,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [isUserScrolledUp, setIsUserScrolledUp] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+  const [showScrollToBottomButton, setShowScrollToBottomButton] = useState(false);
 
   // Smart scrolling - only scroll if user is at bottom
   const scrollToBottom = useCallback((force = false) => {
@@ -593,11 +594,12 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
           >
             Debug {debugEnabled ? 'ON' : 'OFF'}
           </Button>
-          {isUserScrolledUp && (
+          {showScrollToBottomButton && (
             <Button
               variant="outline"
               size="sm"
               onClick={() => scrollToBottom(true)}
+              className="text-xs"
             >
               <ChevronDown className="h-4 w-4 mr-1" />
               Scroll to bottom

@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAIUsage } from '@/hooks/useAIUsage';
 import { useChatContext } from '@/contexts/ChatContext';
+import { ProviderSyncButton } from '@/components/ProviderSyncButton';
 
 interface ChatSidebarProps {
   onClose?: () => void;
@@ -224,6 +225,7 @@ export const ChatSidebar = ({
                 <h3 className="font-semibold text-foreground text-sm">RT AI</h3>
                 <div className="flex items-center gap-2 mt-1">
                   <AIStatusIndicator key="sidebar-status" size="sm" showLabel readOnly={true} />
+                  <ProviderSyncButton onSync={() => window.location.reload()} />
                 </div>
               </div>
             </div>
