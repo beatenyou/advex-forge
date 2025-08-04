@@ -13,8 +13,7 @@ import { MessageSquare, X, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { useUserModelAccess } from '@/hooks/useUserModelAccess';
-import { useChatContext } from '@/contexts/ChatContext';
+import { useChatSystemValidation } from '@/hooks/useChatSystemValidation';
 
 interface Technique {
   id: string;
@@ -45,42 +44,26 @@ export const TechniqueAIChatDrawer: React.FC<TechniqueAIChatDrawerProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [initialPrompt, setInitialPrompt] = useState<string>('');
-  const [isInitializing, setIsInitializing] = useState(false);
   
-  // Get model access and chat context for validation
-  const { selectedModel, selectedModelId, loading: modelsLoading } = useUserModelAccess();
-  const { currentSession } = useChatContext();
+  // Use comprehensive chat system validation
+  const { 
+    isReady, 
+    isValidating, 
+    errors, 
+    warnings, 
+    canSendMessage, 
+    validationDetails,
+    retry 
+  } = useChatSystemValidation();
 
   // Generate context-aware initial prompt when technique is selected
   useEffect(() => {
     if (technique && open) {
-      setIsInitializing(true);
       const prompt = generateTechniquePrompt(technique);
       setInitialPrompt(prompt);
-      // Don't reset session to null - let ChatSession manage it properly
-      // This ensures the same battle-tested session management as sidebar/fullscreen
-      
-      // Wait for models to load before allowing chat
-      const checkReadiness = () => {
-        if (!modelsLoading && selectedModelId) {
-          console.log('✅ TechniqueAIChatDrawer ready:', { selectedModelId, hasModel: !!selectedModel });
-          setIsInitializing(false);
-        }
-      };
-      
-      // Check immediately and set up a retry mechanism
-      checkReadiness();
-      const readinessInterval = setInterval(() => {
-        checkReadiness();
-        if (!modelsLoading && selectedModelId) {
-          clearInterval(readinessInterval);
-        }
-      }, 100);
-      
-      // Cleanup
-      return () => clearInterval(readinessInterval);
+      console.log('🎯 TechniqueAIChatDrawer: Generated initial prompt for', technique.title);
     }
-  }, [technique, open, modelsLoading, selectedModelId, selectedModel]);
+  }, [technique, open]);
 
   const generateTechniquePrompt = (tech: Technique): string => {
     const context = `I'm working with the following attack technique and need assistance:
@@ -159,17 +142,45 @@ Please help me understand this technique better. I'm looking for insights about 
         </DrawerHeader>
 
         <div className="flex-1 min-h-0 p-0">
-          {(isInitializing || modelsLoading || !selectedModelId) ? (
+          {(!isReady || isValidating) ? (
             <div className="flex items-center justify-center h-full p-8">
-              <div className="flex flex-col items-center gap-4 text-center">
+              <div className="flex flex-col items-center gap-4 text-center max-w-md">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
                 <div className="space-y-2">
-                  <p className="text-sm font-medium">Initializing AI Chat</p>
-                  <p className="text-xs text-muted-foreground">
-                    {modelsLoading ? "Loading AI models..." : 
-                     !selectedModelId ? "Waiting for model selection..." : 
-                     "Preparing chat session..."}
+                  <p className="text-sm font-medium">
+                    {errors.length > 0 ? "System Check Failed" : "Initializing AI Chat"}
                   </p>
+                  
+                  {errors.length > 0 ? (
+                    <div className="space-y-1">
+                      {errors.map((error, index) => (
+                        <p key={index} className="text-xs text-destructive">
+                          • {error}
+                        </p>
+                      ))}
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={retry}
+                        className="mt-2"
+                      >
+                        Retry
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      {warnings.map((warning, index) => (
+                        <p key={index} className="text-xs text-muted-foreground">
+                          • {warning}
+                        </p>
+                      ))}
+                      {!warnings.length && (
+                        <p className="text-xs text-muted-foreground">
+                          {isValidating ? "Validating system..." : "Preparing chat session..."}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

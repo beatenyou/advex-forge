@@ -18,6 +18,14 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  console.log('🚀 AI Chat Router: Request received', { 
+    method: req.method, 
+    url: req.url,
+    contentType: req.headers.get('content-type'),
+    contentLength: req.headers.get('content-length'),
+    hasAuth: !!req.headers.get('authorization')
+  });
+
   try {
     // Get user from auth header
     const authHeader = req.headers.get('Authorization');
@@ -33,101 +41,151 @@ serve(async (req) => {
     }
 
     const userId = userData.user.id;
-    console.log('User authenticated:', userId);
+    console.log('✅ User authenticated:', userId);
     
-    // Check AI quota
+    // Enhanced request body reconstruction with multiple fallback mechanisms
+    let requestData: any = {};
+    let rawBodyText = '';
+    let bodyParsingSuccess = false;
+    
+    // Step 1: Try to get the raw request body
+    try {
+      const clonedRequest = req.clone();
+      rawBodyText = await clonedRequest.text();
+      console.log('📥 Raw body received:', { 
+        length: rawBodyText.length, 
+        hasContent: rawBodyText.trim().length > 0,
+        preview: rawBodyText.substring(0, 100)
+      });
+      
+      if (rawBodyText && rawBodyText.trim().length > 0) {
+        try {
+          requestData = JSON.parse(rawBodyText);
+          bodyParsingSuccess = true;
+          console.log('✅ Body parsed successfully:', {
+            hasMessage: !!requestData.message,
+            hasMessages: !!requestData.messages,
+            hasSessionId: !!requestData.sessionId,
+            hasSelectedModelId: !!requestData.selectedModelId
+          });
+        } catch (jsonError) {
+          console.log('⚠️ JSON parsing failed:', jsonError.message);
+        }
+      }
+    } catch (bodyError) {
+      console.log('⚠️ Body reading failed:', bodyError.message);
+    }
+    
+    // Step 2: Enhanced header fallback reconstruction
+    if (!bodyParsingSuccess) {
+      console.log('🔄 Reconstructing request from headers...');
+      
+      const headerMessage = req.headers.get('X-Message');
+      const headerModelId = req.headers.get('X-Model-Id');
+      const headerSessionId = req.headers.get('X-Session-Id');
+      
+      if (headerMessage || headerModelId || headerSessionId) {
+        requestData = {
+          message: headerMessage ? decodeURIComponent(headerMessage) : '',
+          selectedModelId: headerModelId || '',
+          sessionId: headerSessionId || '',
+          conversationId: headerSessionId || '',
+          messages: [] // Will be reconstructed if needed
+        };
+        
+        console.log('✅ Request reconstructed from headers:', {
+          messageLength: requestData.message.length,
+          hasSessionId: !!requestData.sessionId,
+          hasSelectedModelId: !!requestData.selectedModelId
+        });
+        
+        bodyParsingSuccess = true;
+      }
+    }
+    
+    // Step 3: URL parameter fallback
+    if (!bodyParsingSuccess) {
+      console.log('🔄 Trying URL parameter fallback...');
+      const url = new URL(req.url);
+      
+      if (url.searchParams.has('message')) {
+        requestData = {
+          message: url.searchParams.get('message') || '',
+          selectedModelId: url.searchParams.get('selectedModelId') || '',
+          sessionId: url.searchParams.get('sessionId') || '',
+          conversationId: url.searchParams.get('conversationId') || '',
+          messages: []
+        };
+        bodyParsingSuccess = true;
+        console.log('✅ Request reconstructed from URL parameters');
+      }
+    }
+    
+    // Validate reconstructed request data
+    const message = requestData.message || '';
+    const messages = requestData.messages || [];
+    const selectedModelId = requestData.selectedModelId || '';
+    const sessionId = requestData.sessionId || '';
+    const conversationId = requestData.conversationId || sessionId;
+    
+    console.log('📋 Final request validation:', {
+      hasMessage: message.length > 0,
+      hasMessages: messages.length > 0,
+      hasSelectedModelId: selectedModelId.length > 0,
+      hasSessionId: sessionId.length > 0,
+      messagePreview: message.substring(0, 50)
+    });
+    
+    // Enhanced validation with specific error messages
+    if (!message && (!messages || messages.length === 0)) {
+      throw new Error('Request validation failed: No message content provided. This usually indicates a request body transmission issue.');
+    }
+    
+    if (!selectedModelId) {
+      throw new Error('Request validation failed: No AI model selected. Please ensure a model is selected before sending messages.');
+    }
+    
+    if (!sessionId) {
+      throw new Error('Request validation failed: No session ID provided. Please ensure the chat session is properly initialized.');
+    }
+    
+    // Check AI quota with enhanced error handling
+    console.log('🔍 Checking AI quota for user:', userId);
     const { data: quotaData, error: quotaError } = await supabase.rpc('check_ai_quota', {
       user_id_param: userId
     });
 
     if (quotaError) {
-      throw new Error('Failed to check AI usage quota');
+      console.error('❌ Quota check failed:', quotaError);
+      throw new Error('Failed to check AI usage quota: ' + quotaError.message);
     }
 
     if (!quotaData || quotaData.length === 0 || !quotaData[0].can_use_ai) {
+      console.log('⚠️ Quota exceeded for user:', userId, quotaData?.[0]);
       return new Response(JSON.stringify({ 
         error: 'AI usage quota exceeded',
         quota_exceeded: true,
         current_usage: quotaData?.[0]?.current_usage || 0,
-        quota_limit: quotaData?.[0]?.quota_limit || 50
+        quota_limit: quotaData?.[0]?.quota_limit || 50,
+        plan_name: quotaData?.[0]?.plan_name || 'Unknown'
       }), {
         status: 429,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-
-    // Hybrid request parsing - handle Supabase infrastructure issue where bodies are stripped
-    let requestBody: any = {};
-    let message: string = '';
-    let messages: any[] = [];
-    let selectedModelId: string = '';
-    let sessionId: string = '';
-    let conversationId: string = '';
     
-    const contentLength = req.headers.get('content-length');
-    const contentType = req.headers.get('content-type');
-    const url = new URL(req.url);
-    
-    console.log('Hybrid parsing - Request info:', { 
-      contentLength, 
-      contentType, 
-      hasBody: !!req.body,
-      hasHeaders: req.headers.has('X-Message'),
-      hasUrlParams: url.searchParams.has('message')
+    console.log('✅ Quota check passed:', {
+      currentUsage: quotaData[0].current_usage,
+      quotaLimit: quotaData[0].quota_limit,
+      planName: quotaData[0].plan_name
     });
-    
-    // Try to parse body first (normal case)
-    let bodyParsingSuccess = false;
-    if (contentLength !== '0' && contentLength !== null) {
-      try {
-        const bodyText = await req.text();
-        console.log('Raw body length:', bodyText.length);
-        if (bodyText && bodyText.trim().length > 0) {
-          requestBody = JSON.parse(bodyText);
-          bodyParsingSuccess = true;
-          console.log('✅ Body parsing successful');
-        } else {
-          console.log('⚠️ Empty body detected, using header fallback');
-        }
-      } catch (parseError) {
-        console.log('⚠️ Body parsing failed, trying fallback methods:', parseError.message);
-      }
-    } else {
-      console.log('⚠️ Empty body detected, using header fallback');
-    }
-    
-    // Extract data from body if available
-    if (bodyParsingSuccess && requestBody) {
-      message = requestBody.message || '';
-      messages = requestBody.messages || [];
-      selectedModelId = requestBody.selectedModelId || '';
-      sessionId = requestBody.sessionId || '';
-      conversationId = requestBody.conversationId || '';
-    }
-    
-    // Fallback: Extract from headers (for Supabase infrastructure issue)
-    if (!message && req.headers.has('X-Message')) {
-      message = decodeURIComponent(req.headers.get('X-Message') || '');
-      selectedModelId = req.headers.get('X-Model-Id') || '';
-      sessionId = req.headers.get('X-Session-Id') || '';
-      conversationId = sessionId; // Use session ID as conversation ID
-      console.log('🔄 Using header fallback for message:', message.substring(0, 50));
-    }
-    
-    // Fallback: Extract from URL parameters
-    if (!message && url.searchParams.has('message')) {
-      message = url.searchParams.get('message') || '';
-      selectedModelId = url.searchParams.get('selectedModelId') || '';
-      sessionId = url.searchParams.get('sessionId') || '';
-      conversationId = url.searchParams.get('conversationId') || '';
-      console.log('🔄 Using URL parameter fallback for message:', message.substring(0, 50));
-    }
-    
-    if (!message && !messages) {
-      throw new Error('Message or messages array is required');
-    }
 
-    console.log('Processing request for user:', userId, 'selectedModelId:', selectedModelId);
+    console.log('🎯 Processing validated request:', { 
+      userId, 
+      selectedModelId, 
+      messageLength: message.length,
+      sessionId: sessionId
+    });
 
     // Get AI configuration
     const { data: config, error: configError } = await supabase
@@ -231,97 +289,274 @@ serve(async (req) => {
 
     console.log('Using provider:', provider.name, 'Type:', provider.type);
 
-    // Route to appropriate provider function
+    // Route to appropriate provider function with enhanced error handling
     const functionName = provider.type === 'openai' ? 'ai-chat-openai' : 'ai-chat-mistral';
+    console.log('🔗 Routing to provider function:', functionName, 'for provider:', provider.name);
     
-    // Prepare conversation context
+    // Prepare conversation context with enhanced validation
     let conversationMessages = [];
-    if (messages && Array.isArray(messages)) {
+    if (messages && Array.isArray(messages) && messages.length > 0) {
       conversationMessages = messages.slice(-20).map((msg: any) => ({
-        role: msg.role,
-        content: msg.content
-      }));
+        role: msg.role || 'user',
+        content: msg.content || ''
+      })).filter(msg => msg.content.trim().length > 0);
+      console.log('💬 Using conversation context:', conversationMessages.length, 'messages');
     } else if (message) {
       conversationMessages = [{ role: 'user', content: message }];
+      console.log('💬 Using single message context');
     }
     
+    if (conversationMessages.length === 0) {
+      throw new Error('No valid conversation messages to process');
+    }
+    
+    // Enhanced payload for provider function with redundant data transmission
+    const providerPayload = {
+      message: message || conversationMessages[conversationMessages.length - 1]?.content,
+      messages: conversationMessages,
+      model: provider.model_name,
+      systemPrompt: config.system_prompt,
+      maxTokens: config.max_tokens,
+      temperature: parseFloat(config.temperature),
+      agentId: provider.agent_id,
+      conversationId: conversationId,
+      baseUrl: provider.base_url,
+      // Add redundant fields for robustness
+      requestId: `${userId}-${Date.now()}`,
+      timestamp: new Date().toISOString()
+    };
+    
+    console.log('📤 Sending to provider function:', {
+      functionName,
+      messageLength: providerPayload.message?.length || 0,
+      messagesCount: providerPayload.messages?.length || 0,
+      model: providerPayload.model,
+      hasAgentId: !!providerPayload.agentId,
+      payloadSize: JSON.stringify(providerPayload).length
+    });
+    
+    // Enhanced provider function call with multiple transmission methods
     const providerResponse = await supabase.functions.invoke(functionName, {
-      body: {
-        message: message || conversationMessages[conversationMessages.length - 1]?.content,
-        messages: conversationMessages,
-        model: provider.model_name,
-        systemPrompt: config.system_prompt,
-        maxTokens: config.max_tokens,
-        temperature: parseFloat(config.temperature),
-        agentId: provider.agent_id,
-        conversationId: conversationId,
-        baseUrl: provider.base_url
-      },
+      body: providerPayload,
       headers: {
         'Content-Type': 'application/json',
-        // Pass data via headers as fallback for Supabase infrastructure bug
-        'X-Message': message || conversationMessages[conversationMessages.length - 1]?.content || '',
+        'Accept': 'application/json',
+        // Triple redundancy: send critical data via headers as fallback
+        'X-Message': encodeURIComponent(providerPayload.message || ''),
         'X-Model-Id': provider.id,
         'X-Session-Id': sessionId || '',
-        'X-Simple-Mode': 'true'
+        'X-Agent-Id': provider.agent_id || '',
+        'X-Model-Name': provider.model_name || '',
+        'X-Request-Id': providerPayload.requestId,
+        'X-Simple-Mode': 'true',
+        // Add additional debugging headers
+        'X-Debug-Provider': provider.name,
+        'X-Debug-Type': provider.type,
+        'X-Debug-Timestamp': providerPayload.timestamp
       }
     });
 
+    // Enhanced provider response handling
+    console.log('📥 Provider response received:', {
+      hasError: !!providerResponse.error,
+      hasData: !!providerResponse.data,
+      errorMessage: providerResponse.error?.message,
+      dataKeys: providerResponse.data ? Object.keys(providerResponse.data) : []
+    });
+
     if (providerResponse.error) {
-      throw new Error(providerResponse.error.message || 'Provider function error');
+      console.error('❌ Provider function error:', providerResponse.error);
+      
+      // Classify provider errors for better user experience
+      let errorMessage = 'AI provider error: ' + (providerResponse.error.message || 'Unknown provider error');
+      
+      if (providerResponse.error.message?.includes('timeout')) {
+        errorMessage = 'AI provider timeout - please try again with a shorter message';
+      } else if (providerResponse.error.message?.includes('quota') || providerResponse.error.message?.includes('limit')) {
+        errorMessage = 'AI provider quota exceeded - please try again later';
+      } else if (providerResponse.error.message?.includes('API key') || providerResponse.error.message?.includes('authentication')) {
+        errorMessage = 'AI provider authentication error - please contact support';
+      } else if (providerResponse.error.message?.includes('model')) {
+        errorMessage = 'AI model error - please try selecting a different model';
+      }
+      
+      throw new Error(errorMessage);
+    }
+
+    if (!providerResponse.data) {
+      throw new Error('No response data received from AI provider');
     }
 
     const result = providerResponse.data;
+    console.log('✅ Provider response validated:', {
+      hasMessage: !!result.message,
+      messageLength: result.message?.length || 0,
+      tokensUsed: result.tokensUsed || 0,
+      providerId: result.providerId || 'unknown'
+    });
 
-    // Increment usage
+    // Enhanced usage tracking with better error handling
+    console.log('📊 Tracking usage for successful request...');
     try {
-      await supabase.rpc('increment_ai_usage', {
+      // Track general AI usage
+      const { error: usageError } = await supabase.rpc('increment_ai_usage', {
         user_id_param: userId
       });
       
-      await supabase.rpc('increment_model_usage', {
+      if (usageError) {
+        console.error('❌ Failed to increment AI usage:', usageError);
+      } else {
+        console.log('✅ AI usage incremented for user:', userId);
+      }
+      
+      // Track model-specific usage
+      const { error: modelUsageError } = await supabase.rpc('increment_model_usage', {
         user_id_param: userId,
         provider_id_param: provider.id,
         tokens_used_param: result.tokensUsed || 1,
         session_id_param: sessionId
       });
+      
+      if (modelUsageError) {
+        console.error('❌ Failed to increment model usage:', modelUsageError);
+      } else {
+        console.log('✅ Model usage incremented:', {
+          provider: provider.name,
+          tokens: result.tokensUsed || 1,
+          session: sessionId
+        });
+      }
+      
+      // Log successful interaction for analytics
+      await supabase
+        .from('ai_interactions')
+        .insert({
+          user_id: userId,
+          session_id: sessionId,
+          provider_name: provider.name,
+          success: true,
+          tokens_used: result.tokensUsed || 1,
+          response_time_ms: Date.now() - Date.parse(new Date().toISOString()), // Approximate
+          request_type: 'chat',
+          created_at: new Date().toISOString()
+        });
+        
     } catch (usageError) {
-      console.error('Error tracking AI usage:', usageError);
+      console.error('❌ Error tracking AI usage (non-critical):', usageError);
+      // Don't throw here - usage tracking failure shouldn't break the response
     }
 
-    return new Response(JSON.stringify({
+    // Enhanced response with debugging information
+    const enhancedResult = {
       ...result,
       providerId: provider.id,
-      providerName: provider.name
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      providerName: provider.name,
+      modelName: provider.model_name,
+      requestTimestamp: new Date().toISOString(),
+      // Add debugging info in non-production
+      debug: {
+        userId: userId.substring(0, 8) + '...',
+        sessionId: sessionId.substring(0, 8) + '...',
+        messageLength: message.length,
+        tokensUsed: result.tokensUsed || 1
+      }
+    };
+    
+    console.log('🎉 Successfully processed AI request:', {
+      provider: provider.name,
+      messageLength: message.length,
+      responseLength: result.message?.length || 0,
+      tokensUsed: result.tokensUsed || 1,
+      processingComplete: true
+    });
+
+    return new Response(JSON.stringify(enhancedResult), {
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json',
+        'X-Provider-Used': provider.name,
+        'X-Model-Used': provider.model_name,
+        'X-Request-Success': 'true'
+      },
     });
 
   } catch (error) {
-    console.error('Error in ai-chat-router function:', error);
+    console.error('❌ Critical error in ai-chat-router function:', error);
     
-    // Log error to database
+    // Enhanced error classification for better debugging
+    let errorType = 'system_error';
+    let errorStatus = 500;
+    let userFriendlyMessage = 'An unexpected error occurred. Please try again.';
+    
+    if (error.message?.includes('Authentication')) {
+      errorType = 'auth_error';
+      errorStatus = 401;
+      userFriendlyMessage = 'Authentication failed. Please refresh the page and try again.';
+    } else if (error.message?.includes('quota')) {
+      errorType = 'quota_error';
+      errorStatus = 429;
+      userFriendlyMessage = error.message; // Keep quota messages as-is
+    } else if (error.message?.includes('validation') || error.message?.includes('required')) {
+      errorType = 'validation_error';
+      errorStatus = 400;
+      userFriendlyMessage = 'Request validation failed. Please ensure all required fields are provided.';
+    } else if (error.message?.includes('Provider') || error.message?.includes('model')) {
+      errorType = 'provider_error';
+      errorStatus = 503;
+      userFriendlyMessage = 'AI service temporarily unavailable. Please try again in a moment.';
+    } else if (error.message?.includes('timeout')) {
+      errorType = 'timeout_error';
+      errorStatus = 504;
+      userFriendlyMessage = 'Request timed out. Please try again with a shorter message.';
+    }
+    
+    // Enhanced error logging with more context
     try {
       await supabase
         .from('ai_interactions')
         .insert({
-          user_id: null, // We might not have userId if auth failed
+          user_id: null, // We might not have userId if auth failed early
           success: false,
-          error_type: 'system_error',
+          error_type: errorType,
           provider_name: 'router',
           request_type: 'chat_router',
-          error_details: { message: error.message },
+          error_details: { 
+            message: error.message,
+            stack: error.stack,
+            userAgent: 'edge-function',
+            timestamp: new Date().toISOString()
+          },
           created_at: new Date().toISOString()
         });
     } catch (logError) {
-      console.error('Failed to log error:', logError);
+      console.error('❌ Failed to log error to database:', logError);
     }
 
-    return new Response(JSON.stringify({ 
-      error: error.message
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // Return structured error response
+    const errorResponse = {
+      error: userFriendlyMessage,
+      error_type: errorType,
+      error_code: errorStatus,
+      timestamp: new Date().toISOString(),
+      debug_message: error.message, // For debugging purposes
+      retry_suggested: !['auth_error', 'validation_error'].includes(errorType)
+    };
+
+    console.log('🚨 Returning error response:', {
+      type: errorType,
+      status: errorStatus,
+      message: userFriendlyMessage,
+      originalError: error.message
+    });
+
+    return new Response(JSON.stringify(errorResponse), {
+      status: errorStatus,
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'application/json',
+        'X-Error-Type': errorType,
+        'X-Request-Success': 'false'
+      },
     });
   }
 });

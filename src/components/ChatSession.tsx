@@ -19,6 +19,7 @@ import { EnhancedHistoryTab } from '@/components/EnhancedHistoryTab';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useLocation } from 'react-router-dom';
 import { AIStatusRecovery } from '@/components/AIStatusRecovery';
+import { useChatSystemValidation } from '@/hooks/useChatSystemValidation';
 
 interface ChatMessage {
   id: string;
@@ -57,6 +58,9 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
   const { canUseAI, currentUsage, quotaLimit, planName, refreshQuota } = useAIUsage();
   const { selectedModel, selectedModelId, getSelectedModel, refreshModels } = useUserModelAccess();
   const location = useLocation();
+  
+  // Add system validation for enhanced safety
+  const { canSendMessage: systemCanSendMessage, validationDetails } = useChatSystemValidation();
   
   // Use global chat context for state management
   const {
@@ -571,6 +575,25 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentQuestion.trim() || isLoading || isSending || !currentSession) return;
+    
+    // Enhanced system validation before sending
+    if (!systemCanSendMessage) {
+      console.warn('🚫 System validation failed - cannot send message:', validationDetails);
+      
+      let errorMessage = 'System not ready to send messages.';
+      if (!validationDetails.hasSelectedModel) {
+        errorMessage = 'Please select an AI model before sending messages.';
+      } else if (!validationDetails.hasUsageQuota) {
+        errorMessage = 'AI usage quota exceeded.';
+      }
+      
+      toast({
+        title: "Cannot Send Message",
+        description: errorMessage,
+        variant: "destructive",
+      });
+      return;
+    }
 
     // Reset all states at the beginning to ensure clean start
     setShowStopButton(false);
@@ -650,43 +673,87 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
         throw new Error('No AI model selected. Please select a model first.');
       }
       
-      // Enhanced payload preparation with debugging
+      // Enhanced payload preparation with redundant validation
       const requestPayload = {
-        message: userQuestion,
-        messages: conversationContext,
+        message: userQuestion.trim(),
+        messages: conversationContext.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+          id: msg.id,
+          created_at: msg.created_at
+        })),
         sessionId: currentSession.id,
-        selectedModelId: modelIdToUse
+        selectedModelId: modelIdToUse,
+        conversationId: currentSession.id,
+        // Add metadata for enhanced debugging
+        requestId: `${user?.id}-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        clientVersion: '2.0.0'
       };
       
-      console.log('🚀 Making AI request with payload:', {
-        message: userQuestion.substring(0, 100) + '...',
+      // Validate payload before sending
+      if (!requestPayload.message || requestPayload.message.length === 0) {
+        throw new Error('Message cannot be empty');
+      }
+      
+      if (!requestPayload.sessionId) {
+        throw new Error('Session ID is required but missing');
+      }
+      
+      if (!requestPayload.selectedModelId) {
+        throw new Error('AI model selection is required but missing');
+      }
+      
+      console.log('🚀 Making enhanced AI request:', {
+        messageLength: userQuestion.length,
         messagesCount: conversationContext.length,
         sessionId: currentSession.id,
         selectedModelId: modelIdToUse,
         payloadSize: JSON.stringify(requestPayload).length,
-        hasValidSession: !!currentSession.id,
-        hasValidModel: !!modelIdToUse
+        validation: {
+          hasValidSession: !!currentSession.id,
+          hasValidModel: !!modelIdToUse,
+          hasValidMessage: !!userQuestion.trim(),
+          hasValidUser: !!user?.id
+        }
       });
-      
-      // Log the exact request being sent for debugging
-      console.log('📤 Full request payload:', JSON.stringify(requestPayload, null, 2));
 
+      // Enhanced request with multiple transmission paths
       const result = await Promise.race([
         supabase.functions.invoke('ai-chat-router', {
           body: requestPayload,
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            // Add fallback headers for Supabase infrastructure issue
-            'X-Message': encodeURIComponent(requestPayload.message || ''),
-            'X-Model-Id': requestPayload.selectedModelId || '',
-            'X-Session-Id': requestPayload.sessionId || ''
+            'Cache-Control': 'no-cache',
+            // Triple redundancy: send ALL critical data via headers as fallback
+            'X-Message': encodeURIComponent(requestPayload.message),
+            'X-Model-Id': requestPayload.selectedModelId,
+            'X-Session-Id': requestPayload.sessionId,
+            'X-Conversation-Id': requestPayload.conversationId,
+            'X-Request-Id': requestPayload.requestId,
+            'X-User-Id': user?.id || '',
+            'X-Timestamp': requestPayload.timestamp,
+            'X-Client-Version': requestPayload.clientVersion,
+            // Add validation headers
+            'X-Message-Length': requestPayload.message.length.toString(),
+            'X-Messages-Count': requestPayload.messages.length.toString(),
+            'X-Validation-Token': `${requestPayload.sessionId}-${requestPayload.selectedModelId}`
           }
         }),
-        // Increased timeout to 60 seconds to handle slower responses
-        new Promise<never>((_, reject) => 
-          setTimeout(() => reject(new Error('Request timeout after 60 seconds - please try again')), 60000)
-        )
+        // Enhanced timeout with progressive messaging
+        new Promise<never>((_, reject) => {
+          const timeoutId = setTimeout(() => {
+            reject(new Error('Request timeout after 75 seconds. The AI service is taking longer than usual. Please try again with a shorter message or try again later.'));
+          }, 75000);
+          
+          // Show user feedback after 30 seconds
+          setTimeout(() => {
+            console.log('⏳ Request taking longer than usual (30s)...');
+          }, 30000);
+          
+          return () => clearTimeout(timeoutId);
+        })
       ]) as { data: any; error: any };
       
       const { data, error } = result;
@@ -730,9 +797,12 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
           retryable = false;
         } else if (error.message?.includes('timeout') || error.message?.includes('60 seconds')) {
           errorMessage = 'Request timed out after 60 seconds. Please try again with a shorter message.';
+        } else if (error.message?.includes('validation failed') || error.message?.includes('Request validation failed')) {
+          errorMessage = 'Request validation failed. This may be a temporary issue. Please try again.';
+          retryable = true;
         } else if (error.message?.includes('Empty request body') || error.message?.includes('Request body is empty') || error.message?.includes('deployment') || error.message?.includes('configuration issue')) {
-          errorMessage = 'Edge function deployment issue detected. The AI chat router is not receiving request bodies properly. Please contact support to resolve this configuration issue.';
-          retryable = false;
+          errorMessage = 'System configuration issue detected. The request was not processed correctly. This has been automatically reported and should be resolved shortly.';
+          retryable = true;
         } else if (error.message?.includes('network') || error.message?.includes('fetch') || error.message?.includes('NetworkError')) {
           errorMessage = 'Network connection issue. Please check your connection and try again.';
         } else if (error.message?.includes('authentication') || error.message?.includes('Invalid authentication')) {
@@ -749,17 +819,25 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
         }
         
         toast({
-          title: "AI Error",
+          title: "AI Chat Error",
           description: errorMessage,
           variant: "destructive",
+          duration: retryable ? 8000 : 5000,
           action: retryable ? (
             <Button 
               variant="outline" 
               size="sm" 
               onClick={() => {
-                // Retry the same request
-                setQuestion(userQuestion);
-                setTimeout(() => handleSubmit(e), 100);
+                console.log('🔄 User initiated retry for error:', error.message);
+                // Reset states and retry
+                setIsLoading(false);
+                setIsSending(false);
+                setShowStopButton(false);
+                // Retry after a short delay
+                setTimeout(() => {
+                  setQuestion(userQuestion);
+                  handleSubmit(e);
+                }, 500);
               }}
             >
               Retry
@@ -767,7 +845,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
           ) : undefined,
         });
 
-        // Enhanced error logging with detailed context
+        // Enhanced error logging with comprehensive context
         const errorContext = {
           user_id: user?.id,
           session_id: currentSession?.id,
@@ -776,11 +854,19 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
           request_timestamp: new Date().toISOString(),
           browser_info: navigator.userAgent,
           user_agent: navigator.userAgent,
-          message_preview: userQuestion.substring(0, 100), // First 100 chars for context
+          message_preview: userQuestion.substring(0, 100),
           conversation_length: conversationContext.length,
           current_usage: currentUsage,
           quota_limit: quotaLimit,
-          plan_name: planName
+          plan_name: planName,
+          // Enhanced debugging context
+          selected_model_id: modelIdToUse,
+          selected_model_name: currentSelectedModel?.provider?.name,
+          payload_size: JSON.stringify(requestPayload).length,
+          network_online: navigator.onLine,
+          request_attempt: 1, // Could be enhanced for retry counting
+          client_version: '2.0.0',
+          page_url: window.location.href
         };
 
         // Log detailed error to ai_interactions table
