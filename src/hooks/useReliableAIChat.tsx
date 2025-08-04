@@ -60,10 +60,10 @@ export const useReliableAIChat = (options: ReliableAIChatOptions = {}) => {
         'Content-Type': 'application/json',
         'apikey': SUPABASE_KEY,
         // Send data in headers as backup
-        'x-message': encodeURIComponent(requestData.message),
-        'x-session-id': requestData.sessionId,
-        'x-model-id': requestData.modelId,
-        'x-conversation-history': encodeURIComponent(JSON.stringify(requestData.conversationHistory)),
+        'X-Message': encodeURIComponent(requestData.message),
+        'X-Session-Id': requestData.sessionId,
+        'X-Model-Id': requestData.modelId,
+        'X-Conversation-History': encodeURIComponent(JSON.stringify(requestData.conversationHistory)),
       },
       body: JSON.stringify(requestData),
     });
@@ -84,10 +84,10 @@ export const useReliableAIChat = (options: ReliableAIChatOptions = {}) => {
       body: requestData,
       headers: {
         // Send data in headers as backup
-        'x-message': encodeURIComponent(requestData.message),
-        'x-session-id': requestData.sessionId,
-        'x-model-id': requestData.modelId,
-        'x-conversation-history': encodeURIComponent(JSON.stringify(requestData.conversationHistory)),
+        'X-Message': encodeURIComponent(requestData.message),
+        'X-Session-Id': requestData.sessionId,
+        'X-Model-Id': requestData.modelId,
+        'X-Conversation-History': encodeURIComponent(JSON.stringify(requestData.conversationHistory)),
       },
     });
 
