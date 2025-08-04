@@ -277,6 +277,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent event bubbling that might cause scrolling
     
     // Basic validation
     if (!question.trim()) {
@@ -347,7 +348,8 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
         await updateSessionTitle(currentSession.id, userQuestion);
       }
 
-      
+      // Only scroll when submitting, not during loading
+      scrollToBottom(true);
       
       // Prepare request payload for reliable AI chat
       const requestPayload = {
@@ -666,7 +668,10 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                handleSubmit(e as any);
+                e.stopPropagation(); // Prevent scrolling on Enter
+                if (!isLoading && question.trim()) {
+                  handleSubmit(e as any);
+                }
               }
             }}
             disabled={isLoading}
