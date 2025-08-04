@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { 
   Bug, 
   Activity, 
@@ -76,7 +77,7 @@ export const ChatDebugPanel = ({
   }
 
   return (
-    <Card className="fixed bottom-4 right-4 w-96 h-[600px] z-50 shadow-xl">
+    <Card className="fixed bottom-4 right-4 w-[600px] max-h-[80vh] z-50 shadow-xl resize overflow-auto">
       <div className="p-4 border-b flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Bug className="h-5 w-5" />
@@ -169,37 +170,45 @@ export const ChatDebugPanel = ({
           <ScrollArea className="h-[450px]">
             <div className="space-y-2">
               {requestHistory.slice(-20).reverse().map((request) => (
-                <div key={request.requestId} className="border rounded p-2 text-xs">
-                  <div className="flex justify-between items-center">
-                    <span className="font-mono">{request.requestId.slice(0, 8)}</span>
-                    <div className="flex items-center space-x-1">
-                      {request.success ? (
-                        <CheckCircle className="h-3 w-3 text-green-600" />
-                      ) : (
-                        <XCircle className="h-3 w-3 text-red-600" />
+                <Collapsible key={request.requestId}>
+                  <CollapsibleTrigger className="w-full">
+                    <div className="border rounded p-2 text-xs text-left hover:bg-muted/50">
+                      <div className="flex justify-between items-center">
+                        <span className="font-mono break-all">{request.requestId.slice(0, 12)}</span>
+                        <div className="flex items-center space-x-1">
+                          {request.success ? (
+                            <CheckCircle className="h-3 w-3 text-green-600" />
+                          ) : (
+                            <XCircle className="h-3 w-3 text-red-600" />
+                          )}
+                          <span>{request.duration?.toFixed(0)}ms</span>
+                        </div>
+                      </div>
+                      <div className="text-gray-600 break-words">
+                        Model: {request.modelId.slice(0, 25)}...
+                      </div>
+                    </div>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="text-xs bg-muted/20 p-2 rounded mt-1">
+                    <div className="space-y-1 break-words">
+                      {request.tokensUsed && (
+                        <div className="text-gray-600">
+                          Tokens: {request.tokensUsed}
+                        </div>
                       )}
-                      <span>{request.duration?.toFixed(0)}ms</span>
+                      {request.retryAttempts > 0 && (
+                        <div className="text-yellow-600">
+                          Retries: {request.retryAttempts}
+                        </div>
+                      )}
+                      {!request.success && request.errorMessage && (
+                        <div className="text-red-600 mt-1 whitespace-pre-wrap">
+                          {request.errorMessage}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                  <div className="text-gray-600">
-                    Model: {request.modelId.slice(0, 15)}...
-                  </div>
-                  {request.tokensUsed && (
-                    <div className="text-gray-600">
-                      Tokens: {request.tokensUsed}
-                    </div>
-                  )}
-                  {request.retryAttempts > 0 && (
-                    <div className="text-yellow-600">
-                      Retries: {request.retryAttempts}
-                    </div>
-                  )}
-                  {!request.success && request.errorMessage && (
-                    <div className="text-red-600 mt-1">
-                      {request.errorMessage}
-                    </div>
-                  )}
-                </div>
+                  </CollapsibleContent>
+                </Collapsible>
               ))}
             </div>
           </ScrollArea>
@@ -231,15 +240,24 @@ export const ChatDebugPanel = ({
                 <div className="space-y-2">
                   <span className="text-sm font-medium">Recent Errors</span>
                   {errorHistory.slice(-5).reverse().map((error, index) => (
-                    <div key={index} className="bg-red-50 p-2 rounded text-xs">
-                      <div className="font-medium text-red-800">{error.type}</div>
-                      <div className="text-red-600">{error.message}</div>
-                      {error.suggestedActions && (
-                        <div className="mt-1 text-gray-600">
-                          Suggested: {error.suggestedActions[0]}
+                    <Collapsible key={index}>
+                      <CollapsibleTrigger className="w-full text-left">
+                        <div className="bg-red-50 p-2 rounded text-xs hover:bg-red-100">
+                          <div className="font-medium text-red-800 break-words">{error.type}</div>
+                          <div className="text-xs text-gray-500">
+                            Recent error
+                          </div>
                         </div>
-                      )}
-                    </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent className="text-xs bg-red-100 p-2 rounded mt-1">
+                        <div className="text-red-600 break-words whitespace-pre-wrap">{error.message}</div>
+                        {error.suggestedActions && (
+                          <div className="mt-1 text-gray-600">
+                            Suggested: {error.suggestedActions[0]}
+                          </div>
+                        )}
+                      </CollapsibleContent>
+                    </Collapsible>
                   ))}
                 </div>
               </div>

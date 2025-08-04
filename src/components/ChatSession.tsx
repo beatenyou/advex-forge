@@ -46,20 +46,9 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
   const { toast } = useToast();
   const { trackActivity } = useAnalytics();
   
-  // Enhanced debugging and error handling
-  const {
-    debugMode,
-    startRequestTracking,
-    endRequestTracking,
-    logError,
-    logStateTransition,
-    updateSessionDebugInfo
-  } = useAIChatDebugger();
-  
-  const {
-    handleError,
-    attemptAutoRecovery
-  } = useAIChatErrorHandler();
+  // Simplified debugging to fix network issues
+  const aiDebugger = useAIChatDebugger();
+  const errorHandler = useAIChatErrorHandler();
   
   // Reliable AI chat with enhanced retry logic
   const reliableAIChat = useReliableAIChat({
@@ -257,41 +246,40 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
     // Basic validation
     if (!question.trim()) {
       console.log('❌ Empty question submitted');
-      logStateTransition('idle', 'validation_failed', { reason: 'empty_question' });
       return;
     }
 
     if (!user) {
-      const error = new Error('Authentication required');
-      handleError(error, { requestId: `auth-${Date.now()}` });
-      logStateTransition('idle', 'auth_error');
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to use the AI chat.",
+        variant: "destructive"
+      });
       return;
     }
 
     if (!currentSession) {
-      const error = new Error('No chat session available');
-      handleError(error, { sessionId: 'none' });
-      logStateTransition('idle', 'session_error');
+      toast({
+        title: "Session Error",
+        description: "No chat session available. Please refresh the page.",
+        variant: "destructive"
+      });
       return;
     }
 
     // Check AI quota
     if (!canUseAI) {
-      const error = new Error(`AI usage limit reached: ${planName} plan (${quotaLimit} interactions)`);
-      handleError(error, { sessionId: currentSession.id }, false);
       toast({
         title: "AI Usage Limit Reached",
         description: `You've reached your ${planName} plan limit of ${quotaLimit} AI interactions this month.`,
         variant: "destructive"
       });
-      logStateTransition('idle', 'quota_exceeded', { planName, quotaLimit });
       return;
     }
 
     // Prevent multiple simultaneous requests
     if (isRequestActiveRef.current) {
       console.log('⚠️ Request already in progress, ignoring new submission');
-      logStateTransition('processing', 'request_blocked', { reason: 'already_processing' });
       return;
     }
 
@@ -301,12 +289,6 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
     setQuestion(''); // Clear input immediately
     isRequestActiveRef.current = true;
     setIsLoading(true);
-    
-    logStateTransition('idle', 'processing', { 
-      requestId, 
-      messageLength: userQuestion.length,
-      sessionId: currentSession.id 
-    });
 
     console.log('🚀 Starting AI request - User:', user.id, 'Session:', currentSession.id);
 
@@ -320,15 +302,10 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
         throw new Error('No AI model selected. Please select a model first.');
       }
       
-      startRequestTracking(requestId, modelIdToUse, modelName);
-      logStateTransition('processing', 'saving_user_message');
+      aiDebugger.startRequestTracking(requestId, modelIdToUse, modelName);
 
-      // Save user message immediately with error handling
-      const userMessage = await attemptAutoRecovery(
-        () => saveMessage(currentSession.id, 'user', userQuestion),
-        2,
-        500
-      );
+      // Save user message immediately
+      const userMessage = await saveMessage(currentSession.id, 'user', userQuestion);
       setMessages(prev => [...prev, userMessage as ChatMessage]);
 
       // Update session title if this is the first message
@@ -336,7 +313,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
         await updateSessionTitle(currentSession.id, userQuestion);
       }
 
-      logStateTransition('saving_user_message', 'preparing_ai_request', { modelId: modelIdToUse });
+      
       
       // Prepare request payload for reliable AI chat
       const requestPayload = {
@@ -360,7 +337,7 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
         requestId
       });
 
-      logStateTransition('preparing_ai_request', 'sending_ai_request');
+      
 
       // Use reliable AI chat with enhanced error handling and retries
       const data = await reliableAIChat.sendMessage(requestPayload);
@@ -382,53 +359,30 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
         throw new Error(data.error || 'Invalid response from AI service');
       }
 
-      logStateTransition('sending_ai_request', 'processing_response');
+      // Increment AI usage
+      await incrementUsage();
 
-      // Increment AI usage with error handling
-      const usageIncremented = await attemptAutoRecovery(
-        () => incrementUsage(),
-        2,
-        500
-      );
-      
-      if (!usageIncremented) {
-        console.warn('⚠️ Failed to increment AI usage, but continuing...');
-      }
-
-      // Save assistant message with error handling
-      const assistantMessage = await attemptAutoRecovery(
-        () => saveMessage(
-          currentSession.id, 
-          'assistant', 
-          data.response,
-          data.provider_used,
-          data.tokens_used
-        ),
-        2,
-        500
+      // Save assistant message
+      const assistantMessage = await saveMessage(
+        currentSession.id, 
+        'assistant', 
+        data.response,
+        data.provider_used,
+        data.tokens_used
       );
       
       setMessages(prev => [...prev, assistantMessage as ChatMessage]);
 
       // End request tracking with success
-      endRequestTracking(
+      aiDebugger.endRequestTracking(
         requestId,
         modelIdToUse,
         true,
-        data.tokens_used,
-        undefined,
-        undefined,
-        reliableAIChat.retryCount
+        data.tokens_used
       );
 
-      logStateTransition('processing_response', 'completed', {
-        tokensUsed: data.tokens_used,
-        provider: data.provider_used,
-        retryCount: reliableAIChat.retryCount
-      });
-
       // Update session debug info
-      updateSessionDebugInfo(
+      aiDebugger.updateSessionDebugInfo(
         currentSession.id,
         messages.length + 2, // +2 for user and assistant messages just added
         (messages.reduce((sum, msg) => sum + (msg.tokens_used || 0), 0)) + (data.tokens_used || 0)
@@ -449,28 +403,20 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
       const modelIdForError = currentSelectedModel?.provider_id || 'unknown';
       
       // End request tracking with failure
-      endRequestTracking(
+      aiDebugger.endRequestTracking(
         requestId,
         modelIdForError,
         false,
         undefined,
         error.name || 'unknown_error',
-        error.message,
-        reliableAIChat.retryCount
+        error.message
       );
 
       // Handle error with user-friendly messaging
-      handleError(error, {
+      errorHandler.handleError(error, {
         requestId,
         sessionId: currentSession.id,
-        modelId: modelIdForError,
-        userMessage: userQuestion
-      });
-
-      logStateTransition('sending_ai_request', 'error', {
-        errorType: error.name,
-        errorMessage: error.message,
-        retryCount: reliableAIChat.retryCount
+        modelId: modelIdForError
       });
       
       // Track failed interaction
@@ -481,7 +427,6 @@ export const ChatSession = ({ onClear, sessionId, initialPrompt, onSessionChange
     } finally {
       isRequestActiveRef.current = false;
       setIsLoading(false);
-      logStateTransition('processing', 'idle');
     }
   };
 
