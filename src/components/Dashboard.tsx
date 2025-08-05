@@ -30,6 +30,7 @@ interface DashboardProps {
   onTechniqueSelect?: (technique: ParsedTechnique) => void;
   onToggleChat?: () => void;
   onOpenChatWithPrompt?: (prompt: string) => void;
+  onOpenChatWithPromptAndFocus?: (prompt: string, technique: any) => void;
   isChatVisible?: boolean;
   isWideScreen?: boolean;
   onClearFocusedTechnique?: () => void;
@@ -48,6 +49,7 @@ export const Dashboard = ({
   onTechniqueSelect,
   onToggleChat,
   onOpenChatWithPrompt,
+  onOpenChatWithPromptAndFocus,
   isChatVisible = false,
   isWideScreen = false,
   onClearFocusedTechnique
@@ -369,8 +371,11 @@ Can you help me understand this scenario and provide guidance on the techniques,
     }
   };
   const handleOpenChatWithPromptAndFocus = (prompt: string, techniqueId: string) => {
+    const technique = techniques.find(t => t.id === techniqueId);
     setFocusedTechniqueId(techniqueId);
-    if (onOpenChatWithPrompt) {
+    if (onOpenChatWithPromptAndFocus && technique) {
+      onOpenChatWithPromptAndFocus(prompt, technique);
+    } else if (onOpenChatWithPrompt) {
       onOpenChatWithPrompt(prompt);
     }
   };

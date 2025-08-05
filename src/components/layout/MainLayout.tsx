@@ -21,6 +21,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   const [isChatVisible, setIsChatVisible] = useState(false); // Start hidden
   const [isWideScreen, setIsWideScreen] = useState(false);
   const [initialChatPrompt, setInitialChatPrompt] = useState<string | undefined>();
+  const [focusedTechnique, setFocusedTechnique] = useState<any>(null);
   const isMobile = useIsMobile();
 
   // Check for navigation state to show chat and restore state
@@ -58,6 +59,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
 
   const handleCloseChat = () => {
     setIsChatVisible(false);
+    setFocusedTechnique(null); // Clear focused technique when closing chat
   };
 
   const handleToggleChat = () => {
@@ -69,6 +71,26 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
     setIsChatVisible(true);
     // Clear the prompt after a short delay to allow the ChatSession to pick it up
     setTimeout(() => setInitialChatPrompt(undefined), 1000);
+  };
+
+  const handleOpenChatWithPromptAndFocus = (prompt: string, technique: any) => {
+    setInitialChatPrompt(prompt);
+    setFocusedTechnique(technique);
+    setIsChatVisible(true);
+    // Clear the prompt after a short delay to allow the ChatSession to pick it up
+    setTimeout(() => setInitialChatPrompt(undefined), 1000);
+  };
+
+  const handleToggleFavorite = async (techniqueId: string) => {
+    // This will be passed down from Dashboard through children props
+    const child = React.Children.only(children) as React.ReactElement;
+    if (child.props.onToggleFavorite) {
+      await child.props.onToggleFavorite(techniqueId);
+      // Update focused technique if it's the same one
+      if (focusedTechnique && focusedTechnique.id === techniqueId) {
+        setFocusedTechnique(prev => prev ? { ...prev, starred: !prev.starred } : null);
+      }
+    }
   };
 
   // Dynamic sizing based on screen width
@@ -109,6 +131,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
             {React.cloneElement(children as React.ReactElement, { 
               onToggleChat: handleToggleChat, 
               onOpenChatWithPrompt: handleOpenChatWithPrompt,
+              onOpenChatWithPromptAndFocus: handleOpenChatWithPromptAndFocus,
               isChatVisible: isChatVisible,
               isWideScreen: isWideScreen 
             })}
@@ -117,7 +140,12 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
           {/* Mobile Chat Overlay */}
           {isChatVisible && (
             <div className="fixed inset-0 z-50 bg-background">
-              <ChatSidebar onClose={handleCloseChat} initialPrompt={initialChatPrompt} />
+              <ChatSidebar 
+                onClose={handleCloseChat} 
+                initialPrompt={initialChatPrompt}
+                focusedTechnique={focusedTechnique}
+                onToggleFavorite={handleToggleFavorite}
+              />
             </div>
           )}
         </div>
@@ -137,6 +165,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
                 {React.cloneElement(children as React.ReactElement, { 
                   onToggleChat: handleToggleChat, 
                   onOpenChatWithPrompt: handleOpenChatWithPrompt,
+                  onOpenChatWithPromptAndFocus: handleOpenChatWithPromptAndFocus,
                   isChatVisible: isChatVisible,
                   isWideScreen: isWideScreen 
                 })}
@@ -158,7 +187,12 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
                 className="bg-background h-full overflow-hidden"
                 style={{ contain: 'layout', isolation: 'isolate' }}
               >
-                <ChatSidebar onClose={handleCloseChat} initialPrompt={initialChatPrompt} />
+                <ChatSidebar 
+                  onClose={handleCloseChat} 
+                  initialPrompt={initialChatPrompt}
+                  focusedTechnique={focusedTechnique}
+                  onToggleFavorite={handleToggleFavorite}
+                />
               </ResizablePanel>
             </>
           )}

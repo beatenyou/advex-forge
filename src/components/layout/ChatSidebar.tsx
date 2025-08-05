@@ -11,15 +11,20 @@ import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAIUsage } from '@/hooks/useAIUsage';
 import { useChatContext } from '@/contexts/ChatContext';
+import { FocusedTechniqueDisplay } from '@/components/chat/FocusedTechniqueDisplay';
 
 
 interface ChatSidebarProps {
   onClose?: () => void;
   initialPrompt?: string;
+  focusedTechnique?: any;
+  onToggleFavorite?: (techniqueId: string) => Promise<void>;
 }
 export const ChatSidebar = ({
   onClose,
-  initialPrompt
+  initialPrompt,
+  focusedTechnique,
+  onToggleFavorite
 }: ChatSidebarProps) => {
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
   const [showUsage, setShowUsage] = useState(false);
@@ -277,6 +282,16 @@ export const ChatSidebar = ({
         {/* Content */}
         <div className="flex-1 p-4 bg-background overflow-hidden min-h-0">
           <div className="w-full h-full flex flex-col min-h-0">
+            {/* Focused Technique Display */}
+            {focusedTechnique && onToggleFavorite && (
+              <div className="mb-4">
+                <FocusedTechniqueDisplay
+                  technique={focusedTechnique}
+                  onToggleFavorite={onToggleFavorite}
+                />
+              </div>
+            )}
+            
             {/* Chat session */}
             <div className="flex-1 overflow-hidden">
               <SidebarChat 
