@@ -299,6 +299,7 @@ export const ChatSidebar = ({
                 initialPrompt={initialPrompt}
                 onSessionChange={handleSessionSelect}
                 onClear={clearChatAndResetSession}
+                isChatActive={!!currentSessionId}
               />
             </div>
           </div>

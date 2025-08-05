@@ -7,13 +7,15 @@ interface SidebarChatProps {
   initialPrompt?: string;
   onSessionChange?: (sessionId: string) => void;
   onClear?: () => void;
+  isChatActive?: boolean;
 }
 
 export const SidebarChat = ({
   sessionId,
   initialPrompt,
   onSessionChange,
-  onClear
+  onClear,
+  isChatActive = false
 }: SidebarChatProps) => {
   return (
     <div className="h-full flex flex-col overflow-hidden">
@@ -24,6 +26,7 @@ export const SidebarChat = ({
         onClear={onClear}
         showHeader={false} // Sidebar has its own header
         className="h-full"
+        isChatActive={isChatActive}
       />
     </div>
   );

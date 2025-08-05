@@ -1,6 +1,6 @@
 // ============= Chat Container =============
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useChat } from '@/hooks/useChat';
 import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
@@ -14,6 +14,7 @@ interface ChatContainerProps {
   onClear?: () => void;
   showHeader?: boolean;
   className?: string;
+  isChatActive?: boolean; // Track if chat is already active
 }
 
 export const ChatContainer = ({
@@ -22,9 +23,12 @@ export const ChatContainer = ({
   onSessionChange,
   onClear,
   showHeader = true,
-  className = ""
+  className = "",
+  isChatActive = false
 }: ChatContainerProps) => {
   const { state, actions, metadata } = useChat(sessionId);
+  const lastPromptRef = useRef<string>("");
+  const hasInitializedRef = useRef(false);
 
   // Initialize chat on mount
   useEffect(() => {
@@ -37,6 +41,31 @@ export const ChatContainer = ({
       onSessionChange(state.currentSession.id);
     }
   }, [state.currentSession?.id, onSessionChange]);
+
+  // Handle dynamic prompt changes for technique switching
+  useEffect(() => {
+    // Skip if no prompt, same as last prompt, or chat not ready
+    if (!initialPrompt || 
+        !state.currentSession || 
+        initialPrompt === lastPromptRef.current ||
+        state.isLoading) {
+      return;
+    }
+
+    // If chat is active (has messages) and this is a new prompt, auto-send it
+    if (isChatActive && state.messages.length > 0 && hasInitializedRef.current) {
+      console.log('🔄 Auto-sending new technique prompt:', initialPrompt);
+      actions.sendMessage(initialPrompt);
+    }
+
+    // Update the ref to track this prompt
+    lastPromptRef.current = initialPrompt;
+    
+    // Mark as initialized after first run
+    if (!hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+    }
+  }, [initialPrompt, state.currentSession, state.messages.length, state.isLoading, isChatActive, actions.sendMessage]);
 
   const handleSendMessage = async (message: string) => {
     await actions.sendMessage(message);
@@ -93,7 +122,7 @@ export const ChatContainer = ({
         onSendMessage={handleSendMessage}
         isLoading={state.isLoading}
         disabled={!metadata.canUseAI}
-        initialValue={initialPrompt}
+        initialValue={isChatActive && state.messages.length > 0 ? "" : initialPrompt}
         placeholder={
           metadata.canUseAI 
             ? "Type your message..." 

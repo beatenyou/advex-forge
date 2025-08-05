@@ -1,6 +1,6 @@
 // ============= Chat Input Component =============
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Send, Loader2 } from 'lucide-react';
 import TextareaAutosize from 'react-textarea-autosize';
@@ -24,6 +24,13 @@ export const ChatInput = ({
 }: ChatInputProps) => {
   const [message, setMessage] = useState(initialValue);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Update message when initialValue changes (only if input is empty)
+  useEffect(() => {
+    if (initialValue && message.trim() === "") {
+      setMessage(initialValue);
+    }
+  }, [initialValue, message]);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
