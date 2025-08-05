@@ -3,7 +3,7 @@ import { Bot, Download, Trash2, X, Maximize2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChatSession } from "@/components/ChatSession";
+import { SidebarChat } from "@/components/chat/interfaces/SidebarChat";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -279,7 +279,12 @@ export const ChatSidebar = ({
           <div className="w-full h-full flex flex-col min-h-0">
             {/* Chat session */}
             <div className="flex-1 overflow-hidden">
-              <ChatSession onClear={clearChatAndResetSession} sessionId={currentSessionId} initialPrompt={initialPrompt} />
+              <SidebarChat 
+                sessionId={currentSessionId} 
+                initialPrompt={initialPrompt}
+                onSessionChange={handleSessionSelect}
+                onClear={clearChatAndResetSession}
+              />
             </div>
           </div>
         </div>

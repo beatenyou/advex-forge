@@ -12,6 +12,10 @@ interface AIRequestData {
   timestamp?: string;
 }
 
+/**
+ * @deprecated Use aiChatService from @/services/AIChatService instead
+ * This hook is maintained for backward compatibility only
+ */
 export const useSimpleAIChat = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();

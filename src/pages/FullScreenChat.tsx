@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { FullScreenChatLayout } from "@/components/layouts/FullScreenChatLayout";
-import { ChatSession } from "@/components/ChatSession";
+import { FullScreenChat as FullScreenChatInterface } from "@/components/chat/interfaces/FullScreenChat";
 import { ChatModeToggle } from "@/components/ChatModeToggle";
 import { useChatContext } from "@/contexts/ChatContext";
 
@@ -45,10 +45,10 @@ export default function FullScreenChat() {
     <>
       <FullScreenChatLayout>
         <div className="h-full">
-          <ChatSession 
-            onClear={handleClearChat} 
+          <FullScreenChatInterface
             sessionId={sessionId}
             onSessionChange={handleSessionChange}
+            onClear={handleClearChat}
           />
         </div>
       </FullScreenChatLayout>
