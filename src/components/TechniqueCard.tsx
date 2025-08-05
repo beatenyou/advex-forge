@@ -120,7 +120,7 @@ interface TechniqueCardProps {
   technique: Technique;
   onToggleFavorite: (techniqueId: string) => Promise<void>;
   onOpenAIChat?: (prompt: string) => void;
-  onOpenAIChatWithFocus?: (prompt: string, techniqueId: string) => void;
+  onOpenAIChatWithFocus?: (prompt: string, technique: Technique) => void;
   cardWidth?: string;
   columnCount?: number;
   isFocused?: boolean;
@@ -204,7 +204,7 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, onOpe
     
     // Use the focus-aware function if available, otherwise use the regular one
     if (onOpenAIChatWithFocus) {
-      onOpenAIChatWithFocus(prompt, technique.id);
+      onOpenAIChatWithFocus(prompt, technique);
     } else if (onOpenAIChat) {
       onOpenAIChat(prompt);
     }
