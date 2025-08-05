@@ -68,6 +68,7 @@ interface TechniqueModalProps {
   onClose: () => void;
   onToggleFavorite: (techniqueId: string) => Promise<void>;
   onOpenAIChat?: (prompt: string) => void;
+  onOpenAIChatWithFocus?: (prompt: string, technique: Technique) => void;
 }
 
 // Enhanced function to get detailed technique data
@@ -131,7 +132,7 @@ const extractParamsFromCommand = (command: string) => {
   return params;
 };
 
-export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, onOpenAIChat }: TechniqueModalProps) => {
+export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, onOpenAIChat, onOpenAIChatWithFocus }: TechniqueModalProps) => {
   const [selectedCommand, setSelectedCommand] = useState(0);
   const [generatedCommand, setGeneratedCommand] = useState("");
   const [commandParams, setCommandParams] = useState<Record<string, string>>({});
@@ -223,22 +224,26 @@ export const TechniqueModal = ({ technique, isOpen, onClose, onToggleFavorite, o
   };
 
   const handleAIChatClick = () => {
-    if (onOpenAIChat) {
-      const prompt = `Tell me more about the ${technique.title} attack technique${technique.mitre_id ? ` (${extractCleanMitreId(technique.mitre_id)})` : ''}. Please provide additional details about its usage, tools, and methods to employ this strategy.`;
-      
-      // Track AI query
-      const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
-      trackTechniqueAIQuery({
-        techniqueId: technique.id,
-        techniqueTitle: technique.title,
-        mitreId: technique.mitre_id,
-        phase: primaryPhase,
-        category: technique.category
-      });
-      
+    const prompt = `Tell me more about the ${technique.title} attack technique${technique.mitre_id ? ` (${extractCleanMitreId(technique.mitre_id)})` : ''}. Please provide additional details about its usage, tools, and methods to employ this strategy.`;
+    
+    // Track AI query
+    const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
+    trackTechniqueAIQuery({
+      techniqueId: technique.id,
+      techniqueTitle: technique.title,
+      mitreId: technique.mitre_id,
+      phase: primaryPhase,
+      category: technique.category
+    });
+    
+    // Use focused version if available, otherwise fallback to regular AI chat
+    if (onOpenAIChatWithFocus) {
+      onOpenAIChatWithFocus(prompt, technique);
+    } else if (onOpenAIChat) {
       onOpenAIChat(prompt);
-      onClose(); // Close modal after opening chat
     }
+    
+    onClose(); // Close modal after opening chat
   };
 
   return (

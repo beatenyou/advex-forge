@@ -370,10 +370,9 @@ Can you help me understand this scenario and provide guidance on the techniques,
       onToggleChat();
     }
   };
-  const handleOpenChatWithPromptAndFocus = (prompt: string, techniqueId: string) => {
-    const technique = techniques.find(t => t.id === techniqueId);
-    setFocusedTechniqueId(techniqueId);
-    if (onOpenChatWithPromptAndFocus && technique) {
+  const handleOpenChatWithPromptAndFocus = (prompt: string, technique: any) => {
+    setFocusedTechniqueId(technique.id);
+    if (onOpenChatWithPromptAndFocus) {
       onOpenChatWithPromptAndFocus(prompt, technique);
     } else if (onOpenChatWithPrompt) {
       onOpenChatWithPrompt(prompt);
@@ -527,7 +526,7 @@ Can you help me understand this scenario and provide guidance on the techniques,
       </div>
 
       {/* Technique Modal */}
-      {selectedTechnique && <TechniqueModal technique={selectedTechnique} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onToggleFavorite={toggleFavorite} onOpenAIChat={onOpenChatWithPrompt} />}
+      {selectedTechnique && <TechniqueModal technique={selectedTechnique} isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onToggleFavorite={toggleFavorite} onOpenAIChat={onOpenChatWithPrompt} onOpenAIChatWithFocus={handleOpenChatWithPromptAndFocus} />}
 
       {/* Admin Dashboard */}
       {showAdminDashboard && <AdminDashboard onClose={() => setShowAdminDashboard(false)} />}
