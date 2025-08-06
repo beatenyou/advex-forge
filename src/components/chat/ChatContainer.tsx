@@ -6,6 +6,8 @@ import { MessageList } from './MessageList';
 import { ChatInput } from './ChatInput';
 import { ChatHeader } from './ChatHeader';
 import { SessionHistory } from '@/components/SessionHistory';
+import { FastChatLoader } from './FastChatLoader';
+import { useAIChatPreloader } from '@/hooks/useAIChatPreloader';
 
 interface ChatContainerProps {
   sessionId?: string;
@@ -27,13 +29,19 @@ export const ChatContainer = ({
   isChatActive = false
 }: ChatContainerProps) => {
   const { state, actions, metadata } = useChat(sessionId);
+  const { isConnectionWarm, triggerWarmup } = useAIChatPreloader();
   const lastPromptRef = useRef<string>("");
   const hasInitializedRef = useRef(false);
 
-  // Initialize chat on mount
+  // Initialize chat on mount and trigger warmup if needed
   useEffect(() => {
     actions.initialize();
-  }, [actions.initialize]);
+    
+    // Trigger warmup if connection is cold
+    if (!isConnectionWarm) {
+      triggerWarmup();
+    }
+  }, [actions.initialize, isConnectionWarm, triggerWarmup]);
 
   // Notify parent of session changes
   useEffect(() => {
@@ -111,12 +119,24 @@ export const ChatContainer = ({
         />
       )}
 
-      <MessageList
-        messages={state.messages}
-        isLoading={state.isLoading}
-        onCopyMessage={actions.copyMessage}
-        className="flex-1 min-h-0"
-      />
+      {/* Show fast loader when initializing */}
+      {state.isLoading && !state.messages.length && (
+        <div className="flex-1 flex items-center justify-center">
+          <FastChatLoader 
+            isLoading={true} 
+            isConnectionWarm={isConnectionWarm}
+          />
+        </div>
+      )}
+
+      {(!state.isLoading || state.messages.length > 0) && (
+        <MessageList
+          messages={state.messages}
+          isLoading={state.isLoading}
+          onCopyMessage={actions.copyMessage}
+          className="flex-1 min-h-0"
+        />
+      )}
 
       <ChatInput
         onSendMessage={handleSendMessage}
