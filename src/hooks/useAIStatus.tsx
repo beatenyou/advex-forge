@@ -17,7 +17,7 @@ export const useAIStatus = () => {
   const [loading, setLoading] = useState(true);
   const [currentModelId, setCurrentModelId] = useState<string | null>(null);
 
-  console.log('🔧 useAIStatus hook initialized, currentModelId:', currentModelId);
+  // Removed console.log to reduce noise
 
   // Fetch user's selected model from database
   const fetchUserSelectedModel = async () => {
@@ -61,21 +61,27 @@ export const useAIStatus = () => {
         console.log('🔄 AI Status: Updating status for new model:', modelId, 'from:', source);
         
         // Only update if the model actually changed
-        if (modelId !== currentModelId) {
-          setCurrentModelId(modelId);
-          setLoading(true);
-          await checkAIStatus(modelId);
-          console.log('✅ AI Status: Model change status check completed for:', modelId);
-        } else {
-          console.log('🔄 AI Status: Same model, refreshing status anyway');
-          setLoading(true);
-          await checkAIStatus(modelId);
-        }
+        setCurrentModelId(prev => {
+          if (modelId !== prev) {
+            setLoading(true);
+            checkAIStatus(modelId);
+            console.log('✅ AI Status: Model change status check completed for:', modelId);
+            return modelId;
+          } else {
+            console.log('🔄 AI Status: Same model, refreshing status anyway');
+            setLoading(true);
+            checkAIStatus(modelId);
+            return prev;
+          }
+        });
       } else {
         // Refresh with current model
         console.log('🔄 AI Status: Refreshing status with current model');
         setLoading(true);
-        await checkAIStatus(currentModelId);
+        setCurrentModelId(prev => {
+          checkAIStatus(prev);
+          return prev;
+        });
       }
     };
 
@@ -171,20 +177,20 @@ export const useAIStatus = () => {
       });
       supabase.removeChannel(broadcastChannel);
     };
-  }, []);
+  }, []); // Empty dependency array to run only once on mount
 
   const checkAIStatus = async (modelId?: string | null) => {
     try {
       setLoading(true);
       
-      // Use provided modelId or fetch from user preferences
+      // Use provided modelId or current state
       let targetModelId = modelId;
       if (targetModelId === undefined) {
-        targetModelId = currentModelId || await fetchUserSelectedModel();
+        targetModelId = currentModelId;
       }
       
       // Update current model ID state if we have a new one
-      if (targetModelId !== currentModelId) {
+      if (targetModelId && targetModelId !== currentModelId) {
         console.log('🎯 AI Status: Updating current model ID from', currentModelId, 'to', targetModelId);
         setCurrentModelId(targetModelId);
       }

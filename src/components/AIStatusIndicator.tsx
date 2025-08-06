@@ -62,7 +62,7 @@ export const AIStatusIndicator = ({
   const { isAdmin } = usePermissions();
   const statusConfig = getStatusConfig(aiStatus.status);
   
-  console.log('🖥️ AIStatusIndicator render - status:', aiStatus.status, 'message:', aiStatus.message, 'details:', aiStatus.details, 'className:', className);
+  // Removed console.log to reduce noise
   const sizeConfig = getSizeConfig(size);
   const StatusIcon = statusConfig.icon;
 
