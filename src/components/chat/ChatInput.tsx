@@ -23,14 +23,26 @@ export const ChatInput = ({
   className = ""
 }: ChatInputProps) => {
   const [message, setMessage] = useState(initialValue);
+  const [lastHelperMessage, setLastHelperMessage] = useState(initialValue);
+  const [isUserTyping, setIsUserTyping] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Update message when initialValue changes (only if input is empty)
+  // Update message when initialValue changes
   useEffect(() => {
-    if (initialValue && message.trim() === "") {
-      setMessage(initialValue);
+    if (initialValue) {
+      // If no message or message matches the last helper message, update with new helper
+      if (!message.trim() || message === lastHelperMessage) {
+        setMessage(initialValue);
+        setLastHelperMessage(initialValue);
+        setIsUserTyping(false);
+      }
+      // If user is typing something different, don't override
+      else if (message !== lastHelperMessage) {
+        // User has typed something, keep their content
+        setIsUserTyping(true);
+      }
     }
-  }, [initialValue, message]);
+  }, [initialValue, message, lastHelperMessage]);
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -41,12 +53,26 @@ export const ChatInput = ({
 
     onSendMessage(trimmedMessage);
     setMessage('');
+    setIsUserTyping(false);
+    setLastHelperMessage('');
     
     // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
     }
   }, [message, isLoading, disabled, onSendMessage]);
+
+  const handleMessageChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    setMessage(newValue);
+    
+    // Track if user is actively typing (different from helper message)
+    if (newValue !== lastHelperMessage && newValue.trim() !== '') {
+      setIsUserTyping(true);
+    } else if (newValue.trim() === '') {
+      setIsUserTyping(false);
+    }
+  }, [lastHelperMessage]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -64,7 +90,7 @@ export const ChatInput = ({
           <TextareaAutosize
             ref={textareaRef}
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={handleMessageChange}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             disabled={disabled}
