@@ -86,7 +86,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
     setTimeout(() => setInitialChatPrompt(undefined), 1000);
   };
 
-  const handleToggleFavorite = async (techniqueId: string) => {
+  const handleToggleFavoriteWithState = async (techniqueId: string, userFavorites: string[], setUserFavorites: (favorites: string[]) => void, setTechniques: (techniques: any[]) => void) => {
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -96,13 +96,66 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
       return;
     }
 
-    // Get the current favorite status from focused technique or assume false
+    // Use the provided userFavorites to check current status
+    const isFavorite = userFavorites.includes(techniqueId);
+    
+    try {
+      const success = await toggleTechniqueFavorite(user.id, techniqueId, isFavorite);
+      if (success) {
+        // Update Dashboard's userFavorites state
+        if (isFavorite) {
+          setUserFavorites(userFavorites.filter(id => id !== techniqueId));
+        } else {
+          setUserFavorites([...userFavorites, techniqueId]);
+        }
+
+        // Update Dashboard's techniques array will be handled by setTechniques callback
+
+        // Update focused technique if it's the same one
+        if (focusedTechnique && focusedTechnique.id === techniqueId) {
+          setFocusedTechnique(prev => prev ? { ...prev, starred: !prev.starred } : null);
+        }
+        
+        toast({
+          title: isFavorite ? "Removed from favorites" : "Added to favorites",
+          description: isFavorite ? "Technique removed from your favorites" : "Technique saved to your favorites"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update favorite",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update favorite",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Wrapper function for components that only need techniqueId
+  const handleToggleFavorite = async (techniqueId: string) => {
+    // This will be called from ChatSidebar - we need to get the current state from Dashboard
+    // For now, just update the focused technique
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to save favorites",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const isFavorite = focusedTechnique?.starred || false;
     
     try {
       const success = await toggleTechniqueFavorite(user.id, techniqueId, isFavorite);
       if (success) {
-        // Update focused technique if it's the same one
+        // Update focused technique
         if (focusedTechnique && focusedTechnique.id === techniqueId) {
           setFocusedTechnique(prev => prev ? { ...prev, starred: !prev.starred } : null);
         }
@@ -167,7 +220,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
               onToggleChat: handleToggleChat, 
               onOpenChatWithPrompt: handleOpenChatWithPrompt,
               onOpenChatWithPromptAndFocus: handleOpenChatWithPromptAndFocus,
-              onToggleFavorite: handleToggleFavorite,
+              onToggleFavorite: handleToggleFavoriteWithState,
               isChatVisible: isChatVisible,
               isWideScreen: isWideScreen 
             })}
@@ -202,7 +255,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
                   onToggleChat: handleToggleChat, 
                   onOpenChatWithPrompt: handleOpenChatWithPrompt,
                   onOpenChatWithPromptAndFocus: handleOpenChatWithPromptAndFocus,
-                  onToggleFavorite: handleToggleFavorite,
+              onToggleFavorite: handleToggleFavoriteWithState,
                   isChatVisible: isChatVisible,
                   isWideScreen: isWideScreen 
                 })}

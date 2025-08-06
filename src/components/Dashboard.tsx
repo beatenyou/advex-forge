@@ -34,7 +34,7 @@ interface DashboardProps {
   isChatVisible?: boolean;
   isWideScreen?: boolean;
   onClearFocusedTechnique?: () => void;
-  onToggleFavorite?: (techniqueId: string) => Promise<void>;
+  onToggleFavorite?: (techniqueId: string, userFavorites: string[], setUserFavorites: (favorites: string[]) => void, setTechniques: (techniques: any[]) => void) => Promise<void>;
 }
 interface Scenario {
   id: string;
@@ -284,7 +284,7 @@ export const Dashboard = ({
   const toggleFavorite = async (techniqueId: string) => {
     // Use external toggle function if provided, otherwise use internal logic
     if (onToggleFavorite) {
-      await onToggleFavorite(techniqueId);
+      await onToggleFavorite(techniqueId, userFavorites, setUserFavorites, setTechniques);
       return;
     }
 
