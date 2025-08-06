@@ -10,6 +10,9 @@ import AnnouncementBanner from "@/components/AnnouncementBanner";
 import { useChatContext } from '@/contexts/ChatContext';
 import { ChatModeToggle } from "@/components/ChatModeToggle";
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import { toggleTechniqueFavorite } from "@/lib/techniqueDataMigration";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -18,6 +21,8 @@ interface MainLayoutProps {
 export const MainLayout = ({ children }: MainLayoutProps) => {
   const location = useLocation();
   const { restoreStateFromModeSwitch } = useChatContext();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [isChatVisible, setIsChatVisible] = useState(false); // Start hidden
   const [isWideScreen, setIsWideScreen] = useState(false);
   const [initialChatPrompt, setInitialChatPrompt] = useState<string | undefined>();
@@ -82,14 +87,44 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   };
 
   const handleToggleFavorite = async (techniqueId: string) => {
-    // This will be passed down from Dashboard through children props
-    const child = React.Children.only(children) as React.ReactElement;
-    if (child.props.onToggleFavorite) {
-      await child.props.onToggleFavorite(techniqueId);
-      // Update focused technique if it's the same one
-      if (focusedTechnique && focusedTechnique.id === techniqueId) {
-        setFocusedTechnique(prev => prev ? { ...prev, starred: !prev.starred } : null);
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to save favorites",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Get the current favorite status from focused technique or assume false
+    const isFavorite = focusedTechnique?.starred || false;
+    
+    try {
+      const success = await toggleTechniqueFavorite(user.id, techniqueId, isFavorite);
+      if (success) {
+        // Update focused technique if it's the same one
+        if (focusedTechnique && focusedTechnique.id === techniqueId) {
+          setFocusedTechnique(prev => prev ? { ...prev, starred: !prev.starred } : null);
+        }
+        
+        toast({
+          title: isFavorite ? "Removed from favorites" : "Added to favorites",
+          description: isFavorite ? "Technique removed from your favorites" : "Technique saved to your favorites"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to update favorite",
+          variant: "destructive"
+        });
       }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update favorite",
+        variant: "destructive"
+      });
     }
   };
 
@@ -132,6 +167,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
               onToggleChat: handleToggleChat, 
               onOpenChatWithPrompt: handleOpenChatWithPrompt,
               onOpenChatWithPromptAndFocus: handleOpenChatWithPromptAndFocus,
+              onToggleFavorite: handleToggleFavorite,
               isChatVisible: isChatVisible,
               isWideScreen: isWideScreen 
             })}
@@ -166,6 +202,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
                   onToggleChat: handleToggleChat, 
                   onOpenChatWithPrompt: handleOpenChatWithPrompt,
                   onOpenChatWithPromptAndFocus: handleOpenChatWithPromptAndFocus,
+                  onToggleFavorite: handleToggleFavorite,
                   isChatVisible: isChatVisible,
                   isWideScreen: isWideScreen 
                 })}

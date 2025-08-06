@@ -34,6 +34,7 @@ interface DashboardProps {
   isChatVisible?: boolean;
   isWideScreen?: boolean;
   onClearFocusedTechnique?: () => void;
+  onToggleFavorite?: (techniqueId: string) => Promise<void>;
 }
 interface Scenario {
   id: string;
@@ -52,7 +53,8 @@ export const Dashboard = ({
   onOpenChatWithPromptAndFocus,
   isChatVisible = false,
   isWideScreen = false,
-  onClearFocusedTechnique
+  onClearFocusedTechnique,
+  onToggleFavorite
 }: DashboardProps) => {
   const {
     user,
@@ -280,6 +282,12 @@ export const Dashboard = ({
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
   const toggleFavorite = async (techniqueId: string) => {
+    // Use external toggle function if provided, otherwise use internal logic
+    if (onToggleFavorite) {
+      await onToggleFavorite(techniqueId);
+      return;
+    }
+
     if (!user) {
       toast({
         title: "Authentication Required",
