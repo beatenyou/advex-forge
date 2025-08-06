@@ -16,12 +16,9 @@ import { toggleTechniqueFavorite } from "@/lib/techniqueDataMigration";
 
 interface MainLayoutProps {
   children: ReactNode;
-  userFavorites?: string[];
-  setUserFavorites?: (favorites: string[]) => void;
-  setTechniques?: (techniques: any[]) => void;
 }
 
-export const MainLayout = ({ children, userFavorites = [], setUserFavorites, setTechniques }: MainLayoutProps) => {
+export const MainLayout = ({ children }: MainLayoutProps) => {
   const location = useLocation();
   const { restoreStateFromModeSwitch } = useChatContext();
   const { user } = useAuth();
@@ -89,54 +86,10 @@ export const MainLayout = ({ children, userFavorites = [], setUserFavorites, set
     setTimeout(() => setInitialChatPrompt(undefined), 1000);
   };
 
-  const handleToggleFavoriteWithState = async (techniqueId: string, userFavorites: string[], setUserFavorites: (favorites: string[]) => void, setTechniques: (techniques: any[]) => void) => {
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to save favorites",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    // Use the provided userFavorites to check current status
-    const isFavorite = userFavorites.includes(techniqueId);
-    
-    try {
-      const success = await toggleTechniqueFavorite(user.id, techniqueId, isFavorite);
-      if (success) {
-        // Update Dashboard's userFavorites state
-        if (isFavorite) {
-          setUserFavorites(userFavorites.filter(id => id !== techniqueId));
-        } else {
-          setUserFavorites([...userFavorites, techniqueId]);
-        }
-
-        // Update Dashboard's techniques array will be handled by setTechniques callback
-
-        // Update focused technique if it's the same one
-        if (focusedTechnique && focusedTechnique.id === techniqueId) {
-          setFocusedTechnique(prev => prev ? { ...prev, starred: !prev.starred } : null);
-        }
-        
-        toast({
-          title: isFavorite ? "Removed from favorites" : "Added to favorites",
-          description: isFavorite ? "Technique removed from your favorites" : "Technique saved to your favorites"
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to update favorite",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update favorite",
-        variant: "destructive"
-      });
+  const handleFavoriteUpdate = (techniqueId: string, isFavorited: boolean) => {
+    // Update focused technique if it's the same one
+    if (focusedTechnique && focusedTechnique.id === techniqueId) {
+      setFocusedTechnique(prev => prev ? { ...prev, starred: isFavorited } : null);
     }
   };
 
@@ -180,12 +133,9 @@ export const MainLayout = ({ children, userFavorites = [], setUserFavorites, set
               onToggleChat: handleToggleChat, 
               onOpenChatWithPrompt: handleOpenChatWithPrompt,
               onOpenChatWithPromptAndFocus: handleOpenChatWithPromptAndFocus,
-              onToggleFavorite: handleToggleFavoriteWithState,
+              onFavoriteUpdate: handleFavoriteUpdate,
               isChatVisible: isChatVisible,
-              isWideScreen: isWideScreen,
-              userFavorites: userFavorites,
-              setUserFavorites: setUserFavorites,
-              setTechniques: setTechniques
+              isWideScreen: isWideScreen
             })}
           </div>
           
@@ -196,10 +146,6 @@ export const MainLayout = ({ children, userFavorites = [], setUserFavorites, set
                 onClose={handleCloseChat} 
                 initialPrompt={initialChatPrompt}
                 focusedTechnique={focusedTechnique}
-                onToggleFavorite={handleToggleFavoriteWithState}
-                userFavorites={userFavorites}
-                setUserFavorites={setUserFavorites}
-                setTechniques={setTechniques}
               />
             </div>
           )}
@@ -221,12 +167,9 @@ export const MainLayout = ({ children, userFavorites = [], setUserFavorites, set
                   onToggleChat: handleToggleChat, 
                   onOpenChatWithPrompt: handleOpenChatWithPrompt,
                   onOpenChatWithPromptAndFocus: handleOpenChatWithPromptAndFocus,
-                  onToggleFavorite: handleToggleFavoriteWithState,
+                  onFavoriteUpdate: handleFavoriteUpdate,
                   isChatVisible: isChatVisible,
-                  isWideScreen: isWideScreen,
-                  userFavorites: userFavorites,
-                  setUserFavorites: setUserFavorites,
-                  setTechniques: setTechniques
+                  isWideScreen: isWideScreen
                 })}
               </div>
             </div>
@@ -250,10 +193,6 @@ export const MainLayout = ({ children, userFavorites = [], setUserFavorites, set
                   onClose={handleCloseChat} 
                   initialPrompt={initialChatPrompt}
                   focusedTechnique={focusedTechnique}
-                  onToggleFavorite={handleToggleFavoriteWithState}
-                  userFavorites={userFavorites}
-                  setUserFavorites={setUserFavorites}
-                  setTechniques={setTechniques}
                 />
               </ResizablePanel>
             </>

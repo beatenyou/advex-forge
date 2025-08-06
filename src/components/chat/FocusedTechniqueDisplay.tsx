@@ -30,7 +30,7 @@ interface FocusedTechniqueData {
 
 interface FocusedTechniqueDisplayProps {
   technique: FocusedTechniqueData;
-  onToggleFavorite: (techniqueId: string) => Promise<void>;
+  onToggleFavorite?: (techniqueId: string) => Promise<void>;
   className?: string;
 }
 
@@ -115,7 +115,7 @@ export const FocusedTechniqueDisplay = ({
   const mitreUrl = technique.mitre_id ? generateMitreUrl(technique.mitre_id) : '';
 
   const handleToggleFavorite = async () => {
-    if (isToggling) return;
+    if (isToggling || !onToggleFavorite) return;
     setIsToggling(true);
     try {
       await onToggleFavorite(technique.id);
@@ -146,27 +146,29 @@ export const FocusedTechniqueDisplay = ({
             </div>
             
             <div className="flex items-center gap-1 shrink-0">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleToggleFavorite}
-                    disabled={isToggling}
-                    className={cn(
-                      "h-8 w-8 p-0 transition-colors",
-                      technique.starred 
-                        ? "text-yellow-500 hover:text-yellow-600" 
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    <Star className={cn("h-4 w-4", technique.starred && "fill-current")} />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{technique.starred ? "Remove from favorites" : "Add to favorites"}</p>
-                </TooltipContent>
-              </Tooltip>
+              {onToggleFavorite && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleToggleFavorite}
+                      disabled={isToggling}
+                      className={cn(
+                        "h-8 w-8 p-0 transition-colors",
+                        technique.starred 
+                          ? "text-yellow-500 hover:text-yellow-600" 
+                          : "text-muted-foreground hover:text-foreground"
+                      )}
+                    >
+                      <Star className={cn("h-4 w-4", technique.starred && "fill-current")} />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{technique.starred ? "Remove from favorites" : "Add to favorites"}</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
 
               <Tooltip>
                 <TooltipTrigger asChild>

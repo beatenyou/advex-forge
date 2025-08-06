@@ -18,19 +18,11 @@ interface ChatSidebarProps {
   onClose?: () => void;
   initialPrompt?: string;
   focusedTechnique?: any;
-  onToggleFavorite?: (techniqueId: string, userFavorites: string[], setUserFavorites: (favorites: string[]) => void, setTechniques: (techniques: any[]) => void) => Promise<void>;
-  userFavorites?: string[];
-  setUserFavorites?: (favorites: string[]) => void;
-  setTechniques?: (techniques: any[]) => void;
 }
 export const ChatSidebar = ({
   onClose,
   initialPrompt,
-  focusedTechnique,
-  onToggleFavorite,
-  userFavorites = [],
-  setUserFavorites,
-  setTechniques
+  focusedTechnique
 }: ChatSidebarProps) => {
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
   const [showUsage, setShowUsage] = useState(false);
@@ -289,11 +281,10 @@ export const ChatSidebar = ({
         <div className="flex-1 p-4 bg-background overflow-hidden min-h-0">
           <div className="w-full h-full flex flex-col min-h-0">
             {/* Focused Technique Display */}
-            {focusedTechnique && onToggleFavorite && userFavorites && setUserFavorites && setTechniques && (
+            {focusedTechnique && (
               <div className="mb-4">
                 <FocusedTechniqueDisplay
                   technique={focusedTechnique}
-                  onToggleFavorite={(techniqueId) => onToggleFavorite(techniqueId, userFavorites, setUserFavorites, setTechniques)}
                 />
               </div>
             )}

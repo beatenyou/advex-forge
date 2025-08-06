@@ -34,10 +34,7 @@ interface DashboardProps {
   isChatVisible?: boolean;
   isWideScreen?: boolean;
   onClearFocusedTechnique?: () => void;
-  onToggleFavorite?: (techniqueId: string, userFavorites: string[], setUserFavorites: (favorites: string[]) => void, setTechniques: (techniques: any[]) => void) => Promise<void>;
-  userFavorites?: string[];
-  setUserFavorites?: (favorites: string[]) => void;
-  setTechniques?: (techniques: any[]) => void;
+  onFavoriteUpdate?: (techniqueId: string, isFavorited: boolean) => void;
 }
 interface Scenario {
   id: string;
@@ -57,10 +54,7 @@ export const Dashboard = ({
   isChatVisible = false,
   isWideScreen = false,
   onClearFocusedTechnique,
-  onToggleFavorite,
-  userFavorites: externalUserFavorites,
-  setUserFavorites: externalSetUserFavorites,
-  setTechniques: externalSetTechniques
+  onFavoriteUpdate
 }: DashboardProps) => {
   const {
     user,
@@ -97,11 +91,6 @@ export const Dashboard = ({
   });
   const [techniques, setTechniques] = useState<any[]>([]);
   const [userFavorites, setUserFavorites] = useState<string[]>([]);
-  
-  // Use external state when provided, otherwise use internal state
-  const actualUserFavorites = externalUserFavorites ?? userFavorites;
-  const actualSetUserFavorites = externalSetUserFavorites ?? setUserFavorites;
-  const actualSetTechniques = externalSetTechniques ?? setTechniques;
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPhase, setSelectedPhase] = useState<string>(""); // Initialize empty, will set to first phase when loaded
@@ -128,13 +117,13 @@ export const Dashboard = ({
     }
   }, [user]);
 
-  // Sync techniques starred state with actualUserFavorites
+  // Sync techniques starred state with userFavorites
   useEffect(() => {
     setTechniques(prev => prev.map(technique => ({
       ...technique,
-      starred: actualUserFavorites.includes(technique.id)
+      starred: userFavorites.includes(technique.id)
     })));
-  }, [actualUserFavorites]);
+  }, [userFavorites]);
 
   // Set up realtime subscriptions
   useEffect(() => {
@@ -172,7 +161,7 @@ export const Dashboard = ({
         mitre_id: technique.mitre_id,
         tags: technique.tags || [],
         tools: technique.tools || [],
-        starred: actualUserFavorites.includes(technique.id),
+        starred: userFavorites.includes(technique.id),
         phases: technique.phases || (technique.phase ? [technique.phase] : []),
         whenToUse: technique.when_to_use,
         howToUse: technique.how_to_use,
@@ -184,10 +173,10 @@ export const Dashboard = ({
       setTechniques(formattedTechniques);
 
       // Update starred status based on favorites
-      if (actualUserFavorites.length > 0) {
+      if (userFavorites.length > 0) {
         setTechniques(prev => prev.map(technique => ({
           ...technique,
-          starred: actualUserFavorites.includes(technique.id)
+          starred: userFavorites.includes(technique.id)
         })));
       }
     } catch (error) {
@@ -205,7 +194,7 @@ export const Dashboard = ({
     if (!user) return;
     try {
       const favorites = await fetchUserFavorites(user.id);
-      actualSetUserFavorites(favorites);
+      setUserFavorites(favorites);
     } catch (error) {
       console.error('Error loading user favorites:', error);
     }
@@ -293,12 +282,6 @@ export const Dashboard = ({
     setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
   const toggleFavorite = async (techniqueId: string) => {
-    // Use external toggle function if provided, otherwise use internal logic
-    if (onToggleFavorite) {
-      await onToggleFavorite(techniqueId, actualUserFavorites, actualSetUserFavorites, actualSetTechniques);
-      return;
-    }
-
     if (!user) {
       toast({
         title: "Authentication Required",
@@ -307,31 +290,32 @@ export const Dashboard = ({
       });
       return;
     }
-    const isFavorite = actualUserFavorites.includes(techniqueId);
+    
+    const isFavorite = userFavorites.includes(techniqueId);
     try {
       const success = await toggleTechniqueFavorite(user.id, techniqueId, isFavorite);
       if (success) {
         // Optimistically update the UI
         if (isFavorite) {
-          if (typeof actualSetUserFavorites === 'function') {
-            const newFavorites = actualUserFavorites.filter(id => id !== techniqueId);
-            actualSetUserFavorites(newFavorites);
-          }
+          const newFavorites = userFavorites.filter(id => id !== techniqueId);
+          setUserFavorites(newFavorites);
         } else {
-          if (typeof actualSetUserFavorites === 'function') {
-            const newFavorites = [...actualUserFavorites, techniqueId];
-            actualSetUserFavorites(newFavorites);
-          }
+          const newFavorites = [...userFavorites, techniqueId];
+          setUserFavorites(newFavorites);
         }
 
         // Update the techniques array to reflect the starred status
-        if (typeof actualSetTechniques === 'function') {
-          const newTechniques = techniques.map(technique => technique.id === techniqueId ? {
-            ...technique,
-            starred: !isFavorite
-          } : technique);
-          actualSetTechniques(newTechniques);
+        const newTechniques = techniques.map(technique => technique.id === techniqueId ? {
+          ...technique,
+          starred: !isFavorite
+        } : technique);
+        setTechniques(newTechniques);
+        
+        // Notify parent about the update for synchronization
+        if (onFavoriteUpdate) {
+          onFavoriteUpdate(techniqueId, !isFavorite);
         }
+        
         toast({
           title: isFavorite ? "Removed from favorites" : "Added to favorites",
           description: isFavorite ? "Technique removed from your favorites" : "Technique saved to your favorites"
@@ -353,15 +337,13 @@ export const Dashboard = ({
     }
   };
   const clearAllFavorites = async () => {
-    if (!user || actualUserFavorites.length === 0) return;
+    if (!user || userFavorites.length === 0) return;
     try {
       const {
         error
       } = await supabase.from('user_favorites').delete().eq('user_id', user.id);
       if (error) throw error;
-      if (typeof actualSetUserFavorites === 'function') {
-        actualSetUserFavorites([]);
-      }
+      setUserFavorites([]);
       toast({
         title: "Success",
         description: "All favorites cleared"
