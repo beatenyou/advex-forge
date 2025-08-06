@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { History, MessageSquare, Trash2, Loader2 } from 'lucide-react';
 import { SessionHistory } from '@/components/SessionHistory';
+import { CompactUsageDisplay } from '@/components/CompactUsageDisplay';
+import { useAIUsage } from '@/hooks/useAIUsage';
 import { ChatSession } from '@/types/chat';
 
 interface ChatHeaderProps {
@@ -24,6 +26,7 @@ export const ChatHeader = ({
   className = ""
 }: ChatHeaderProps) => {
   const [showHistory, setShowHistory] = useState(false);
+  const { canUseAI, currentUsage, quotaLimit, planName } = useAIUsage();
 
   const handleNewSession = () => {
     onNewSession();
@@ -39,15 +42,28 @@ export const ChatHeader = ({
     <>
       <div className={`border-b border-border bg-card/30 backdrop-blur-sm p-4 ${className}`}>
         <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <h3 className="font-semibold text-foreground">
-              {currentSession?.title || 'New Conversation'}
-            </h3>
-            {currentSession && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Created {new Date(currentSession.created_at).toLocaleDateString()}
-              </p>
-            )}
+          <div className="flex-1 flex items-center gap-4">
+            <div>
+              <h3 className="font-semibold text-foreground">
+                {currentSession?.title || 'New Conversation'}
+              </h3>
+              {currentSession && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Created {new Date(currentSession.created_at).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+            
+            {/* Credits Display - Hidden on mobile to save space */}
+            <div className="hidden sm:block">
+              <CompactUsageDisplay
+                currentUsage={currentUsage}
+                quotaLimit={quotaLimit}
+                planName={planName}
+                canUseAI={canUseAI}
+                className="bg-muted/50 px-3 py-1.5 rounded-md border"
+              />
+            </div>
           </div>
 
           <div className="flex items-center gap-1">

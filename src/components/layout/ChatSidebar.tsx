@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Bot, Download, Trash2, X, Maximize2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { SidebarChat } from "@/components/chat/interfaces/SidebarChat";
+import { ChatHeaderExtension } from "@/components/chat/ChatHeaderExtension";
 import { AIStatusIndicator } from "@/components/AIStatusIndicator";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +14,12 @@ import { useAIUsage } from '@/hooks/useAIUsage';
 import { useChatContext } from '@/contexts/ChatContext';
 import { FocusedTechniqueDisplay } from '@/components/chat/FocusedTechniqueDisplay';
 
+
+interface RecentSession {
+  id: string;
+  title: string;
+  updated_at: string;
+}
 
 interface ChatSidebarProps {
   onClose?: () => void;
@@ -25,12 +32,34 @@ export const ChatSidebar = ({
   focusedTechnique
 }: ChatSidebarProps) => {
   const [currentSessionId, setCurrentSessionId] = useState<string | undefined>();
+  const [recentSessions, setRecentSessions] = useState<RecentSession[]>([]);
   const [showUsage, setShowUsage] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
   const { canUseAI, currentUsage, quotaLimit, planName } = useAIUsage();
   const { currentSession, preserveStateForModeSwitch } = useChatContext();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      fetchRecentSessions();
+    }
+  }, [user]);
+
+  const fetchRecentSessions = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from('chat_sessions')
+      .select('id, title, updated_at')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false })
+      .limit(5);
+
+    if (!error && data) {
+      setRecentSessions(data);
+    }
+  };
 
   // Function to clear chat that can be passed to ChatSession
   const clearChatAndResetSession = async () => {
@@ -41,7 +70,6 @@ export const ChatSidebar = ({
   };
   const handleSessionSelect = (sessionId: string) => {
     setCurrentSessionId(sessionId);
-    // You could also trigger session loading here if needed
   };
 
   const handleNewSession = async () => {
@@ -50,6 +78,11 @@ export const ChatSidebar = ({
     if ((window as any).__clearChatFunction) {
       await (window as any).__clearChatFunction();
     }
+  };
+
+  const handleSessionChange = (sessionId: string) => {
+    setCurrentSessionId(sessionId);
+    fetchRecentSessions(); // Refresh sessions when a new one is created
   };
 
   const handleClearChats = async () => {
@@ -277,6 +310,14 @@ export const ChatSidebar = ({
           </div>
         </div>
 
+        {/* Chat Header Extension */}
+        <ChatHeaderExtension
+          currentSessionId={currentSessionId}
+          onSessionSelect={handleSessionSelect}
+          onNewSession={handleNewSession}
+          recentSessions={recentSessions}
+        />
+
         {/* Content */}
         <div className="flex-1 p-4 bg-background overflow-hidden min-h-0">
           <div className="w-full h-full flex flex-col min-h-0">
@@ -294,7 +335,7 @@ export const ChatSidebar = ({
               <SidebarChat 
                 sessionId={currentSessionId} 
                 initialPrompt={initialPrompt}
-                onSessionChange={handleSessionSelect}
+                onSessionChange={handleSessionChange}
                 onClear={clearChatAndResetSession}
                 isChatActive={!!currentSessionId}
               />
