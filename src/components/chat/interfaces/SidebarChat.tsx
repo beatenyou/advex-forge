@@ -1,5 +1,6 @@
 // ============= Sidebar Chat Interface =============
 
+import React from 'react';
 import { ChatContainer } from '../ChatContainer';
 
 interface SidebarChatProps {
@@ -10,7 +11,7 @@ interface SidebarChatProps {
   isChatActive?: boolean;
 }
 
-export const SidebarChat = ({
+export const SidebarChat = React.memo(({
   sessionId,
   initialPrompt,
   onSessionChange,
@@ -30,4 +31,6 @@ export const SidebarChat = ({
       />
     </div>
   );
-};
+});
+
+SidebarChat.displayName = 'SidebarChat';

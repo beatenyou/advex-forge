@@ -264,17 +264,21 @@ export const useChat = (sessionId?: string) => {
     try {
       updateState({ isLoading: true, error: null });
       
-      if (sessionId) {
-        await loadSession(sessionId);
-      } else {
-        await createNewSession();
-      }
+      // Add timeout to prevent infinite loading
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Initialization timeout')), 8000); // 8 second timeout
+      });
+      
+      const initPromise = sessionId ? loadSession(sessionId) : createNewSession();
+      
+      await Promise.race([initPromise, timeoutPromise]);
+      
       isInitializedRef.current = true;
       updateState({ isLoading: false });
     } catch (error) {
       console.error('❌ useChat: Failed to initialize', error);
       updateState({ isLoading: false });
-      setError('Failed to initialize chat');
+      setError('Failed to initialize chat - please try refreshing');
     }
   }, [user, sessionId, loadSession, createNewSession, updateState, setError]);
 

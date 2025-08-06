@@ -43,10 +43,10 @@ export const FastChatLoader = ({
       });
     }, isConnectionWarm ? 300 : 800); // Faster animation for warm connections
 
-    // Timeout fallback after 10 seconds
+    // Timeout fallback after 8 seconds instead of 10
     const timeout = setTimeout(() => {
       setShowTimeoutFallback(true);
-    }, 10000);
+    }, 8000);
 
     return () => {
       clearInterval(interval);
@@ -63,7 +63,7 @@ export const FastChatLoader = ({
 
     const interval = setInterval(() => {
       setDots(prev => prev.length >= 3 ? '' : prev + '.');
-    }, 500);
+    }, 400); // Slightly faster dot animation
 
     return () => clearInterval(interval);
   }, [isLoading]);

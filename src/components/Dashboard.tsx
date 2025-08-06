@@ -400,13 +400,9 @@ Can you help me understand this scenario and provide guidance on the techniques,
       setFocusedTechniqueId(null);
     }
   }, [isChatVisible, focusedTechniqueId]);
-  // Add debug logging
-  console.log('Dashboard render:', {
-    navigationPhases: navigationPhases.length,
-    selectedPhase,
-    loading,
-    filteredTechniques: filteredTechniques.length
-  });
+  
+  // Remove excessive debug logging that causes performance issues
+  // Only log critical state changes
 
   // Use proper loading state from the hook
   if (phasesLoading) {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, memo, useMemo } from "react";
 import { Star, Zap, Eye, Copy, ExternalLink, Bolt, Loader2, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -126,7 +126,7 @@ interface TechniqueCardProps {
   isFocused?: boolean;
 }
 
-export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, onOpenAIChatWithFocus, cardWidth = 'medium', columnCount = 3, isFocused = false }: TechniqueCardProps) => {
+const TechniqueCard = memo(({ technique, onToggleFavorite, onOpenAIChat, onOpenAIChatWithFocus, cardWidth = 'medium', columnCount = 3, isFocused = false }: TechniqueCardProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isCommandGenOpen, setIsCommandGenOpen] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
@@ -142,11 +142,20 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, onOpe
     trackTechniqueModalOpened
   } = useTechniqueTracking();
 
+  // Memoize expensive computations
+  const displayPhases = useMemo(() => getDisplayPhases(technique), [technique.phases, technique.phase]);
+  const cleanMitreId = useMemo(() => technique.mitre_id ? extractCleanMitreId(technique.mitre_id) : null, [technique.mitre_id]);
+  const isValidMitre = useMemo(() => technique.mitre_id ? isValidMitreId(technique.mitre_id) : false, [technique.mitre_id]);
+
   // Determine content adaptation based on card width and column count
-  const isNarrow = columnCount >= 5 || cardWidth === 'minimal' || cardWidth === 'compact';
-  const isVeryNarrow = columnCount >= 6 || cardWidth === 'minimal';
-  const showFullContent = cardWidth === 'full' || cardWidth === 'wide';
-  const showSecondaryActions = !isVeryNarrow;
+  const layoutConfig = useMemo(() => {
+    const isNarrow = columnCount >= 5 || cardWidth === 'minimal' || cardWidth === 'compact';
+    const isVeryNarrow = columnCount >= 6 || cardWidth === 'minimal';
+    const showFullContent = cardWidth === 'full' || cardWidth === 'wide';
+    const showSecondaryActions = !isVeryNarrow;
+    
+    return { isNarrow, isVeryNarrow, showFullContent, showSecondaryActions };
+  }, [columnCount, cardWidth]);
 
   const toggleStar = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -190,7 +199,7 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, onOpe
 
   const handleAIChatClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const prompt = `Tell me more about the ${technique.title} attack technique${technique.mitre_id && isValidMitreId(technique.mitre_id) ? ` (${extractCleanMitreId(technique.mitre_id)})` : ''}. Please provide additional details about its usage, tools, and methods to employ this strategy.`;
+    const prompt = `Tell me more about the ${technique.title} attack technique${isValidMitre ? ` (${cleanMitreId})` : ''}. Please provide additional details about its usage, tools, and methods to employ this strategy.`;
     
     // Track AI query
     const primaryPhase = technique.phases?.[0] || technique.phase || 'Unknown';
@@ -264,21 +273,21 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, onOpe
           {/* Header */}
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex-1 min-w-0">
-              <h3 className={cn(
+               <h3 className={cn(
                 "font-semibold text-foreground leading-tight mb-1",
-                isVeryNarrow ? "text-xs line-clamp-1" : "text-sm line-clamp-2"
+                layoutConfig.isVeryNarrow ? "text-xs line-clamp-1" : "text-sm line-clamp-2"
               )}>
                 {technique.title}
               </h3>
               {/* MITRE ID Badge */}
-              {(technique.mitre_id && isValidMitreId(technique.mitre_id)) && !isVeryNarrow && (
+              {(isValidMitre) && !layoutConfig.isVeryNarrow && (
                 <Badge variant="outline" className="text-xs bg-muted/20 text-muted-foreground border-muted/30">
-                  {extractCleanMitreId(technique.mitre_id)}
+                  {cleanMitreId}
                 </Badge>
               )}
               {/* Phase badges - always visible */}
               <div className="flex flex-wrap gap-1 mt-1">
-                {getDisplayPhases(technique).slice(0, isNarrow ? 1 : 2).map((phase, index) => (
+                {displayPhases.slice(0, layoutConfig.isNarrow ? 1 : 2).map((phase, index) => (
                   <Badge 
                     key={index} 
                     variant="outline" 
@@ -287,12 +296,12 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, onOpe
                     {phase}
                   </Badge>
                 ))}
-                {getDisplayPhases(technique).length > (isNarrow ? 1 : 2) && (
+                {displayPhases.length > (layoutConfig.isNarrow ? 1 : 2) && (
                   <Badge 
                     variant="outline" 
                     className="text-xs px-2 py-0.5 text-muted-foreground border-muted-foreground/30 bg-muted/5"
                   >
-                    +{getDisplayPhases(technique).length - (isNarrow ? 1 : 2)}
+                    +{displayPhases.length - (layoutConfig.isNarrow ? 1 : 2)}
                   </Badge>
                 )}
               </div>
@@ -381,15 +390,15 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, onOpe
           {/* Description - adaptive length */}
           <p className={cn(
             "text-muted-foreground leading-relaxed mb-4 flex-1",
-            isVeryNarrow ? "text-xs line-clamp-2" : isNarrow ? "text-xs line-clamp-3" : "text-xs line-clamp-3"
+            layoutConfig.isVeryNarrow ? "text-xs line-clamp-2" : layoutConfig.isNarrow ? "text-xs line-clamp-3" : "text-xs line-clamp-3"
           )}>
             {technique.description}
           </p>
 
           {/* Tags - show fewer in narrow layouts */}
-          {technique.tags && technique.tags.length > 0 && !isVeryNarrow && (
+          {technique.tags && technique.tags.length > 0 && !layoutConfig.isVeryNarrow && (
             <div className="flex flex-wrap gap-1 mb-4">
-              {technique.tags.slice(0, isNarrow ? 2 : 3).map((tag, index) => (
+              {technique.tags.slice(0, layoutConfig.isNarrow ? 2 : 3).map((tag, index) => (
                 <Badge 
                   key={index} 
                   variant="secondary" 
@@ -398,12 +407,12 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, onOpe
                   {tag}
                 </Badge>
               ))}
-              {technique.tags.length > (isNarrow ? 2 : 3) && (
+              {technique.tags.length > (layoutConfig.isNarrow ? 2 : 3) && (
                 <Badge 
                   variant="secondary" 
                   className="text-xs px-2 py-0.5 text-muted-foreground bg-muted/20"
                 >
-                  +{technique.tags.length - (isNarrow ? 2 : 3)}
+                  +{technique.tags.length - (layoutConfig.isNarrow ? 2 : 3)}
                 </Badge>
               )}
             </div>
@@ -415,8 +424,8 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, onOpe
               <div className="flex items-center gap-1 text-xs text-muted-foreground">
                 <Zap className="w-3 h-3" />
                 <span>
-                  {showFullContent 
-                    ? `${technique.tools.slice(0, isNarrow ? 2 : 3).join(", ")}${technique.tools.length > (isNarrow ? 2 : 3) ? ` +${technique.tools.length - (isNarrow ? 2 : 3)} more` : ''}`
+                  {layoutConfig.showFullContent 
+                    ? `${technique.tools.slice(0, layoutConfig.isNarrow ? 2 : 3).join(", ")}${technique.tools.length > (layoutConfig.isNarrow ? 2 : 3) ? ` +${technique.tools.length - (layoutConfig.isNarrow ? 2 : 3)} more` : ''}`
                     : `${technique.tools.length} tool${technique.tools.length > 1 ? 's' : ''}`
                   }
                 </span>
@@ -450,4 +459,8 @@ export const TechniqueCard = ({ technique, onToggleFavorite, onOpenAIChat, onOpe
       />
     </>
   );
-};
+});
+
+TechniqueCard.displayName = 'TechniqueCard';
+
+export { TechniqueCard };

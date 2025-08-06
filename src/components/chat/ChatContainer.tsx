@@ -36,13 +36,18 @@ export const ChatContainer = ({
   // Initialize chat on mount and trigger warmup if needed
   useEffect(() => {
     if (!hasInitializedRef.current) {
-      actions.initialize();
-      hasInitializedRef.current = true;
+      // Optimize initialization by reducing delay
+      const initTimer = setTimeout(() => {
+        actions.initialize();
+        hasInitializedRef.current = true;
+      }, 100); // Reduced from no delay to 100ms for smoother UX
       
-      // Trigger warmup if connection is cold
+      // Trigger warmup if connection is cold, but don't wait for it
       if (!isConnectionWarm) {
         triggerWarmup();
       }
+      
+      return () => clearTimeout(initTimer);
     }
   }, []); // Remove all dependencies to prevent re-initialization
 
