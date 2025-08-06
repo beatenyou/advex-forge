@@ -35,6 +35,9 @@ interface DashboardProps {
   isWideScreen?: boolean;
   onClearFocusedTechnique?: () => void;
   onToggleFavorite?: (techniqueId: string, userFavorites: string[], setUserFavorites: (favorites: string[]) => void, setTechniques: (techniques: any[]) => void) => Promise<void>;
+  userFavorites?: string[];
+  setUserFavorites?: (favorites: string[]) => void;
+  setTechniques?: (techniques: any[]) => void;
 }
 interface Scenario {
   id: string;
@@ -54,7 +57,10 @@ export const Dashboard = ({
   isChatVisible = false,
   isWideScreen = false,
   onClearFocusedTechnique,
-  onToggleFavorite
+  onToggleFavorite,
+  userFavorites: externalUserFavorites,
+  setUserFavorites: externalSetUserFavorites,
+  setTechniques: externalSetTechniques
 }: DashboardProps) => {
   const {
     user,
@@ -91,6 +97,11 @@ export const Dashboard = ({
   });
   const [techniques, setTechniques] = useState<any[]>([]);
   const [userFavorites, setUserFavorites] = useState<string[]>([]);
+  
+  // Use external state when provided, otherwise use internal state
+  const actualUserFavorites = externalUserFavorites ?? userFavorites;
+  const actualSetUserFavorites = externalSetUserFavorites ?? setUserFavorites;
+  const actualSetTechniques = externalSetTechniques ?? setTechniques;
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPhase, setSelectedPhase] = useState<string>(""); // Initialize empty, will set to first phase when loaded
@@ -117,13 +128,13 @@ export const Dashboard = ({
     }
   }, [user]);
 
-  // Sync techniques starred state with userFavorites
+  // Sync techniques starred state with actualUserFavorites
   useEffect(() => {
     setTechniques(prev => prev.map(technique => ({
       ...technique,
-      starred: userFavorites.includes(technique.id)
+      starred: actualUserFavorites.includes(technique.id)
     })));
-  }, [userFavorites]);
+  }, [actualUserFavorites]);
 
   // Set up realtime subscriptions
   useEffect(() => {
@@ -161,7 +172,7 @@ export const Dashboard = ({
         mitre_id: technique.mitre_id,
         tags: technique.tags || [],
         tools: technique.tools || [],
-        starred: userFavorites.includes(technique.id),
+        starred: actualUserFavorites.includes(technique.id),
         phases: technique.phases || (technique.phase ? [technique.phase] : []),
         whenToUse: technique.when_to_use,
         howToUse: technique.how_to_use,
@@ -173,10 +184,10 @@ export const Dashboard = ({
       setTechniques(formattedTechniques);
 
       // Update starred status based on favorites
-      if (userFavorites.length > 0) {
+      if (actualUserFavorites.length > 0) {
         setTechniques(prev => prev.map(technique => ({
           ...technique,
-          starred: userFavorites.includes(technique.id)
+          starred: actualUserFavorites.includes(technique.id)
         })));
       }
     } catch (error) {
@@ -194,7 +205,7 @@ export const Dashboard = ({
     if (!user) return;
     try {
       const favorites = await fetchUserFavorites(user.id);
-      setUserFavorites(favorites);
+      actualSetUserFavorites(favorites);
     } catch (error) {
       console.error('Error loading user favorites:', error);
     }
@@ -284,7 +295,7 @@ export const Dashboard = ({
   const toggleFavorite = async (techniqueId: string) => {
     // Use external toggle function if provided, otherwise use internal logic
     if (onToggleFavorite) {
-      await onToggleFavorite(techniqueId, userFavorites, setUserFavorites, setTechniques);
+      await onToggleFavorite(techniqueId, actualUserFavorites, actualSetUserFavorites, actualSetTechniques);
       return;
     }
 
@@ -296,22 +307,31 @@ export const Dashboard = ({
       });
       return;
     }
-    const isFavorite = userFavorites.includes(techniqueId);
+    const isFavorite = actualUserFavorites.includes(techniqueId);
     try {
       const success = await toggleTechniqueFavorite(user.id, techniqueId, isFavorite);
       if (success) {
         // Optimistically update the UI
         if (isFavorite) {
-          setUserFavorites(prev => prev.filter(id => id !== techniqueId));
+          if (typeof actualSetUserFavorites === 'function') {
+            const newFavorites = actualUserFavorites.filter(id => id !== techniqueId);
+            actualSetUserFavorites(newFavorites);
+          }
         } else {
-          setUserFavorites(prev => [...prev, techniqueId]);
+          if (typeof actualSetUserFavorites === 'function') {
+            const newFavorites = [...actualUserFavorites, techniqueId];
+            actualSetUserFavorites(newFavorites);
+          }
         }
 
         // Update the techniques array to reflect the starred status
-        setTechniques(prev => prev.map(technique => technique.id === techniqueId ? {
-          ...technique,
-          starred: !isFavorite
-        } : technique));
+        if (typeof actualSetTechniques === 'function') {
+          const newTechniques = techniques.map(technique => technique.id === techniqueId ? {
+            ...technique,
+            starred: !isFavorite
+          } : technique);
+          actualSetTechniques(newTechniques);
+        }
         toast({
           title: isFavorite ? "Removed from favorites" : "Added to favorites",
           description: isFavorite ? "Technique removed from your favorites" : "Technique saved to your favorites"
@@ -333,13 +353,15 @@ export const Dashboard = ({
     }
   };
   const clearAllFavorites = async () => {
-    if (!user || userFavorites.length === 0) return;
+    if (!user || actualUserFavorites.length === 0) return;
     try {
       const {
         error
       } = await supabase.from('user_favorites').delete().eq('user_id', user.id);
       if (error) throw error;
-      setUserFavorites([]);
+      if (typeof actualSetUserFavorites === 'function') {
+        actualSetUserFavorites([]);
+      }
       toast({
         title: "Success",
         description: "All favorites cleared"

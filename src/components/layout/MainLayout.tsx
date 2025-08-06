@@ -16,9 +16,12 @@ import { toggleTechniqueFavorite } from "@/lib/techniqueDataMigration";
 
 interface MainLayoutProps {
   children: ReactNode;
+  userFavorites?: string[];
+  setUserFavorites?: (favorites: string[]) => void;
+  setTechniques?: (techniques: any[]) => void;
 }
 
-export const MainLayout = ({ children }: MainLayoutProps) => {
+export const MainLayout = ({ children, userFavorites = [], setUserFavorites, setTechniques }: MainLayoutProps) => {
   const location = useLocation();
   const { restoreStateFromModeSwitch } = useChatContext();
   const { user } = useAuth();
@@ -137,49 +140,6 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
     }
   };
 
-  // Wrapper function for components that only need techniqueId
-  const handleToggleFavorite = async (techniqueId: string) => {
-    // This will be called from ChatSidebar - we need to get the current state from Dashboard
-    // For now, just update the focused technique
-    if (!user) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to save favorites",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const isFavorite = focusedTechnique?.starred || false;
-    
-    try {
-      const success = await toggleTechniqueFavorite(user.id, techniqueId, isFavorite);
-      if (success) {
-        // Update focused technique
-        if (focusedTechnique && focusedTechnique.id === techniqueId) {
-          setFocusedTechnique(prev => prev ? { ...prev, starred: !prev.starred } : null);
-        }
-        
-        toast({
-          title: isFavorite ? "Removed from favorites" : "Added to favorites",
-          description: isFavorite ? "Technique removed from your favorites" : "Technique saved to your favorites"
-        });
-      } else {
-        toast({
-          title: "Error",
-          description: "Failed to update favorite",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update favorite",
-        variant: "destructive"
-      });
-    }
-  };
 
   // Dynamic sizing based on screen width
   const getChatPanelSize = () => {
@@ -222,7 +182,10 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
               onOpenChatWithPromptAndFocus: handleOpenChatWithPromptAndFocus,
               onToggleFavorite: handleToggleFavoriteWithState,
               isChatVisible: isChatVisible,
-              isWideScreen: isWideScreen 
+              isWideScreen: isWideScreen,
+              userFavorites: userFavorites,
+              setUserFavorites: setUserFavorites,
+              setTechniques: setTechniques
             })}
           </div>
           
@@ -233,7 +196,10 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
                 onClose={handleCloseChat} 
                 initialPrompt={initialChatPrompt}
                 focusedTechnique={focusedTechnique}
-                onToggleFavorite={handleToggleFavorite}
+                onToggleFavorite={handleToggleFavoriteWithState}
+                userFavorites={userFavorites}
+                setUserFavorites={setUserFavorites}
+                setTechniques={setTechniques}
               />
             </div>
           )}
@@ -255,9 +221,12 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
                   onToggleChat: handleToggleChat, 
                   onOpenChatWithPrompt: handleOpenChatWithPrompt,
                   onOpenChatWithPromptAndFocus: handleOpenChatWithPromptAndFocus,
-              onToggleFavorite: handleToggleFavoriteWithState,
+                  onToggleFavorite: handleToggleFavoriteWithState,
                   isChatVisible: isChatVisible,
-                  isWideScreen: isWideScreen 
+                  isWideScreen: isWideScreen,
+                  userFavorites: userFavorites,
+                  setUserFavorites: setUserFavorites,
+                  setTechniques: setTechniques
                 })}
               </div>
             </div>
@@ -281,7 +250,10 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
                   onClose={handleCloseChat} 
                   initialPrompt={initialChatPrompt}
                   focusedTechnique={focusedTechnique}
-                  onToggleFavorite={handleToggleFavorite}
+                  onToggleFavorite={handleToggleFavoriteWithState}
+                  userFavorites={userFavorites}
+                  setUserFavorites={setUserFavorites}
+                  setTechniques={setTechniques}
                 />
               </ResizablePanel>
             </>
