@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
+import { useRequestDeduplication } from './useRequestDeduplication';
 
 export type UserRole = 'user' | 'pro' | 'admin';
 
@@ -24,6 +25,7 @@ export interface UserProfile {
 
 export function useUser() {
   const { user } = useAuth();
+  const { deduplicatedRequest } = useRequestDeduplication();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -37,35 +39,43 @@ export function useUser() {
     
     const fetchProfile = async () => {
       try {
-        // Check if profile exists first
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('user_id')
-          .eq('user_id', user.id)
-          .single();
+        // Use deduplication to prevent multiple identical requests
+        const data = await deduplicatedRequest(
+          `user-profile-${user.id}`,
+          async () => {
+            // Check if profile exists first
+            const { data: existingProfile } = await supabase
+              .from('profiles')
+              .select('user_id')
+              .eq('user_id', user.id)
+              .single();
 
-        // Only create profile if it doesn't exist (for new users)
-        if (!existingProfile) {
-          await supabase
-            .from('profiles')
-            .insert({
-              user_id: user.id,
-              email: user.email || '',
-              display_name: user.email?.split('@')[0] || 'User',
-              role: 'user',
-              role_enum: 'user',
-              permissions: ['user'],
-              is_pro: false,
-              subscription_status: 'free'
-            });
-        }
+            // Only create profile if it doesn't exist (for new users)
+            if (!existingProfile) {
+              await supabase
+                .from('profiles')
+                .insert({
+                  user_id: user.id,
+                  email: user.email || '',
+                  display_name: user.email?.split('@')[0] || 'User',
+                  role: 'user',
+                  role_enum: 'user',
+                  permissions: ['user'],
+                  is_pro: false,
+                  subscription_status: 'free'
+                });
+            }
 
-        // Fetch complete profile using the enterprise database function
-        const { data, error } = await supabase
-          .rpc('get_enterprise_user_profile', { target_user_id: user.id });
+            // Fetch complete profile using the enterprise database function
+            const { data, error } = await supabase
+              .rpc('get_enterprise_user_profile', { target_user_id: user.id });
 
-        if (error) {
-          console.error('Error fetching profile:', error);
+            if (error) throw error;
+            return data;
+          }
+        );
+
+        if (!data || data.length === 0) {
           // Create fallback profile
           setProfile({
             user_id: user.id,
@@ -80,7 +90,7 @@ export function useUser() {
             ai_quota_limit: 50,
             plan_name: 'Free'
           });
-        } else if (data && data.length > 0) {
+        } else {
           setProfile({
             ...data[0],
             role_enum: data[0].role as UserRole,

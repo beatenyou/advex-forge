@@ -5,58 +5,57 @@ export function usePerformanceMonitoring() {
   const { trackPerformance } = useAnalytics();
 
   useEffect(() => {
-    // Track page load performance
+    let hasTracked = false;
+    
+    // Track page load performance (only once)
     const trackPageLoadMetrics = () => {
-      if ('performance' in window) {
-        const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      if (hasTracked || !('performance' in window)) return;
+      
+      const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+      
+      if (navigation) {
+        hasTracked = true;
         
-        if (navigation) {
-          // Page load time
-          const pageLoadTime = navigation.loadEventEnd - navigation.fetchStart;
-          trackPerformance('page_load_time', pageLoadTime, 'milliseconds', 'frontend');
-          
-          // DOM content loaded time
-          const domLoadTime = navigation.domContentLoadedEventEnd - navigation.fetchStart;
-          trackPerformance('dom_load_time', domLoadTime, 'milliseconds', 'frontend');
-          
-          // First paint time
-          const firstPaint = performance.getEntriesByName('first-paint')[0];
-          if (firstPaint) {
-            trackPerformance('first_paint', firstPaint.startTime, 'milliseconds', 'frontend');
-          }
-          
-          // First contentful paint
-          const firstContentfulPaint = performance.getEntriesByName('first-contentful-paint')[0];
-          if (firstContentfulPaint) {
-            trackPerformance('first_contentful_paint', firstContentfulPaint.startTime, 'milliseconds', 'frontend');
-          }
+        // Batch all metrics into a single call
+        const metrics = {
+          pageLoadTime: navigation.loadEventEnd - navigation.fetchStart,
+          domLoadTime: navigation.domContentLoadedEventEnd - navigation.fetchStart
+        };
+        
+        // Only track if metrics are reasonable (not 0 or negative)
+        if (metrics.pageLoadTime > 0 && metrics.pageLoadTime < 60000) {
+          trackPerformance('page_load_time', metrics.pageLoadTime, 'milliseconds', 'frontend');
+        }
+        
+        if (metrics.domLoadTime > 0 && metrics.domLoadTime < 60000) {
+          trackPerformance('dom_load_time', metrics.domLoadTime, 'milliseconds', 'frontend');
         }
       }
     };
 
-    // Track performance metrics after page is fully loaded
+    // Track performance metrics after page is fully loaded (with delay to prevent duplicates)
     if (document.readyState === 'complete') {
-      setTimeout(trackPageLoadMetrics, 100);
+      setTimeout(trackPageLoadMetrics, 500);
     } else {
       window.addEventListener('load', () => {
-        setTimeout(trackPageLoadMetrics, 100);
+        setTimeout(trackPageLoadMetrics, 500);
       });
     }
 
-    // Track memory usage (if available)
-    const trackMemoryUsage = () => {
-      if ('memory' in performance) {
-        const memory = (performance as any).memory;
-        trackPerformance('memory_used', memory.usedJSHeapSize, 'bytes', 'frontend');
-        trackPerformance('memory_total', memory.totalJSHeapSize, 'bytes', 'frontend');
-      }
-    };
+    // Disable memory tracking to reduce overhead
+    // const trackMemoryUsage = () => {
+    //   if ('memory' in performance) {
+    //     const memory = (performance as any).memory;
+    //     trackPerformance('memory_used', memory.usedJSHeapSize, 'bytes', 'frontend');
+    //     trackPerformance('memory_total', memory.totalJSHeapSize, 'bytes', 'frontend');
+    //   }
+    // };
 
-    // Track memory usage every 30 seconds
-    const memoryInterval = setInterval(trackMemoryUsage, 30000);
+    // // Track memory usage every 30 seconds
+    // const memoryInterval = setInterval(trackMemoryUsage, 30000);
 
     return () => {
-      clearInterval(memoryInterval);
+      // clearInterval(memoryInterval);
     };
   }, [trackPerformance]);
 

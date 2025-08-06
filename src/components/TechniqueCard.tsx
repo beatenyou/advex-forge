@@ -463,4 +463,5 @@ const TechniqueCard = memo(({ technique, onToggleFavorite, onOpenAIChat, onOpenA
 
 TechniqueCard.displayName = 'TechniqueCard';
 
+export default TechniqueCard;
 export { TechniqueCard };

@@ -163,8 +163,9 @@ export const Dashboard = ({
         tools: technique.tools || [],
         starred: userFavorites.includes(technique.id),
         phases: technique.phases || (technique.phase ? [technique.phase] : []),
-        whenToUse: technique.when_to_use,
-        howToUse: technique.how_to_use,
+        // Fix circular references by creating clean references
+        whenToUse: technique.when_to_use || [],
+        howToUse: technique.how_to_use || [],
         commands: technique.commands || [],
         detection: technique.detection,
         mitigation: technique.mitigation,
