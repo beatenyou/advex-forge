@@ -262,16 +262,21 @@ export const useChat = (sessionId?: string) => {
     if (!user || isInitializedRef.current) return;
 
     try {
+      updateState({ isLoading: true, error: null });
+      
       if (sessionId) {
         await loadSession(sessionId);
       } else {
         await createNewSession();
       }
       isInitializedRef.current = true;
+      updateState({ isLoading: false });
     } catch (error) {
       console.error('❌ useChat: Failed to initialize', error);
+      updateState({ isLoading: false });
+      setError('Failed to initialize chat');
     }
-  }, [user, sessionId, loadSession, createNewSession]);
+  }, [user, sessionId, loadSession, createNewSession, updateState, setError]);
 
   // Handle sessionId changes after initialization
   useEffect(() => {

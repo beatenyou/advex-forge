@@ -25,6 +25,13 @@ export const useAIChatPreloader = () => {
     try {
       console.log('🔥 Warming up AI connection...');
       
+      // Only warmup if no active chat initialization is happening
+      if (aiChatService.getActiveRequestCount() > 0) {
+        console.log('Skipping warmup - active chat requests in progress');
+        isWarmingRef.current = false;
+        return;
+      }
+      
       // Send a minimal request to warm up the connection
       const warmupPayload = {
         message: "ping", // Minimal message for warmup

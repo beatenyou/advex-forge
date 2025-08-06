@@ -19,11 +19,13 @@ export const FastChatLoader = ({
 }: FastChatLoaderProps) => {
   const [loadingStep, setLoadingStep] = useState(0);
   const [dots, setDots] = useState('');
+  const [showTimeoutFallback, setShowTimeoutFallback] = useState(false);
 
   // Animate loading steps
   useEffect(() => {
     if (!isLoading) {
       setLoadingStep(0);
+      setShowTimeoutFallback(false);
       return;
     }
 
@@ -41,7 +43,15 @@ export const FastChatLoader = ({
       });
     }, isConnectionWarm ? 300 : 800); // Faster animation for warm connections
 
-    return () => clearInterval(interval);
+    // Timeout fallback after 10 seconds
+    const timeout = setTimeout(() => {
+      setShowTimeoutFallback(true);
+    }, 10000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
   }, [isLoading, isConnectionWarm]);
 
   // Animate dots
@@ -108,12 +118,14 @@ export const FastChatLoader = ({
           {/* Loading text */}
           <div className="text-center">
             <p className="text-sm font-medium text-foreground">
-              {currentStep.label}{dots}
+              {showTimeoutFallback ? "Still loading..." : currentStep.label}{dots}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {isConnectionWarm 
-                ? "Using warm connection for faster loading" 
-                : "Starting up AI services..."
+              {showTimeoutFallback 
+                ? "This is taking longer than expected. Please wait..."
+                : isConnectionWarm 
+                  ? "Using warm connection for faster loading" 
+                  : "Starting up AI services..."
               }
             </p>
           </div>

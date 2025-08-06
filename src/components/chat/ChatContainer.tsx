@@ -35,13 +35,16 @@ export const ChatContainer = ({
 
   // Initialize chat on mount and trigger warmup if needed
   useEffect(() => {
-    actions.initialize();
-    
-    // Trigger warmup if connection is cold
-    if (!isConnectionWarm) {
-      triggerWarmup();
+    if (!hasInitializedRef.current) {
+      actions.initialize();
+      hasInitializedRef.current = true;
+      
+      // Trigger warmup if connection is cold
+      if (!isConnectionWarm) {
+        triggerWarmup();
+      }
     }
-  }, [actions.initialize, isConnectionWarm, triggerWarmup]);
+  }, []); // Remove all dependencies to prevent re-initialization
 
   // Notify parent of session changes
   useEffect(() => {
