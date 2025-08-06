@@ -1,6 +1,6 @@
 // ============= Unified Chat Hook =============
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useAIUsage } from '@/hooks/useAIUsage';
@@ -257,7 +257,7 @@ export const useChat = (sessionId?: string) => {
     }
   }, [toast]);
 
-  // Initialize session on mount or when sessionId changes
+  // Initialize session on mount
   const initialize = useCallback(async () => {
     if (!user || isInitializedRef.current) return;
 
@@ -272,6 +272,17 @@ export const useChat = (sessionId?: string) => {
       console.error('❌ useChat: Failed to initialize', error);
     }
   }, [user, sessionId, loadSession, createNewSession]);
+
+  // Handle sessionId changes after initialization
+  useEffect(() => {
+    if (!user || !sessionId || !isInitializedRef.current) return;
+    
+    // If sessionId changed and we have a different current session, load the new one
+    if (state.currentSession?.id !== sessionId) {
+      console.log('📌 useChat: SessionId changed, loading new session', sessionId);
+      loadSession(sessionId);
+    }
+  }, [sessionId, user, state.currentSession?.id, loadSession]);
 
   return {
     state,
