@@ -264,14 +264,11 @@ export const useChat = (sessionId?: string) => {
     try {
       updateState({ isLoading: true, error: null });
       
-      // Add timeout to prevent infinite loading
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Initialization timeout')), 8000); // 8 second timeout
-      });
-      
-      const initPromise = sessionId ? loadSession(sessionId) : createNewSession();
-      
-      await Promise.race([initPromise, timeoutPromise]);
+      if (sessionId) {
+        await loadSession(sessionId);
+      } else {
+        await createNewSession();
+      }
       
       isInitializedRef.current = true;
       updateState({ isLoading: false });

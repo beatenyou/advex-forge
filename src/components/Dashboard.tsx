@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useAIChatPreloader } from "@/hooks/useAIChatPreloader";
 import { Search, Shield, Users, Settings, Star, Hash, Filter, LogOut, UserCog, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -57,8 +56,6 @@ export const Dashboard = ({
   onClearFocusedTechnique,
   onFavoriteUpdate
 }: DashboardProps) => {
-  // Initialize AI chat preloader for better performance
-  useAIChatPreloader();
   const {
     user,
     signOut
